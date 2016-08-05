@@ -67,17 +67,17 @@ func nodeMapString(nodeMap uint32) string {
 	return strings.Join(strs, " ")
 }
 
-type Key interface {
-	Equals(Key) bool
-	Hash30() uint32
-	Hash60() uint64
-	String() string
-}
+//type Key interface {
+//	Equals(Key) bool
+//	Hash30() uint32
+//	Hash60() uint64
+//	String() string
+//}
 
 type Hamt interface {
-	Get(Key) (interface{}, bool)
-	Put(Key, interface{}) bool
-	Del(Key) (interface{}, bool)
+	Get(hamt_key.Key) (interface{}, bool)
+	Put(hamt_key.Key, interface{}) bool
+	Del(hamt_key.Key) (interface{}, bool)
 	String() string
 	LongString(indent string) string
 }
@@ -87,13 +87,13 @@ type Hamt32 struct {
 	nentries int
 }
 
-func NewHamt() Hamt {
+func NewHamt32() Hamt {
 	var h = new(Hamt32)
 	return h
 }
 
 type keyVal struct {
-	key Key
+	key hamt_key.Key
 	val interface{}
 }
 
@@ -105,7 +105,7 @@ func (h *Hamt32) IsEmpty() bool {
 	return h.root == nil
 }
 
-func (h *Hamt32) Get(key Key) (interface{}, bool) {
+func (h *Hamt32) Get(key hamt_key.Key) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
 	}
@@ -140,7 +140,7 @@ func (h *Hamt32) Get(key Key) (interface{}, bool) {
 	return nil, false
 }
 
-func (h *Hamt32) Put(key Key, val interface{}) bool {
+func (h *Hamt32) Put(key hamt_key.Key, val interface{}) bool {
 	var h30 = key.Hash30()
 	var newLeaf = NewFlatLeaf32(h30, key, val)
 	var depth uint = 0
@@ -210,7 +210,7 @@ func (h *Hamt32) Put(key Key, val interface{}) bool {
 	return inserted
 }
 
-func (h *Hamt32) Del(key Key) (interface{}, bool) {
+func (h *Hamt32) Del(key hamt_key.Key) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
 	}

@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	hamt32 "github.com/lleo/go-hamt/hamt32"
+	"github.com/lleo/go-hamt/hamt32"
 
 	"github.com/lleo/stringutil"
 )
@@ -17,7 +17,7 @@ var midKvs []keyVal
 var hugeKvs []keyVal
 
 var M map[string]int
-var H *hamt32.Hamt
+var H hamt32.Hamt
 
 func TestMain(m *testing.M) {
 	//SETUP
@@ -34,9 +34,12 @@ func TestMain(m *testing.M) {
 	var s0 = stringutil.Str("aaa")
 	//numMidKvs := 10000 //ten thousand
 	numMidKvs = 1000 // 10 million
+
 	for i := 0; i < numMidKvs; i++ {
-		var key = StringKey(s0)
+		var key = string_key.StringKey(s0)
 		var val = i
+
+		//log.Printf("numHugeKvs[%d] val=%d; key=%s", i, i, s1)
 		midKvs = append(midKvs, keyVal{key, val})
 		s0 = s0.DigitalInc(1) //get off "" first
 	}
@@ -47,8 +50,9 @@ func TestMain(m *testing.M) {
 	numHugeKvs = 1 * 1024 * 1024 // one mega-entries
 	//numHugeKvs = 256 * 1024 * 1024 //256 MB
 	for i := 0; i < numHugeKvs; i++ {
-		var key = StringKey(s1)
+		var key = string_key.StringKey(s1)
 		var val = i
+
 		//log.Printf("numHugeKvs[%d] val=%d; key=%s", i, i, s1)
 		hugeKvs = append(hugeKvs, keyVal{key, val})
 		s1 = s1.DigitalInc(1)
@@ -56,12 +60,14 @@ func TestMain(m *testing.M) {
 
 	// Build map & hamt, for h.Get() and h.Del() benchmarks
 	M = make(map[string]int)
-	H = hamt32.NewHamt()
+	H = hamt32.NewHamt32()
 	var s = stringutil.Str("aaa")
 	for i := 0; i < numHugeKvs; i++ {
+		var key = string_key.StringKey(s)
 		var val = i
+
 		M[string(s)] = val
-		H.Put(StringKey(s), val)
+		H.Put(key, val)
 		s = s.DigitalInc(1)
 	}
 
@@ -99,7 +105,7 @@ func TestPutGetOne(t *testing.T) {
 	var h = hamt32.NewHamt32()
 
 	var s = stringutil.Str("aaa")
-	var k = StringKey(s)
+	var k = string_key.StringKey(s)
 	var v int = 1
 
 	var inserted = h.Put(k, v)
@@ -125,7 +131,7 @@ func TestPutDelOne(t *testing.T) {
 	var h = hamt32.NewHamt32()
 
 	var s = stringutil.Str("aaa")
-	var k = StringKey(s)
+	var k = string_key.StringKey(s)
 	var v int = 1
 
 	var inserted = h.Put(k, v)
@@ -156,20 +162,26 @@ func TestPutGetMid(t *testing.T) {
 	var h = hamt32.NewHamt32()
 
 	for i := 0; i < numMidKvs; i++ {
-		var inserted = h.Put(midKvs[i].key, midKvs[i].val)
+		key = midKvs[i].key
+		val = midKvs[i].val
+
+		var inserted = h.Put(key, val)
 		if !inserted {
-			t.Fatalf("h.Put(%s, %v): for i=%d returned false", midKvs[i].key, midKvs[i].val, i)
+			t.Fatalf("h.Put(%s, %v): for i=%d returned false", key, val, i)
 		}
 	}
 
 	for i := 0; i < numMidKvs; i++ {
-		var vv, found = h.Get(midKvs[i].key)
+		key = midKvs[i].key
+		val = midKvs[i].val
+
+		var vv, found = h.Get(key)
 		if !found {
-			t.Fatalf("h.Get(%s): for i=%d returned !found", midKvs[i].key, i)
+			t.Fatalf("h.Get(%s): for i=%d returned !found", key, i)
 		}
 		//v := vv.(int)
 		if vv != midKvs[i].val {
-			t.Fatalf("h.Get(%s): returned vv,%v != midKvs[%d].val,%v", midKvs[i].key, vv, i, midKvs[i].val)
+			t.Fatalf("h.Get(%s): returned vv,%v != midKvs[%d].val,%v", key, vv, i, val)
 		}
 	}
 }
@@ -179,27 +191,27 @@ func TestPutDelMid(t *testing.T) {
 	var h = hamt32.NewHamt32()
 
 	for i := 0; i < numMidKvs; i++ {
-		var inserted = h.Put(midKvs[i].key, midKvs[i].val)
+		key = midKvs[i].key
+		val = midKvs[i].val
+
+		var inserted = h.Put(key, val)
 		if !inserted {
-			t.Fatalf("h.Put(%s, %v): for i=%d returned false", midKvs[i].key, midKvs[i].val, i)
+			t.Fatalf("h.Put(%s, %v): for i=%d returned false", key, val, i)
 		}
 	}
 
 	//log.Println("h =", h.LongString(""))
 
 	for i := 0; i < numMidKvs; i++ {
+		key = midKvs[i].key
+		val = midKvs[i].val
 
-		//if midKvs[i].key.Equals(StringKey("aba")) {
-		//	log.Println("before h.Del(%s) h =\n%s", midKvs[i].key, h.LongString(""))
-		//}
-
-		var vv, deleted = h.Del(midKvs[i].key)
+		var vv, deleted = h.Del(key)
 		if !deleted {
-			//log.Printf("h.Del(%s): failed h =\n%s", midKvs[i].key, h.LongString(""))
-			t.Fatalf("h.Del(%s): for i=%d return !deleted", midKvs[i].key, i)
+			t.Fatalf("h.Del(%s): for i=%d return !deleted", key, i)
 		}
-		if vv != midKvs[i].val {
-			t.Fatalf("h.Del(%s): returned vv,%v != midKvs[%d].val,%v", midKvs[i].key, vv, i, midKvs[i].val)
+		if vv != val {
+			t.Fatalf("h.Del(%s): returned vv,%v != midKvs[%d].val,%v", key, vv, i, val)
 		}
 		//log.Println("h =", h.LongString(""))
 	}
@@ -210,20 +222,26 @@ func TestPutGetHuge(t *testing.T) {
 	var h = hamt32.NewHamt32()
 
 	for i := 0; i < numHugeKvs; i++ {
-		var inserted = h.Put(hugeKvs[i].key, hugeKvs[i].val)
+		key = hugeKvs[i].key
+		val = hugeKvs[i].val
+
+		var inserted = h.Put(key, val)
 		if !inserted {
-			t.Fatalf("h.Put(%s, %v): for i=%d returned false", hugeKvs[i].key, hugeKvs[i].val, i)
+			t.Fatalf("h.Put(%s, %v): for i=%d returned false", key, val, i)
 		}
 	}
 
 	for i := 0; i < numHugeKvs; i++ {
-		var vv, found = h.Get(hugeKvs[i].key)
+		key = hugeKvs[i].key
+		val = hugeKvs[i].val
+
+		var vv, found = h.Get(key)
 		if !found {
-			t.Fatalf("h.Get(%s): for i=%d returned !found", hugeKvs[i].key, i)
+			t.Fatalf("h.Get(%s): for i=%d returned !found", key, i)
 		}
 		//v := vv.(int)
-		if vv != hugeKvs[i].val {
-			t.Fatalf("h.Get(%s): returned vv,%v != hugeKvs[%d].val,%v", hugeKvs[i].key, vv, i, hugeKvs[i].val)
+		if vv != val {
+			t.Fatalf("h.Get(%s): returned vv,%v != hugeKvs[%d].val,%v", key, vv, i, val)
 		}
 	}
 }
@@ -233,24 +251,26 @@ func TestPutDelHuge(t *testing.T) {
 	var h = hamt32.NewHamt32()
 
 	for i := 0; i < numHugeKvs; i++ {
-		var inserted = h.Put(hugeKvs[i].key, hugeKvs[i].val)
+		key := hugeKvs[i].key
+		val := hugeKvs[i].val
+
+		var inserted = h.Put(key, val)
 		if !inserted {
-			t.Fatalf("h.Put(%s, %v): for i=%d returned false", hugeKvs[i].key, hugeKvs[i].val, i)
+			t.Fatalf("h.Put(%s, %v): for i=%d returned false", key, val, i)
 		}
 	}
 
 	for i := 0; i < numHugeKvs; i++ {
-		var vv, deleted = h.Del(hugeKvs[i].key)
-		if !deleted {
-			t.Fatalf("h.Del(%s): for i=%d returned !deleted", hugeKvs[i].key, i)
-		}
-		if vv != hugeKvs[i].val {
-			t.Fatalf("h.Del(%s): returned vv,%v != hugeKvs[%d].val,%v", hugeKvs[i].key, vv, i, hugeKvs[i].val)
-		}
+		key := hugeKvs[i].key
+		val := hugeKvs[i].val
 
-		//if hugeKvs[i].key.Equals(StringKey("aaaabccdefghijklmnopqrstuvwxy")) {
-		//	log.Println("h =", h.LongString(""))
-		//}
+		var vv, deleted = h.Del(key)
+		if !deleted {
+			t.Fatalf("h.Del(%s): for i=%d returned !deleted", key, i)
+		}
+		if vv != val {
+			t.Fatalf("h.Del(%s): returned vv,%v != hugeKvs[%d].val,%v", key, vv, i, val)
+		}
 	}
 }
 
@@ -272,12 +292,13 @@ func BenchmarkHamtGet(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var j = int(rand.Int31()) % numHugeKvs
 		var key = hugeKvs[j].key
+		var val0 = hugeKvs[j].val
 		var val, found = H.Get(key)
 		if !found {
 			b.Fatalf("H.Get(%s) not found", key)
 		}
-		if val != hugeKvs[j].val {
-			b.Fatalf("val,%v != hugeKvs[%d].val,%v", val, j, hugeKvs[j].val)
+		if val != val0 {
+			b.Fatalf("val,%v != hugeKvs[%d].val,%v", val, j, val0)
 		}
 	}
 }
@@ -295,7 +316,9 @@ func BenchmarkHamtPut(b *testing.B) {
 	var h = hamt32.NewHamt32()
 	var s = stringutil.Str("aaa")
 	for i := 0; i < b.N; i++ {
-		h.Put(StringKey(s), i+1)
+		key := string_key.StringKey(s)
+		val := i + 1
+		h.Put(key, val)
 		s = s.DigitalInc(1)
 	}
 }

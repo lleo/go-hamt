@@ -1,10 +1,10 @@
-package hamt
+package string_key
 
 import "hash/fnv"
 
 type StringKey string
 
-func (sk StringKey) Equals(key Key) bool {
+func (sk StringKey) Equals(key hamt_key.Key) bool {
 	var k, typeMatches = key.(StringKey)
 	if !typeMatches {
 		panic("type mismatch")
