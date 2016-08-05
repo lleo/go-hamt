@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/lleo/go-hamt/hamt32"
+	"github.com/lleo/go-hamt/hamt64"
 	"github.com/lleo/go-hamt/string_key"
 
 	"github.com/lleo/stringutil"
@@ -289,7 +290,22 @@ func BenchmarkMapGet(b *testing.B) {
 	}
 }
 
-func BenchmarkHamtGet(b *testing.B) {
+func BenchmarkHamt32Get(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		var j = int(rand.Int31()) % numHugeKvs
+		var key = hugeKvs[j].key
+		var val0 = hugeKvs[j].val
+		var val, found = H.Get(key)
+		if !found {
+			b.Fatalf("H.Get(%s) not found", key)
+		}
+		if val != val0 {
+			b.Fatalf("val,%v != hugeKvs[%d].val,%v", val, j, val0)
+		}
+	}
+}
+
+func BenchmarkHamt64Get(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var j = int(rand.Int31()) % numHugeKvs
 		var key = hugeKvs[j].key
@@ -313,8 +329,19 @@ func BenchmarkMapPut(b *testing.B) {
 	}
 }
 
-func BenchmarkHamtPut(b *testing.B) {
+func BenchmarkHamt32Put(b *testing.B) {
 	var h = hamt32.NewHamt32()
+	var s = stringutil.Str("aaa")
+	for i := 0; i < b.N; i++ {
+		key := string_key.StringKey(s)
+		val := i + 1
+		h.Put(key, val)
+		s = s.DigitalInc(1)
+	}
+}
+
+func BenchmarkHamt64Put(b *testing.B) {
+	var h = hamt64.NewHamt64()
 	var s = stringutil.Str("aaa")
 	for i := 0; i < b.N; i++ {
 		key := string_key.StringKey(s)
