@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/lleo/go-hamt/hamt32"
+	"github.com/lleo/go-hamt/string_key"
 
 	"github.com/lleo/stringutil"
 )
@@ -17,7 +18,7 @@ var midKvs []keyVal
 var hugeKvs []keyVal
 
 var M map[string]int
-var H hamt32.Hamt
+var H Hamt
 
 func TestMain(m *testing.M) {
 	//SETUP
@@ -162,8 +163,8 @@ func TestPutGetMid(t *testing.T) {
 	var h = hamt32.NewHamt32()
 
 	for i := 0; i < numMidKvs; i++ {
-		key = midKvs[i].key
-		val = midKvs[i].val
+		var key = midKvs[i].key
+		var val = midKvs[i].val
 
 		var inserted = h.Put(key, val)
 		if !inserted {
@@ -172,8 +173,8 @@ func TestPutGetMid(t *testing.T) {
 	}
 
 	for i := 0; i < numMidKvs; i++ {
-		key = midKvs[i].key
-		val = midKvs[i].val
+		var key = midKvs[i].key
+		var val = midKvs[i].val
 
 		var vv, found = h.Get(key)
 		if !found {
@@ -191,8 +192,8 @@ func TestPutDelMid(t *testing.T) {
 	var h = hamt32.NewHamt32()
 
 	for i := 0; i < numMidKvs; i++ {
-		key = midKvs[i].key
-		val = midKvs[i].val
+		var key = midKvs[i].key
+		var val = midKvs[i].val
 
 		var inserted = h.Put(key, val)
 		if !inserted {
@@ -203,8 +204,8 @@ func TestPutDelMid(t *testing.T) {
 	//log.Println("h =", h.LongString(""))
 
 	for i := 0; i < numMidKvs; i++ {
-		key = midKvs[i].key
-		val = midKvs[i].val
+		var key = midKvs[i].key
+		var val = midKvs[i].val
 
 		var vv, deleted = h.Del(key)
 		if !deleted {
@@ -222,8 +223,8 @@ func TestPutGetHuge(t *testing.T) {
 	var h = hamt32.NewHamt32()
 
 	for i := 0; i < numHugeKvs; i++ {
-		key = hugeKvs[i].key
-		val = hugeKvs[i].val
+		var key = hugeKvs[i].key
+		var val = hugeKvs[i].val
 
 		var inserted = h.Put(key, val)
 		if !inserted {
@@ -232,8 +233,8 @@ func TestPutGetHuge(t *testing.T) {
 	}
 
 	for i := 0; i < numHugeKvs; i++ {
-		key = hugeKvs[i].key
-		val = hugeKvs[i].val
+		var key = hugeKvs[i].key
+		var val = hugeKvs[i].val
 
 		var vv, found = h.Get(key)
 		if !found {

@@ -3,6 +3,8 @@ package hamt32
 import (
 	"fmt"
 	"strings"
+
+	"github.com/lleo/go-hamt/hamt_key"
 )
 
 const NBITS32 uint = 5
@@ -74,20 +76,20 @@ func nodeMapString(nodeMap uint32) string {
 //	String() string
 //}
 
-type Hamt interface {
-	Get(hamt_key.Key) (interface{}, bool)
-	Put(hamt_key.Key, interface{}) bool
-	Del(hamt_key.Key) (interface{}, bool)
-	String() string
-	LongString(indent string) string
-}
+//type Hamt interface {
+//	Get(hamt_key.Key) (interface{}, bool)
+//	Put(hamt_key.Key, interface{}) bool
+//	Del(hamt_key.Key) (interface{}, bool)
+//	String() string
+//	LongString(indent string) string
+//}
 
 type Hamt32 struct {
 	root     table32I
 	nentries int
 }
 
-func NewHamt32() Hamt {
+func NewHamt32() *Hamt32 {
 	var h = new(Hamt32)
 	return h
 }

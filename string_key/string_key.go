@@ -1,6 +1,10 @@
 package string_key
 
-import "hash/fnv"
+import (
+	"hash/fnv"
+
+	"github.com/lleo/go-hamt/hamt_key"
+)
 
 type StringKey string
 

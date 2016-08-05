@@ -3,6 +3,8 @@ package hamt32
 import (
 	"fmt"
 	"strings"
+
+	"github.com/lleo/go-hamt/hamt_key"
 )
 
 type collisionLeaf32 struct {
@@ -31,7 +33,7 @@ func (l collisionLeaf32) String() string {
 	return fmt.Sprintf("collisionLeaf32{hash30:%s, kvs:[]kv{%s}}", hash30String(l._hash30), jkvstr)
 }
 
-func (l collisionLeaf32) get(key Key) (interface{}, bool) {
+func (l collisionLeaf32) get(key hamt_key.Key) (interface{}, bool) {
 	for _, kv := range l.kvs {
 		if kv.key.Equals(key) {
 			return kv.val, true
@@ -40,7 +42,7 @@ func (l collisionLeaf32) get(key Key) (interface{}, bool) {
 	return nil, false
 }
 
-func (l collisionLeaf32) put(key Key, val interface{}) (leaf32I, bool) {
+func (l collisionLeaf32) put(key hamt_key.Key, val interface{}) (leaf32I, bool) {
 	for _, kv := range l.kvs {
 		if kv.key.Equals(key) {
 			kv.val = val
@@ -51,7 +53,7 @@ func (l collisionLeaf32) put(key Key, val interface{}) (leaf32I, bool) {
 	return l, true // key,val was added
 }
 
-func (l collisionLeaf32) del(key Key) (interface{}, leaf32I, bool) {
+func (l collisionLeaf32) del(key hamt_key.Key) (interface{}, leaf32I, bool) {
 	for i, kv := range l.kvs {
 		if kv.key.Equals(key) {
 			l.kvs = append(l.kvs[:i], l.kvs[i+1:]...)
