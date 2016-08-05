@@ -219,7 +219,7 @@ func TestPutDelMid(t *testing.T) {
 	}
 }
 
-func TestPutGetHuge(t *testing.T) {
+func TestPutGetHuge32(t *testing.T) {
 	//log.Println("=== TestPutGetHuge ===")
 	var h = hamt32.NewHamt32()
 
@@ -248,9 +248,38 @@ func TestPutGetHuge(t *testing.T) {
 	}
 }
 
-func TestPutDelHuge(t *testing.T) {
+func TestPutGetHuge64(t *testing.T) {
+	//log.Println("=== TestPutGetHuge ===")
+	var h = hamt64.NewHamt64()
+
+	for i := 0; i < numHugeKvs; i++ {
+		var key = hugeKvs[i].key
+		var val = hugeKvs[i].val
+
+		var inserted = h.Put(key, val)
+		if !inserted {
+			t.Fatalf("h.Put(%s, %v): for i=%d returned false", key, val, i)
+		}
+	}
+
+	for i := 0; i < numHugeKvs; i++ {
+		var key = hugeKvs[i].key
+		var val = hugeKvs[i].val
+
+		var vv, found = h.Get(key)
+		if !found {
+			t.Fatalf("h.Get(%s): for i=%d returned !found", key, i)
+		}
+		//v := vv.(int)
+		if vv != val {
+			t.Fatalf("h.Get(%s): returned vv,%v != hugeKvs[%d].val,%v", key, vv, i, val)
+		}
+	}
+}
+
+func TestPutDelHuge64(t *testing.T) {
 	//log.Println("=== TestPutDelHuge ===")
-	var h = hamt32.NewHamt32()
+	var h = hamt64.NewHamt64()
 
 	for i := 0; i < numHugeKvs; i++ {
 		key := hugeKvs[i].key
