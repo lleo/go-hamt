@@ -1,7 +1,7 @@
 package hamt32
 
 type nodeI interface {
-	hash30() uint
+	hash30() uint32
 	String() string
 }
 

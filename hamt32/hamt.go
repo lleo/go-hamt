@@ -154,7 +154,7 @@ func (h *Hamt) Put(key hamt_key.Key, val interface{}) bool {
 	}
 
 	var path = newPathT()
-	var hashPath uint = 0
+	var hashPath uint32 = 0
 	var curTable = h.root
 	var inserted = true
 

@@ -5,19 +5,19 @@ import (
 	"strings"
 )
 
-type fullTable64 struct {
+type fullTable struct {
 	hashPath uint64
 	nodeMap  uint64
-	nodes    [TABLE_CAPACITY64]node64I
+	nodes    [TABLE_CAPACITY]nodeI
 }
 
-func UpgradeToFullTable64(hashPath uint64, tabEnts []tableEntry64) table64I {
-	var ft = new(fullTable64)
+func UpgradeToFullTable(hashPath uint64, tabEnts []tableEntry) tableI {
+	var ft = new(fullTable)
 	ft.hashPath = hashPath
 	//ft.nodeMap = 0 //unnecessary
 
 	for _, ent := range tabEnts {
-		var nodeBit = uint64(1 << ent.idx)
+		var nodeBit = uint(1 << ent.idx)
 		ft.nodeMap |= nodeBit
 		ft.nodes[ent.idx] = ent.node
 	}
@@ -25,15 +25,15 @@ func UpgradeToFullTable64(hashPath uint64, tabEnts []tableEntry64) table64I {
 	return ft
 }
 
-func (t *fullTable64) hash60() uint64 {
+func (t *fullTable) hash60() uint64 {
 	return t.hashPath
 }
 
-func (t *fullTable64) String() string {
-	return fmt.Sprintf("fullTable64{hashPath=%s, nentries()=%d}", hash60String(t.hashPath), t.nentries())
+func (t *fullTable) String() string {
+	return fmt.Sprintf("fullTable{hashPath=%s, nentries()=%d}", hash60String(t.hashPath), t.nentries())
 }
 
-func (t *fullTable64) LongString(indent string, depth uint) string {
+func (t *fullTable) LongString(indent string, depth uint) string {
 	var strs = make([]string, 3+len(t.nodes))
 
 	strs[1] = indent + "\tnodeMap=" + nodeMapString(t.nodeMap) + ","
@@ -42,7 +42,7 @@ func (t *fullTable64) LongString(indent string, depth uint) string {
 		if t.nodes[i] == nil {
 			strs[2+i] = indent + fmt.Sprintf("\tt.nodes[%d]: nil", i)
 		} else {
-			if t, isTable := t.nodes[i].(table64I); isTable {
+			if t, isTable := t.nodes[i].(tableI); isTable {
 				strs[2+i] = indent + fmt.Sprintf("\tt.nodes[%d]:\n%s", i, t.LongString(indent+"\t", depth+1))
 			} else {
 				strs[2+i] = indent + fmt.Sprintf("\tt.nodes[%d]: %s", i, n)
@@ -55,24 +55,24 @@ func (t *fullTable64) LongString(indent string, depth uint) string {
 	return strings.Join(strs, "\n")
 }
 
-func (t *fullTable64) nentries() uint {
+func (t *fullTable) nentries() uint {
 	return BitCount64(t.nodeMap)
 }
 
-func (t *fullTable64) entries() []tableEntry64 {
+func (t *fullTable) entries() []tableEntry {
 	var n = t.nentries()
-	var ents = make([]tableEntry64, n)
-	for i, j := uint(0), 0; i < TABLE_CAPACITY64; i++ {
+	var ents = make([]tableEntry, n)
+	for i, j := uint(0), 0; i < TABLE_CAPACITY; i++ {
 		var nodeBit = uint64(1 << i)
 		if (t.nodeMap & nodeBit) > 0 {
-			ents[j] = tableEntry64{i, t.nodes[i]}
+			ents[j] = tableEntry{i, t.nodes[i]}
 			j++
 		}
 	}
 	return ents
 }
 
-func (t *fullTable64) get(idx uint) node64I {
+func (t *fullTable) get(idx uint) nodeI {
 	var nodeBit = uint64(1 << idx)
 
 	if (t.nodeMap & nodeBit) == 0 {
@@ -82,7 +82,7 @@ func (t *fullTable64) get(idx uint) node64I {
 	return t.nodes[idx]
 }
 
-func (t *fullTable64) set(idx uint, nn node64I) {
+func (t *fullTable) set(idx uint, nn nodeI) {
 	var nodeBit = uint64(1 << idx)
 
 	if nn != nil {

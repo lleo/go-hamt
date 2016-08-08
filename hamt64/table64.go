@@ -1,25 +1,25 @@
 package hamt64
 
-type node64I interface {
+type nodeI interface {
 	hash60() uint64
 	String() string
 }
 
-type table64I interface {
-	node64I
+type tableI interface {
+	nodeI
 
 	LongString(indent string, depth uint) string
 
 	nentries() uint
-	entries() []tableEntry64
+	entries() []tableEntry
 
-	get(idx uint) node64I
-	set(idx uint, entry node64I)
+	get(idx uint) nodeI
+	set(idx uint, entry nodeI)
 }
 
-type tableEntry64 struct {
+type tableEntry struct {
 	idx  uint
-	node node64I
+	node nodeI
 }
 
 //POPCNT Implementation
