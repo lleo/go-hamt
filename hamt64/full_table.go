@@ -17,7 +17,7 @@ func UpgradeToFullTable(hashPath uint64, tabEnts []tableEntry) tableI {
 	//ft.nodeMap = 0 //unnecessary
 
 	for _, ent := range tabEnts {
-		var nodeBit = uint(1 << ent.idx)
+		var nodeBit = uint64(1 << ent.idx)
 		ft.nodeMap |= nodeBit
 		ft.nodes[ent.idx] = ent.node
 	}

@@ -102,7 +102,7 @@ func TestNewHamt32(t *testing.T) {
 	//log.Println("TestNewHamt32 ok")
 }
 
-func TestPutGetOne(t *testing.T) {
+func TestHamt32PutGetOne(t *testing.T) {
 	//log.Println("=== TestPutGetOne ===")
 	var h = hamt32.NewHamt()
 
@@ -128,8 +128,8 @@ func TestPutGetOne(t *testing.T) {
 
 }
 
-func TestPutDelOne(t *testing.T) {
-	//log.Println("=== TestPutDelOne ===")
+func TestHamt32PutDelOne(t *testing.T) {
+	//log.Println("=== TestHamt32PutDelOne ===")
 	var h = hamt32.NewHamt()
 
 	var s = stringutil.Str("aaa")
@@ -159,8 +159,8 @@ func TestPutDelOne(t *testing.T) {
 	}
 }
 
-func TestPutGetMid(t *testing.T) {
-	//log.Println("=== TestPutGetMid ===")
+func TestHamt32PutGetMid(t *testing.T) {
+	//log.Println("=== TestHamt32PutGetMid ===")
 	var h = hamt32.NewHamt()
 
 	for i := 0; i < numMidKvs; i++ {
@@ -188,8 +188,8 @@ func TestPutGetMid(t *testing.T) {
 	}
 }
 
-func TestPutDelMid(t *testing.T) {
-	//log.Println("=== TestPutDelMid ===")
+func TestHamt32PutDelMid(t *testing.T) {
+	//log.Println("=== TestHamt32PutDelMid ===")
 	var h = hamt32.NewHamt()
 
 	for i := 0; i < numMidKvs; i++ {
@@ -219,8 +219,8 @@ func TestPutDelMid(t *testing.T) {
 	}
 }
 
-func TestPutGetHuge32(t *testing.T) {
-	//log.Println("=== TestPutGetHuge ===")
+func TestHamt32PutGetHuge(t *testing.T) {
+	//log.Println("=== TestHamt32PutGetHuge ===")
 	var h = hamt32.NewHamt()
 
 	for i := 0; i < numHugeKvs; i++ {
@@ -248,9 +248,9 @@ func TestPutGetHuge32(t *testing.T) {
 	}
 }
 
-func dTestPutGetHuge64(t *testing.T) {
-	//log.Println("=== TestPutGetHuge ===")
-	var h = hamt64.NewHamt64()
+func TestHamt64PutGetHuge(t *testing.T) {
+	//log.Println("=== TestHamt64PutGetHuge ===")
+	var h = hamt64.NewHamt()
 
 	for i := 0; i < numHugeKvs; i++ {
 		var key = hugeKvs[i].key
@@ -277,9 +277,9 @@ func dTestPutGetHuge64(t *testing.T) {
 	}
 }
 
-func dTestPutDelHuge64(t *testing.T) {
+func TestHamt64PutDelHuge(t *testing.T) {
 	//log.Println("=== TestPutDelHuge ===")
-	var h = hamt64.NewHamt64()
+	var h = hamt64.NewHamt()
 
 	for i := 0; i < numHugeKvs; i++ {
 		key := hugeKvs[i].key
@@ -334,7 +334,7 @@ func BenchmarkHamt32Get(b *testing.B) {
 	}
 }
 
-func dBenchmarkHamt64Get(b *testing.B) {
+func BenchmarkHamt64Get(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var j = int(rand.Int31()) % numHugeKvs
 		var key = hugeKvs[j].key
@@ -369,8 +369,8 @@ func BenchmarkHamt32Put(b *testing.B) {
 	}
 }
 
-func dBenchmarkHamt64Put(b *testing.B) {
-	var h = hamt64.NewHamt64()
+func BenchmarkHamt64Put(b *testing.B) {
+	var h = hamt64.NewHamt()
 	var s = stringutil.Str("aaa")
 	for i := 0; i < b.N; i++ {
 		key := string_key.StringKey(s)
