@@ -6,36 +6,36 @@ import (
 	"strings"
 )
 
-type compressedTable32 struct {
+type compressedTable struct {
 	hashPath uint32
 	nodeMap  uint32
-	nodes    []node32I
+	nodes    []nodeI
 }
 
-func newCompressedTable32(depth uint, hashPath uint32, lf leaf32I) table32I {
+func newCompressedTable(depth uint, hashPath uint32, lf leafI) tableI {
 	var idx = index(hashPath, depth)
 
-	var ct = new(compressedTable32)
+	var ct = new(compressedTable)
 	ct.hashPath = hashPath & hashPathMask(depth)
 	ct.nodeMap = uint32(1 << idx)
-	ct.nodes = make([]node32I, 1)
+	ct.nodes = make([]nodeI, 1)
 	ct.nodes[0] = lf
 
 	return ct
 }
 
-func newCompressedTable32_2(depth uint, hashPath uint32, leaf1 leaf32I, leaf2 *flatLeaf32) table32I {
-	var retTable = new(compressedTable32)
+func newCompressedTable_2(depth uint, hashPath uint32, leaf1 leafI, leaf2 *flatLeaf) tableI {
+	var retTable = new(compressedTable)
 	retTable.hashPath = hashPath & hashPathMask(depth)
 
 	var curTable = retTable
 	var d uint
-	for d = depth; d < DEPTHLIMIT32; d++ {
+	for d = depth; d < DEPTHLIMIT; d++ {
 		var idx1 = index(leaf1.hash30(), d)
 		var idx2 = index(leaf2.hash30(), d)
 
 		if idx1 != idx2 {
-			curTable.nodes = make([]node32I, 2)
+			curTable.nodes = make([]nodeI, 2)
 
 			curTable.nodeMap |= 1 << idx1
 			curTable.nodeMap |= 1 << idx2
@@ -51,9 +51,9 @@ func newCompressedTable32_2(depth uint, hashPath uint32, leaf1 leaf32I, leaf2 *f
 		}
 		// idx1 == idx2 && continue
 
-		curTable.nodes = make([]node32I, 1)
+		curTable.nodes = make([]nodeI, 1)
 
-		var newTable = new(compressedTable32)
+		var newTable = new(compressedTable)
 
 		hashPath = buildHashPath(hashPath, idx1, d)
 		newTable.hashPath = hashPath
@@ -64,30 +64,30 @@ func newCompressedTable32_2(depth uint, hashPath uint32, leaf1 leaf32I, leaf2 *f
 		curTable = newTable
 	}
 	// We either BREAK out of the loop,
-	// OR we hit d = DEPTHLIMIT32.
-	if d == DEPTHLIMIT32 {
+	// OR we hit d = DEPTHLIMIT.
+	if d == DEPTHLIMIT {
 		// leaf1.hashcode() == leaf2.hashcode()
 		var idx = index(leaf1.hash30(), d)
 		hashPath = buildHashPath(hashPath, idx, d)
 		var kvs = append(leaf1.keyVals(), leaf2.keyVals()...)
-		var leaf = newCollisionLeaf32(hashPath, kvs)
+		var leaf = newCollisionLeaf(hashPath, kvs)
 		curTable.set(idx, leaf)
 	}
 
 	return retTable
 }
 
-// DowngradeToCompressedTable32() converts fullTable32 structs that have less than
-// TABLE_CAPACITY32/2 tableEntry32's. One important thing we know is that none of
+// DowngradeToCompressedTable() converts fullTable structs that have less than
+// TABLE_CAPACITY/2 tableEntry's. One important thing we know is that none of
 // the entries will collide with another.
 //
-// The ents []tableEntry32 slice is guaranteed to be in order from lowest idx to
-// highest. table32I.entries() also adhears to this contract.
-func DowngradeToCompressedTable32(hashPath uint32, ents []tableEntry32) *compressedTable32 {
-	var nt = new(compressedTable32)
+// The ents []tableEntry slice is guaranteed to be in order from lowest idx to
+// highest. tableI.entries() also adhears to this contract.
+func DowngradeToCompressedTable(hashPath uint32, ents []tableEntry) *compressedTable {
+	var nt = new(compressedTable)
 	nt.hashPath = hashPath
 	//nt.nodeMap = 0
-	nt.nodes = make([]node32I, len(ents))
+	nt.nodes = make([]nodeI, len(ents))
 
 	for i := 0; i < len(ents); i++ {
 		var ent = ents[i]
@@ -99,24 +99,24 @@ func DowngradeToCompressedTable32(hashPath uint32, ents []tableEntry32) *compres
 	return nt
 }
 
-func (t *compressedTable32) hash30() uint32 {
+func (t *compressedTable) hash30() uint32 {
 	return t.hashPath
 }
 
-func (t *compressedTable32) String() string {
-	return fmt.Sprintf("compressedTable32{hashPath:%s, nentries()=%d}",
+func (t *compressedTable) String() string {
+	return fmt.Sprintf("compressedTable{hashPath:%s, nentries()=%d}",
 		hash30String(t.hashPath), t.nentries())
 }
 
-func (t *compressedTable32) LongString(indent string, depth uint) string {
+func (t *compressedTable) LongString(indent string, depth uint) string {
 	var strs = make([]string, 3+len(t.nodes))
 
-	strs[0] = indent + fmt.Sprintf("compressedTable32{hashPath=%s, nentries()=%d,", hashPathString(t.hashPath, depth), t.nentries())
+	strs[0] = indent + fmt.Sprintf("compressedTable{hashPath=%s, nentries()=%d,", hashPathString(t.hashPath, depth), t.nentries())
 
 	strs[1] = indent + "\tnodeMap=" + nodeMapString(t.nodeMap) + ","
 
 	for i, n := range t.nodes {
-		if t, isTable := n.(table32I); isTable {
+		if t, isTable := n.(tableI); isTable {
 			strs[2+i] = indent + fmt.Sprintf("\tt.nodes[%d]:\n%s", i, t.LongString(indent+"\t", depth+1))
 		} else {
 			strs[2+i] = indent + fmt.Sprintf("\tt.nodes[%d]: %s", i, n)
@@ -128,19 +128,19 @@ func (t *compressedTable32) LongString(indent string, depth uint) string {
 	return strings.Join(strs, "\n")
 }
 
-func (t *compressedTable32) nentries() uint {
+func (t *compressedTable) nentries() uint {
 	return BitCount32(t.nodeMap)
 }
 
-func (t *compressedTable32) entries() []tableEntry32 {
+func (t *compressedTable) entries() []tableEntry {
 	var n = t.nentries()
-	var ents = make([]tableEntry32, n)
+	var ents = make([]tableEntry, n)
 
-	for i, j := uint(0), uint(0); i < TABLE_CAPACITY32; i++ {
+	for i, j := uint(0), uint(0); i < TABLE_CAPACITY; i++ {
 		var nodeBit = uint32(1 << i)
 
 		if (t.nodeMap & nodeBit) > 0 {
-			ents[j] = tableEntry32{i, t.nodes[j]}
+			ents[j] = tableEntry{i, t.nodes[j]}
 			j++
 		}
 	}
@@ -148,7 +148,7 @@ func (t *compressedTable32) entries() []tableEntry32 {
 	return ents
 }
 
-func (t *compressedTable32) get(idx uint) node32I {
+func (t *compressedTable) get(idx uint) nodeI {
 	var nodeBit = uint32(1 << idx)
 
 	if (t.nodeMap & nodeBit) == 0 {
@@ -161,7 +161,7 @@ func (t *compressedTable32) get(idx uint) node32I {
 	return t.nodes[i]
 }
 
-func (t *compressedTable32) set(idx uint, nn node32I) {
+func (t *compressedTable) set(idx uint, nn nodeI) {
 	var nodeBit = uint32(1 << idx)
 	var bitMask = nodeBit - 1
 	var i = BitCount32(t.nodeMap & bitMask)
@@ -169,7 +169,7 @@ func (t *compressedTable32) set(idx uint, nn node32I) {
 	if nn != nil {
 		if (t.nodeMap & nodeBit) == 0 {
 			t.nodeMap |= nodeBit
-			t.nodes = append(t.nodes[:i], append([]node32I{nn}, t.nodes[i:]...)...)
+			t.nodes = append(t.nodes[:i], append([]nodeI{nn}, t.nodes[i:]...)...)
 		} else {
 			t.nodes[i] = nn
 		}
@@ -178,7 +178,7 @@ func (t *compressedTable32) set(idx uint, nn node32I) {
 			t.nodeMap &^= nodeBit
 			t.nodes = append(t.nodes[:i], t.nodes[i+1:]...)
 		} else if (t.nodeMap & nodeBit) == 0 {
-			log.Panicf("compressedTable32.set(%02d, nil): when no node was set here in the first place", idx)
+			log.Panicf("compressedTable.set(%02d, nil): when no node was set here in the first place", idx)
 			// do nothing
 		}
 	}

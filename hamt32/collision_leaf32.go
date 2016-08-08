@@ -7,33 +7,33 @@ import (
 	"github.com/lleo/go-hamt/hamt_key"
 )
 
-type collisionLeaf32 struct {
+type collisionLeaf struct {
 	_hash30 uint32
 	kvs     []keyVal
 }
 
-func newCollisionLeaf32(hash30 uint32, kvs []keyVal) *collisionLeaf32 {
-	var leaf = new(collisionLeaf32)
+func newCollisionLeaf(hash30 uint32, kvs []keyVal) *collisionLeaf {
+	var leaf = new(collisionLeaf)
 	leaf._hash30 = hash30
 	leaf.kvs = append(leaf.kvs, kvs...)
 	return leaf
 }
 
-func (l collisionLeaf32) hash30() uint32 {
+func (l collisionLeaf) hash30() uint32 {
 	return l._hash30
 }
 
-func (l collisionLeaf32) String() string {
+func (l collisionLeaf) String() string {
 	var kvstrs = make([]string, len(l.kvs))
 	for i := 0; i < len(l.kvs); i++ {
 		kvstrs[i] = l.kvs[i].String()
 	}
 	var jkvstr = strings.Join(kvstrs, ",")
 
-	return fmt.Sprintf("collisionLeaf32{hash30:%s, kvs:[]kv{%s}}", hash30String(l._hash30), jkvstr)
+	return fmt.Sprintf("collisionLeaf{hash30:%s, kvs:[]kv{%s}}", hash30String(l._hash30), jkvstr)
 }
 
-func (l collisionLeaf32) get(key hamt_key.Key) (interface{}, bool) {
+func (l collisionLeaf) get(key hamt_key.Key) (interface{}, bool) {
 	for _, kv := range l.kvs {
 		if kv.key.Equals(key) {
 			return kv.val, true
@@ -42,7 +42,7 @@ func (l collisionLeaf32) get(key hamt_key.Key) (interface{}, bool) {
 	return nil, false
 }
 
-func (l collisionLeaf32) put(key hamt_key.Key, val interface{}) (leaf32I, bool) {
+func (l collisionLeaf) put(key hamt_key.Key, val interface{}) (leafI, bool) {
 	for _, kv := range l.kvs {
 		if kv.key.Equals(key) {
 			kv.val = val
@@ -53,12 +53,12 @@ func (l collisionLeaf32) put(key hamt_key.Key, val interface{}) (leaf32I, bool) 
 	return l, true // key,val was added
 }
 
-func (l collisionLeaf32) del(key hamt_key.Key) (interface{}, leaf32I, bool) {
+func (l collisionLeaf) del(key hamt_key.Key) (interface{}, leafI, bool) {
 	for i, kv := range l.kvs {
 		if kv.key.Equals(key) {
 			l.kvs = append(l.kvs[:i], l.kvs[i+1:]...)
 			if len(l.kvs) == 1 {
-				var fl = NewFlatLeaf32(l.hash30(), l.kvs[0].key, l.kvs[0].val)
+				var fl = NewFlatLeaf(l.hash30(), l.kvs[0].key, l.kvs[0].val)
 				return kv.val, fl, true
 			}
 			return kv.val, l, true
@@ -67,7 +67,7 @@ func (l collisionLeaf32) del(key hamt_key.Key) (interface{}, leaf32I, bool) {
 	return nil, l, false
 }
 
-func (l collisionLeaf32) keyVals() []keyVal {
+func (l collisionLeaf) keyVals() []keyVal {
 	//var r []keyVal
 	//r = append(r, l.kvs...)
 	//return r

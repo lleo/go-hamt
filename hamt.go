@@ -33,5 +33,5 @@ func (kv keyVal) String() string {
 }
 
 func NewHamt32() Hamt {
-	return hamt32.NewHamt32()
+	return hamt32.NewHamt()
 }

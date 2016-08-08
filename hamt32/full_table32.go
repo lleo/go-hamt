@@ -5,14 +5,14 @@ import (
 	"strings"
 )
 
-type fullTable32 struct {
+type fullTable struct {
 	hashPath uint32
 	nodeMap  uint32
-	nodes    [TABLE_CAPACITY32]node32I
+	nodes    [TABLE_CAPACITY]nodeI
 }
 
-func UpgradeToFullTable32(hashPath uint32, tabEnts []tableEntry32) table32I {
-	var ft = new(fullTable32)
+func UpgradeToFullTable(hashPath uint32, tabEnts []tableEntry) tableI {
+	var ft = new(fullTable)
 	ft.hashPath = hashPath
 	//ft.nodeMap = 0 //unnecessary
 
@@ -25,15 +25,15 @@ func UpgradeToFullTable32(hashPath uint32, tabEnts []tableEntry32) table32I {
 	return ft
 }
 
-func (t *fullTable32) hash30() uint32 {
+func (t *fullTable) hash30() uint32 {
 	return t.hashPath
 }
 
-func (t *fullTable32) String() string {
-	return fmt.Sprintf("fullTable32{hashPath=%s, nentries()=%d}", hash30String(t.hashPath), t.nentries())
+func (t *fullTable) String() string {
+	return fmt.Sprintf("fullTable{hashPath=%s, nentries()=%d}", hash30String(t.hashPath), t.nentries())
 }
 
-func (t *fullTable32) LongString(indent string, depth uint) string {
+func (t *fullTable) LongString(indent string, depth uint) string {
 	var strs = make([]string, 3+len(t.nodes))
 
 	strs[1] = indent + "\tnodeMap=" + nodeMapString(t.nodeMap) + ","
@@ -42,7 +42,7 @@ func (t *fullTable32) LongString(indent string, depth uint) string {
 		if t.nodes[i] == nil {
 			strs[2+i] = indent + fmt.Sprintf("\tt.nodes[%d]: nil", i)
 		} else {
-			if t, isTable := t.nodes[i].(table32I); isTable {
+			if t, isTable := t.nodes[i].(tableI); isTable {
 				strs[2+i] = indent + fmt.Sprintf("\tt.nodes[%d]:\n%s", i, t.LongString(indent+"\t", depth+1))
 			} else {
 				strs[2+i] = indent + fmt.Sprintf("\tt.nodes[%d]: %s", i, n)
@@ -55,24 +55,24 @@ func (t *fullTable32) LongString(indent string, depth uint) string {
 	return strings.Join(strs, "\n")
 }
 
-func (t *fullTable32) nentries() uint {
+func (t *fullTable) nentries() uint {
 	return BitCount32(t.nodeMap)
 }
 
-func (t *fullTable32) entries() []tableEntry32 {
+func (t *fullTable) entries() []tableEntry {
 	var n = t.nentries()
-	var ents = make([]tableEntry32, n)
-	for i, j := uint(0), 0; i < TABLE_CAPACITY32; i++ {
+	var ents = make([]tableEntry, n)
+	for i, j := uint(0), 0; i < TABLE_CAPACITY; i++ {
 		var nodeBit = uint32(1 << i)
 		if (t.nodeMap & nodeBit) > 0 {
-			ents[j] = tableEntry32{i, t.nodes[i]}
+			ents[j] = tableEntry{i, t.nodes[i]}
 			j++
 		}
 	}
 	return ents
 }
 
-func (t *fullTable32) get(idx uint) node32I {
+func (t *fullTable) get(idx uint) nodeI {
 	var nodeBit = uint32(1 << idx)
 
 	if (t.nodeMap & nodeBit) == 0 {
@@ -82,7 +82,7 @@ func (t *fullTable32) get(idx uint) node32I {
 	return t.nodes[idx]
 }
 
-func (t *fullTable32) set(idx uint, nn node32I) {
+func (t *fullTable) set(idx uint, nn nodeI) {
 	var nodeBit = uint32(1 << idx)
 
 	if nn != nil {

@@ -1,25 +1,25 @@
 package hamt32
 
-type node32I interface {
-	hash30() uint32
+type nodeI interface {
+	hash30() uint
 	String() string
 }
 
-type table32I interface {
-	node32I
+type tableI interface {
+	nodeI
 
 	LongString(indent string, depth uint) string
 
 	nentries() uint
-	entries() []tableEntry32
+	entries() []tableEntry
 
-	get(idx uint) node32I
-	set(idx uint, entry node32I)
+	get(idx uint) nodeI
+	set(idx uint, entry nodeI)
 }
 
-type tableEntry32 struct {
+type tableEntry struct {
 	idx  uint
-	node node32I
+	node nodeI
 }
 
 //POPCNT Implementation
