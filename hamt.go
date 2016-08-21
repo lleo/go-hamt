@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/lleo/go-hamt/hamt32"
+	"github.com/lleo/go-hamt/hamt64"
 	"github.com/lleo/go-hamt/hamt_key"
 )
 
@@ -34,4 +35,8 @@ func (kv keyVal) String() string {
 
 func NewHamt32() Hamt {
 	return hamt32.NewHamt()
+}
+
+func NewHamt64() Hamt {
+	return hamt64.NewHamt()
 }
