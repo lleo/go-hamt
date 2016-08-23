@@ -144,7 +144,7 @@ func (h *Hamt) Get(key hamt_key.Key) (interface{}, bool) {
 
 func (h *Hamt) Put(key hamt_key.Key, val interface{}) bool {
 	var h30 = key.Hash30()
-	var newLeaf = NewFlatLeaf(h30, key, val)
+	var newLeaf = newFlatLeaf(h30, key, val)
 	var depth uint = 0
 
 	if h.IsEmpty() {
@@ -177,7 +177,7 @@ func (h *Hamt) Put(key hamt_key.Key, val interface{}) bool {
 				}
 			} else {
 				hashPath = buildHashPath(hashPath, idx, depth)
-				var newLeaf = NewFlatLeaf(h30, key, val)
+				var newLeaf = newFlatLeaf(h30, key, val)
 				var collisionTable = newCompressedTable_2(depth+1, hashPath, oldLeaf, newLeaf)
 				//var collisionTable = newCompressedTable_2(depth, hashPath, oldLeaf, newLeaf)
 				curTable.set(idx, collisionTable)
@@ -196,11 +196,11 @@ func (h *Hamt) Put(key hamt_key.Key, val interface{}) bool {
 	var _, isCompressedTable = curTable.(*compressedTable)
 	if isCompressedTable && curTable.nentries() > TABLE_CAPACITY/2 {
 		if curTable == h.root {
-			curTable = UpgradeToFullTable(hashPath, curTable.entries())
+			curTable = upgradeToFullTable(hashPath, curTable.entries())
 
 			h.root = curTable
 		} else {
-			curTable = UpgradeToFullTable(hashPath, curTable.entries())
+			curTable = upgradeToFullTable(hashPath, curTable.entries())
 
 			var parentTable = path.peek()
 
@@ -246,10 +246,10 @@ func (h *Hamt) Del(key hamt_key.Key) (interface{}, bool) {
 					var _, isFullTable = curTable.(*fullTable)
 					if isFullTable && curTable.nentries() < TABLE_CAPACITY/2 {
 						if curTable == h.root {
-							curTable = DowngradeToCompressedTable(hashPath, curTable.entries())
+							curTable = downgradeToCompressedTable(hashPath, curTable.entries())
 							h.root = curTable
 						} else {
-							curTable = DowngradeToCompressedTable(hashPath, curTable.entries())
+							curTable = downgradeToCompressedTable(hashPath, curTable.entries())
 							var parentTable = path.peek()
 							var parentIdx = index(curTable.hash30(), depth-1)
 							parentTable.set(parentIdx, curTable)

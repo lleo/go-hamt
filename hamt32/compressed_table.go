@@ -77,13 +77,13 @@ func newCompressedTable_2(depth uint, hashPath uint32, leaf1 leafI, leaf2 *flatL
 	return retTable
 }
 
-// DowngradeToCompressedTable() converts fullTable structs that have less than
+// downgradeToCompressedTable() converts fullTable structs that have less than
 // TABLE_CAPACITY/2 tableEntry's. One important thing we know is that none of
 // the entries will collide with another.
 //
 // The ents []tableEntry slice is guaranteed to be in order from lowest idx to
 // highest. tableI.entries() also adhears to this contract.
-func DowngradeToCompressedTable(hashPath uint32, ents []tableEntry) *compressedTable {
+func downgradeToCompressedTable(hashPath uint32, ents []tableEntry) *compressedTable {
 	var nt = new(compressedTable)
 	nt.hashPath = hashPath
 	//nt.nodeMap = 0
@@ -129,7 +129,7 @@ func (t *compressedTable) LongString(indent string, depth uint) string {
 }
 
 func (t *compressedTable) nentries() uint {
-	return BitCount32(t.nodeMap)
+	return bitCount32(t.nodeMap)
 }
 
 func (t *compressedTable) entries() []tableEntry {
@@ -156,7 +156,7 @@ func (t *compressedTable) get(idx uint) nodeI {
 	}
 
 	var m = uint32(1<<idx) - 1
-	var i = BitCount32(t.nodeMap & m)
+	var i = bitCount32(t.nodeMap & m)
 
 	return t.nodes[i]
 }
@@ -164,7 +164,7 @@ func (t *compressedTable) get(idx uint) nodeI {
 func (t *compressedTable) set(idx uint, nn nodeI) {
 	var nodeBit = uint32(1 << idx)
 	var bitMask = nodeBit - 1
-	var i = BitCount32(t.nodeMap & bitMask)
+	var i = bitCount32(t.nodeMap & bitMask)
 
 	if nn != nil {
 		if (t.nodeMap & nodeBit) == 0 {

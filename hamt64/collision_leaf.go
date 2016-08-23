@@ -58,7 +58,7 @@ func (l collisionLeaf) del(key hamt_key.Key) (interface{}, leafI, bool) {
 		if kv.key.Equals(key) {
 			l.kvs = append(l.kvs[:i], l.kvs[i+1:]...)
 			if len(l.kvs) == 1 {
-				var fl = NewFlatLeaf(l.hash60(), l.kvs[0].key, l.kvs[0].val)
+				var fl = newFlatLeaf(l.hash60(), l.kvs[0].key, l.kvs[0].val)
 				return kv.val, fl, true
 			}
 			return kv.val, l, true

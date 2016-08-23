@@ -12,7 +12,7 @@ type flatLeaf struct {
 	val     interface{}
 }
 
-func NewFlatLeaf(h30 uint32, key hamt_key.Key, val interface{}) *flatLeaf {
+func newFlatLeaf(h30 uint32, key hamt_key.Key, val interface{}) *flatLeaf {
 	var fl = new(flatLeaf)
 	fl._hash30 = h30
 	fl.key = key

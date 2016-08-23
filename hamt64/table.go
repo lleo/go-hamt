@@ -27,14 +27,14 @@ type tableEntry struct {
 //  was MIT License
 
 const (
-	HEXI_FIVES  = uint64(0x5555555555555555)
-	HEXI_THREES = uint64(0x3333333333333333)
-	HEXI_ONES   = uint64(0x0101010101010101)
-	HEXI_FS     = uint64(0x0f0f0f0f0f0f0f0f)
+	hexi_fives  = uint64(0x5555555555555555)
+	hexi_threes = uint64(0x3333333333333333)
+	hexi_ones   = uint64(0x0101010101010101)
+	hexi_fs     = uint64(0x0f0f0f0f0f0f0f0f)
 )
 
-func BitCount64(n uint64) uint {
-	n = n - ((n >> 1) & HEXI_FIVES)
-	n = (n & HEXI_THREES) + ((n >> 2) & HEXI_THREES)
-	return uint((((n + (n >> 4)) & HEXI_FS) * HEXI_ONES) >> 56)
+func bitCount64(n uint64) uint {
+	n = n - ((n >> 1) & hexi_fives)
+	n = (n & hexi_threes) + ((n >> 2) & hexi_threes)
+	return uint((((n + (n >> 4)) & hexi_fs) * hexi_ones) >> 56)
 }

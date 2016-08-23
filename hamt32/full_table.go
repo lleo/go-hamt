@@ -11,7 +11,7 @@ type fullTable struct {
 	nodes    [TABLE_CAPACITY]nodeI
 }
 
-func UpgradeToFullTable(hashPath uint32, tabEnts []tableEntry) tableI {
+func upgradeToFullTable(hashPath uint32, tabEnts []tableEntry) tableI {
 	var ft = new(fullTable)
 	ft.hashPath = hashPath
 	//ft.nodeMap = 0 //unnecessary
@@ -56,7 +56,7 @@ func (t *fullTable) LongString(indent string, depth uint) string {
 }
 
 func (t *fullTable) nentries() uint {
-	return BitCount32(t.nodeMap)
+	return bitCount32(t.nodeMap)
 }
 
 func (t *fullTable) entries() []tableEntry {
