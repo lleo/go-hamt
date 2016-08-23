@@ -6,8 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/lleo/go-hamt/hamt32"
-	"github.com/lleo/go-hamt/hamt64"
 	"github.com/lleo/go-hamt/string_key"
 
 	"github.com/lleo/stringutil"
@@ -19,7 +17,8 @@ var midKvs []keyVal
 var hugeKvs []keyVal
 
 var M map[string]int
-var H Hamt
+var H32 Hamt
+var H64 Hamt
 
 func TestMain(m *testing.M) {
 	//SETUP
@@ -62,14 +61,16 @@ func TestMain(m *testing.M) {
 
 	// Build map & hamt, for h.Get() and h.Del() benchmarks
 	M = make(map[string]int)
-	H = hamt32.NewHamt()
+	H32 = NewHamt32()
+	H64 = NewHamt64()
 	var s = stringutil.Str("aaa")
 	for i := 0; i < numHugeKvs; i++ {
 		var key = string_key.StringKey(s)
 		var val = i
 
 		M[string(s)] = val
-		H.Put(key, val)
+		H32.Put(key, val)
+		H64.Put(key, val)
 		s = s.DigitalInc(1)
 	}
 
@@ -95,7 +96,7 @@ func genRandomizedKvs(kvs []keyVal) []keyVal {
 
 func TestNewHamt32(t *testing.T) {
 	//log.Println("=== TestNewHamt32 ===")
-	var h = hamt32.NewHamt()
+	var h = NewHamt32()
 	if !h.IsEmpty() {
 		t.Fatal("!?!? a brand new Hamt !IsEmpty()")
 	}
@@ -104,7 +105,7 @@ func TestNewHamt32(t *testing.T) {
 
 func TestHamt32PutGetOne(t *testing.T) {
 	//log.Println("=== TestPutGetOne ===")
-	var h = hamt32.NewHamt()
+	var h = NewHamt32()
 
 	var s = stringutil.Str("aaa")
 	var k = string_key.StringKey(s)
@@ -130,7 +131,7 @@ func TestHamt32PutGetOne(t *testing.T) {
 
 func TestHamt32PutDelOne(t *testing.T) {
 	//log.Println("=== TestHamt32PutDelOne ===")
-	var h = hamt32.NewHamt()
+	var h = NewHamt32()
 
 	var s = stringutil.Str("aaa")
 	var k = string_key.StringKey(s)
@@ -161,7 +162,7 @@ func TestHamt32PutDelOne(t *testing.T) {
 
 func TestHamt32PutGetMid(t *testing.T) {
 	//log.Println("=== TestHamt32PutGetMid ===")
-	var h = hamt32.NewHamt()
+	var h = NewHamt32()
 
 	for i := 0; i < numMidKvs; i++ {
 		var key = midKvs[i].key
@@ -190,7 +191,7 @@ func TestHamt32PutGetMid(t *testing.T) {
 
 func TestHamt32PutDelMid(t *testing.T) {
 	//log.Println("=== TestHamt32PutDelMid ===")
-	var h = hamt32.NewHamt()
+	var h = NewHamt32()
 
 	for i := 0; i < numMidKvs; i++ {
 		var key = midKvs[i].key
@@ -221,7 +222,7 @@ func TestHamt32PutDelMid(t *testing.T) {
 
 func TestHamt32PutGetHuge(t *testing.T) {
 	//log.Println("=== TestHamt32PutGetHuge ===")
-	var h = hamt32.NewHamt()
+	var h = NewHamt32()
 
 	for i := 0; i < numHugeKvs; i++ {
 		var key = hugeKvs[i].key
@@ -250,7 +251,7 @@ func TestHamt32PutGetHuge(t *testing.T) {
 
 func TestHamt64PutGetHuge(t *testing.T) {
 	//log.Println("=== TestHamt64PutGetHuge ===")
-	var h = hamt64.NewHamt()
+	var h = NewHamt64()
 
 	for i := 0; i < numHugeKvs; i++ {
 		var key = hugeKvs[i].key
@@ -279,7 +280,7 @@ func TestHamt64PutGetHuge(t *testing.T) {
 
 func TestHamt64PutDelHuge(t *testing.T) {
 	//log.Println("=== TestPutDelHuge ===")
-	var h = hamt64.NewHamt()
+	var h = NewHamt64()
 
 	for i := 0; i < numHugeKvs; i++ {
 		key := hugeKvs[i].key
@@ -324,7 +325,7 @@ func BenchmarkHamt32Get(b *testing.B) {
 		var j = int(rand.Int31()) % numHugeKvs
 		var key = hugeKvs[j].key
 		var val0 = hugeKvs[j].val
-		var val, found = H.Get(key)
+		var val, found = H32.Get(key)
 		if !found {
 			b.Fatalf("H.Get(%s) not found", key)
 		}
@@ -339,7 +340,7 @@ func BenchmarkHamt64Get(b *testing.B) {
 		var j = int(rand.Int31()) % numHugeKvs
 		var key = hugeKvs[j].key
 		var val0 = hugeKvs[j].val
-		var val, found = H.Get(key)
+		var val, found = H64.Get(key)
 		if !found {
 			b.Fatalf("H.Get(%s) not found", key)
 		}
@@ -359,7 +360,7 @@ func BenchmarkMapPut(b *testing.B) {
 }
 
 func BenchmarkHamt32Put(b *testing.B) {
-	var h = hamt32.NewHamt()
+	var h = NewHamt32()
 	var s = stringutil.Str("aaa")
 	for i := 0; i < b.N; i++ {
 		key := string_key.StringKey(s)
@@ -370,7 +371,7 @@ func BenchmarkHamt32Put(b *testing.B) {
 }
 
 func BenchmarkHamt64Put(b *testing.B) {
-	var h = hamt64.NewHamt()
+	var h = NewHamt64()
 	var s = stringutil.Str("aaa")
 	for i := 0; i < b.N; i++ {
 		key := string_key.StringKey(s)
