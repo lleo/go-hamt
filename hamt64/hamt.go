@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lleo/go-hamt/hamt_key"
+	"github.com/lleo/go-hamt/key"
 )
 
 const NBITS uint = 5
@@ -77,9 +77,9 @@ func nodeMapString(nodeMap uint64) string {
 //}
 
 //type Hamt interface {
-//	Get(hamt_key.Key) (interface{}, bool)
-//	Put(hamt_key.Key, interface{}) bool
-//	Del(hamt_key.Key) (interface{}, bool)
+//	Get(key.Key) (interface{}, bool)
+//	Put(key.Key, interface{}) bool
+//	Del(key.Key) (interface{}, bool)
 //	String() string
 //	LongString(indent string) string
 //}
@@ -95,7 +95,7 @@ func NewHamt() *Hamt {
 }
 
 type keyVal struct {
-	key hamt_key.Key
+	key key.Key
 	val interface{}
 }
 
@@ -107,7 +107,7 @@ func (h *Hamt) IsEmpty() bool {
 	return h.root == nil
 }
 
-func (h *Hamt) Get(key hamt_key.Key) (interface{}, bool) {
+func (h *Hamt) Get(key key.Key) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
 	}
@@ -142,7 +142,7 @@ func (h *Hamt) Get(key hamt_key.Key) (interface{}, bool) {
 	return nil, false
 }
 
-func (h *Hamt) Put(key hamt_key.Key, val interface{}) bool {
+func (h *Hamt) Put(key key.Key, val interface{}) bool {
 	var h60 = key.Hash60()
 	var newLeaf = newFlatLeaf(h60, key, val)
 	var depth uint = 0
@@ -212,7 +212,7 @@ func (h *Hamt) Put(key hamt_key.Key, val interface{}) bool {
 	return inserted
 }
 
-func (h *Hamt) Del(key hamt_key.Key) (interface{}, bool) {
+func (h *Hamt) Del(key key.Key) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
 	}

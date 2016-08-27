@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lleo/go-hamt/hamt_key"
+	"github.com/lleo/go-hamt/key"
 )
 
 type collisionLeaf struct {
@@ -33,7 +33,7 @@ func (l collisionLeaf) String() string {
 	return fmt.Sprintf("collisionLeaf{hash30:%s, kvs:[]kv{%s}}", hash30String(l._hash30), jkvstr)
 }
 
-func (l collisionLeaf) get(key hamt_key.Key) (interface{}, bool) {
+func (l collisionLeaf) get(key key.Key) (interface{}, bool) {
 	for _, kv := range l.kvs {
 		if kv.key.Equals(key) {
 			return kv.val, true
@@ -42,7 +42,7 @@ func (l collisionLeaf) get(key hamt_key.Key) (interface{}, bool) {
 	return nil, false
 }
 
-func (l collisionLeaf) put(key hamt_key.Key, val interface{}) (leafI, bool) {
+func (l collisionLeaf) put(key key.Key, val interface{}) (leafI, bool) {
 	for _, kv := range l.kvs {
 		if kv.key.Equals(key) {
 			kv.val = val
@@ -53,7 +53,7 @@ func (l collisionLeaf) put(key hamt_key.Key, val interface{}) (leafI, bool) {
 	return l, true // key,val was added
 }
 
-func (l collisionLeaf) del(key hamt_key.Key) (interface{}, leafI, bool) {
+func (l collisionLeaf) del(key key.Key) (interface{}, leafI, bool) {
 	for i, kv := range l.kvs {
 		if kv.key.Equals(key) {
 			l.kvs = append(l.kvs[:i], l.kvs[i+1:]...)

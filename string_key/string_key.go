@@ -1,6 +1,6 @@
 /*
-The "github.com/lleo/go-hamt/string_key package" is an implementation of the
-"github.com/lleo/go-hamt/hamt_key.Key" interface.
+Package string_key is an implementation of the
+"github.com/lleo/go-hamt/key.Key" interface.
 
 Both of these packages are are in separate package namespaces to prevent circular
 references between "github.com/lleo/go-hamt" and "github.com/lleo/go-hamt/hamt32"
@@ -14,15 +14,16 @@ package string_key
 import (
 	"hash/fnv"
 
-	"github.com/lleo/go-hamt/hamt_key"
+	"github.com/lleo/go-hamt/key"
 )
 
+// StringKey is a simple string implementing the key.Key interface.
 type StringKey string
 
 // Equals returns true iff the StringKey exactly matches the key passed it. The
-// hamt_key.Key passed as an argument MUST BE a StringKey or the method Equals()
+// key.Key passed as an argument MUST BE a StringKey or the method Equals()
 // automatically returns false.
-func (sk StringKey) Equals(key hamt_key.Key) bool {
+func (sk StringKey) Equals(key key.Key) bool {
 	var k, typeMatches = key.(StringKey)
 	if !typeMatches {
 		panic("type mismatch")
@@ -30,14 +31,14 @@ func (sk StringKey) Equals(key hamt_key.Key) bool {
 	return string(sk) == string(k)
 }
 
-// The Hash30() calculates the fnv1 32bit hash of the string (redered to its bytes).
+// Hash30 calculates the fnv1 32bit hash of the string (redered to its bytes).
 // Then we use the xor-fold technique described <a href="http://www.isthe.com/chongo/tech/comp/fnv/index.html#xor-fold">here</a>
 // to fold the top 2bits into the lower 30bits of the 32bit hash value.
 func (sk StringKey) Hash30() uint32 {
 	return hash30(sk.hash32())
 }
 
-// The Hash60() calculates the fnv1 64bit hash of the string (redered to its bytes).
+// Hash60 calculates the fnv1 64bit hash of the string (redered to its bytes).
 // Then we use the xor-fold technique described <a href="http://www.isthe.com/chongo/tech/comp/fnv/index.html#xor-fold">here</a>
 // to fold the top 4bits into the lower 60bits of the 64bit hash value.
 func (sk StringKey) Hash60() uint64 {
