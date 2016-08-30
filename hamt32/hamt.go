@@ -69,21 +69,6 @@ func nodeMapString(nodeMap uint32) string {
 	return strings.Join(strs, " ")
 }
 
-//type Key interface {
-//	Equals(Key) bool
-//	Hash30() uint32
-//	Hash60() uint64
-//	String() string
-//}
-
-//type Hamt interface {
-//	Get(key.Key) (interface{}, bool)
-//	Put(key.Key, interface{}) bool
-//	Del(key.Key) (interface{}, bool)
-//	String() string
-//	LongString(indent string) string
-//}
-
 type Hamt struct {
 	root     tableI
 	nentries int
@@ -107,12 +92,12 @@ func (h *Hamt) IsEmpty() bool {
 	return h.root == nil
 }
 
-func (h *Hamt) Get(key key.Key) (interface{}, bool) {
+func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
 	}
 
-	var h30 = key.Hash30()
+	var h30 = key.Hash30(k)
 
 	var curTable = h.root //ISA tableI
 
@@ -127,8 +112,8 @@ func (h *Hamt) Get(key key.Key) (interface{}, bool) {
 		if leaf, isLeaf := curNode.(leafI); isLeaf {
 
 			if hashPathEqual(depth, h30, leaf.hash30()) {
-				var val, found = leaf.get(key)
-				return val, found
+				var v, found = leaf.get(k)
+				return v, found
 			}
 
 			return nil, false
@@ -142,9 +127,9 @@ func (h *Hamt) Get(key key.Key) (interface{}, bool) {
 	return nil, false
 }
 
-func (h *Hamt) Put(key key.Key, val interface{}) bool {
-	var h30 = key.Hash30()
-	var newLeaf = newFlatLeaf(h30, key, val)
+func (h *Hamt) Put(k key.Key, v interface{}) bool {
+	var h30 = key.Hash30(k)
+	var newLeaf = newFlatLeaf(h30, k, v)
 	var depth uint = 0
 
 	if h.IsEmpty() {
@@ -171,13 +156,13 @@ func (h *Hamt) Put(key key.Key, val interface{}) bool {
 		if oldLeaf, isLeaf := curNode.(leafI); isLeaf {
 			if oldLeaf.hash30() == h30 {
 				var newLeaf leafI
-				newLeaf, inserted = oldLeaf.put(key, val)
+				newLeaf, inserted = oldLeaf.put(k, v)
 				if inserted {
 					curTable.set(idx, newLeaf)
 				}
 			} else {
 				hashPath = buildHashPath(hashPath, idx, depth)
-				var newLeaf = newFlatLeaf(h30, key, val)
+				var newLeaf = newFlatLeaf(h30, k, v)
 				var collisionTable = newCompressedTable_2(depth+1, hashPath, oldLeaf, newLeaf)
 				//var collisionTable = newCompressedTable_2(depth, hashPath, oldLeaf, newLeaf)
 				curTable.set(idx, collisionTable)
@@ -212,12 +197,12 @@ func (h *Hamt) Put(key key.Key, val interface{}) bool {
 	return inserted
 }
 
-func (h *Hamt) Del(key key.Key) (interface{}, bool) {
+func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
 	}
 
-	var h30 = key.Hash30()
+	var h30 = key.Hash30(k)
 	var depth uint = 0
 
 	var path = newPathT()
@@ -234,7 +219,7 @@ func (h *Hamt) Del(key key.Key) (interface{}, bool) {
 
 		if oldLeaf, isLeaf := curNode.(leafI); isLeaf {
 			if oldLeaf.hash30() == h30 {
-				if val, newLeaf, deleted := oldLeaf.del(key); deleted {
+				if v, newLeaf, deleted := oldLeaf.del(k); deleted {
 					//newLeaf MUST BE nil or a leaf slimmer by one
 					if newLeaf != oldLeaf {
 						//minor optimization, cuz curTable.set() can be non-trivial
@@ -279,7 +264,7 @@ func (h *Hamt) Del(key key.Key) (interface{}, bool) {
 						h.root = nil
 					}
 
-					return val, true
+					return v, true
 				} //if deleted
 			} //if h30 == leaf.hash30
 

@@ -11,11 +11,7 @@ variation of the Hash Array Mapped Trie in "github.com/lleo/go-hamt-fuctional".
 */
 package string_key
 
-import (
-	"hash/fnv"
-
-	"github.com/lleo/go-hamt/key"
-)
+import "github.com/lleo/go-hamt/key"
 
 // StringKey is a simple string implementing the key.Key interface.
 type StringKey string
@@ -31,44 +27,12 @@ func (sk StringKey) Equals(key key.Key) bool {
 	return string(sk) == string(k)
 }
 
-// Hash30 calculates the fnv1 32bit hash of the string (redered to its bytes).
-// Then we use the xor-fold technique described <a href="http://www.isthe.com/chongo/tech/comp/fnv/index.html#xor-fold">here</a>
-// to fold the top 2bits into the lower 30bits of the 32bit hash value.
-func (sk StringKey) Hash30() uint32 {
-	return hash30(sk.hash32())
+// Convert the string in StringKey to a []byte.
+func (sk StringKey) ToByteSlice() []byte {
+	return []byte(sk)
 }
 
-// Hash60 calculates the fnv1 64bit hash of the string (redered to its bytes).
-// Then we use the xor-fold technique described <a href="http://www.isthe.com/chongo/tech/comp/fnv/index.html#xor-fold">here</a>
-// to fold the top 4bits into the lower 60bits of the 64bit hash value.
-func (sk StringKey) Hash60() uint64 {
-	return hash60(sk.hash64())
-}
-
-func (sk StringKey) hash32() uint32 {
-	var h = fnv.New32()
-	h.Write([]byte(sk))
-	return h.Sum32()
-}
-
-func (sk StringKey) hash64() uint64 {
-	var h = fnv.New64()
-	h.Write([]byte(sk))
-	return h.Sum64()
-}
-
-const mask30 = uint32(1<<30) - 1
-const mask60 = uint64(1<<60) - 1
-
-func hash30(h30 uint32) uint32 {
-	return (h30 >> 30) ^ (h30 & mask30)
-}
-
-func hash60(h64 uint64) uint64 {
-	return (h64 >> 60) ^ (h64 & mask60)
-}
-
-// String() returns the StringKey as a basic string type.
+// Return the string in StringKey.
 func (sk StringKey) String() string {
 	return string(sk)
 }
