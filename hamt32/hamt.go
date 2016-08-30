@@ -8,7 +8,7 @@ import (
 )
 
 const NBITS uint = 5
-const DEPTHLIMIT uint = 6
+const MAXDEPTH uint = 5
 const TABLE_CAPACITY uint = uint(1 << NBITS)
 
 func indexMask(depth uint) uint32 {
@@ -101,7 +101,7 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 
 	var curTable = h.root //ISA tableI
 
-	for depth := uint(0); depth < DEPTHLIMIT; depth++ {
+	for depth := uint(0); depth <= MAXDEPTH; depth++ {
 		var idx = index(h30, depth)
 		var curNode = curTable.get(idx) //nodeI
 
@@ -122,7 +122,7 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 		//else curNode MUST BE A tableI
 		curTable = curNode.(tableI)
 	}
-	// curNode == nil || depth >= DEPTHLIMIT
+	// curNode == nil || depth > MAXDEPTH
 
 	return nil, false
 }
@@ -143,7 +143,7 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 	var curTable = h.root
 	var inserted = true
 
-	for depth = 0; depth < DEPTHLIMIT; depth++ {
+	for depth = 0; depth <= MAXDEPTH; depth++ {
 		var idx = index(h30, depth)
 		var curNode = curTable.get(idx)
 
@@ -209,7 +209,7 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 	var hashPath uint32 = 0
 	var curTable = h.root
 
-	for depth = 0; depth < DEPTHLIMIT; depth++ {
+	for depth = 0; depth <= MAXDEPTH; depth++ {
 		var idx = index(h30, depth)
 		var curNode = curTable.get(idx)
 

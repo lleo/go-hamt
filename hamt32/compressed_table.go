@@ -30,7 +30,7 @@ func newCompressedTable_2(depth uint, hashPath uint32, leaf1 leafI, leaf2 *flatL
 
 	var curTable = retTable
 	var d uint
-	for d = depth; d < DEPTHLIMIT; d++ {
+	for d = depth; d <= MAXDEPTH; d++ {
 		var idx1 = index(leaf1.hash30(), d)
 		var idx2 = index(leaf2.hash30(), d)
 
@@ -64,8 +64,8 @@ func newCompressedTable_2(depth uint, hashPath uint32, leaf1 leafI, leaf2 *flatL
 		curTable = newTable
 	}
 	// We either BREAK out of the loop,
-	// OR we hit d = DEPTHLIMIT.
-	if d == DEPTHLIMIT {
+	// OR we hit d > MAXDEPTH.
+	if d > MAXDEPTH {
 		// leaf1.hashcode() == leaf2.hashcode()
 		var idx = index(leaf1.hash30(), d)
 		hashPath = buildHashPath(hashPath, idx, d)

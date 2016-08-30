@@ -6,7 +6,7 @@ type pathT []tableI
 
 // Constructs an empty pathT object.
 func newPathT() pathT {
-	return pathT(make([]tableI, 0, DEPTHLIMIT))
+	return pathT(make([]tableI, 0, MAXDEPTH+1))
 }
 
 // path.peek() returns the last entry without inserted with path.push(...)
