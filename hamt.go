@@ -1,5 +1,5 @@
 /*
-This is the unifying package between a 32bit and 64 bit implementations of
+This is the unifying package between 32bit and 64 bit implementations of
 Hash Array Mapped Tries (HAMT). You can `import hamt "github.com/lleo/go-hamt"'
 then instantiate either a hamt32 or hamt64 datastructure with the
 hamt.NewHamt32() or hamt.NewHamt64() functions. Both datastructures have the
