@@ -7,8 +7,17 @@ import (
 	"github.com/lleo/go-hamt/key"
 )
 
+// NBITS constant is the number of bits(6) a 60bit hash value is split into,
+// to provied the indexes of a HAMT.
 const NBITS uint = 5
+
+// MAXDEPTH constant is the maximum depth(9) of NBITS values that constitute
+// the path in a HAMT, from [0..MAXDEPTH] for a total of MAXDEPTH+1(10) levels.
+// NBITS*(MAXDEPTH+1) == HASHBITS (ie 6*(9+1) == 60).
 const MAXDEPTH uint = 9
+
+// TABLE_CAPACITY constant is the number of table entries in a each node of
+// a HAMT datastructure; its value is 1<<NBITS (ie 2^6 == 64).
 const TABLE_CAPACITY uint = uint(1 << NBITS)
 
 func indexMask(depth uint) uint64 {
