@@ -18,8 +18,8 @@ type Key interface {
 
 const mask30 = uint32(1<<30) - 1
 
-func hash30(h30 uint32) uint32 {
-	return (h30 >> 30) ^ (h30 & mask30)
+func hash30(h32 uint32) uint32 {
+	return (h32 >> 30) ^ (h32 & mask30)
 }
 
 func hash32(k Key) uint32 {
