@@ -11,41 +11,34 @@ package key
 import "hash/fnv"
 
 type Key interface {
+	String() string // ISA/statisfies fmt.Stringer interface
 	Equals(Key) bool
+	Hash30() uint32
 	ToByteSlice() []byte
-	String() string
+}
+
+// Base struct of all structs that satisfy Key interface
+type KeyBase struct {
+	hash30 uint32
 }
 
 const mask30 = uint32(1<<30) - 1
 
-func hash30(h32 uint32) uint32 {
-	return (h32 >> 30) ^ (h32 & mask30)
-}
-
-func hash32(k Key) uint32 {
-	var bs = k.ToByteSlice()
+func hash30(bs []byte) uint32 {
 	var h = fnv.New32()
 	h.Write(bs)
 	return h.Sum32()
 }
 
-func Hash30(k Key) uint32 {
-	return hash30(hash32(k))
+// Initialize the KeyBase part of any struct that has the KeyBase struct embeded.
+// will be called by the New() function of any super class.
+//     k.Initialize(k)
+// where the first k is interpreted as a *KeyBase and the second k is interpreted
+// as a Key interface type.
+func (kb *KeyBase) Initialize(bs []byte) {
+	kb.hash30 = hash30(bs)
 }
 
-const mask60 = uint64(1<<60) - 1
-
-func hash60(h64 uint64) uint64 {
-	return (h64 >> 60) ^ (h64 & mask60)
-}
-
-func hash64(k Key) uint64 {
-	var bs = k.ToByteSlice()
-	var h = fnv.New64()
-	h.Write(bs)
-	return h.Sum64()
-}
-
-func Hash60(k Key) uint64 {
-	return hash60(hash64(k))
+func (kb KeyBase) Hash30() uint32 {
+	return kb.hash30
 }
