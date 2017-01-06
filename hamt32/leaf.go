@@ -4,8 +4,8 @@ import "github.com/lleo/go-hamt/key"
 
 type leafI interface {
 	nodeI
-	// from nodeI
-	// hash30() uint32
+	// from nodeI in table.go
+	// Hash30() uint32
 	// String() string
 
 	get(key key.Key) (interface{}, bool)

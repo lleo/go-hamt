@@ -7,20 +7,25 @@ import (
 	"github.com/lleo/go-hamt/key"
 )
 
+// implements nodeI
+// implements leafI
 type collisionLeaf struct {
-	_hash30 uint32
-	kvs     []keyVal
+	kvs []keyVal
 }
 
-func newCollisionLeaf(hash30 uint32, kvs []keyVal) *collisionLeaf {
+func newCollisionLeaf(kvs []keyVal) *collisionLeaf {
+	for _, kv := range kvs {
+		if kvs[0].key.Hash30() != kv.key.Hash30() {
+			panic(fmt.Sprintf("kvs[0].key.Hash30() != kv.key.Hash30()"))
+		}
+	}
 	var leaf = new(collisionLeaf)
-	leaf._hash30 = hash30
 	leaf.kvs = append(leaf.kvs, kvs...)
 	return leaf
 }
 
-func (l collisionLeaf) hash30() uint32 {
-	return l._hash30
+func (l collisionLeaf) Hash30() uint32 {
+	return l.kvs[0].key.Hash30()
 }
 
 func (l collisionLeaf) String() string {
@@ -30,7 +35,8 @@ func (l collisionLeaf) String() string {
 	}
 	var jkvstr = strings.Join(kvstrs, ",")
 
-	return fmt.Sprintf("collisionLeaf{hash30:%s, kvs:[]kv{%s}}", hash30String(l._hash30), jkvstr)
+	return fmt.Sprintf("collisionLeaf{hash30:%s, kvs:[]kv{%s}}",
+		hash30String(l.Hash30()), jkvstr)
 }
 
 func (l collisionLeaf) get(key key.Key) (interface{}, bool) {
@@ -58,7 +64,7 @@ func (l collisionLeaf) del(key key.Key) (interface{}, leafI, bool) {
 		if kv.key.Equals(key) {
 			l.kvs = append(l.kvs[:i], l.kvs[i+1:]...)
 			if len(l.kvs) == 1 {
-				var fl = newFlatLeaf(l.hash30(), l.kvs[0].key, l.kvs[0].val)
+				var fl = newFlatLeaf(l.kvs[0].key, l.kvs[0].val)
 				return kv.val, fl, true
 			}
 			return kv.val, l, true

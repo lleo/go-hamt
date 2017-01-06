@@ -6,37 +6,44 @@ import (
 	"strings"
 )
 
+// COMPRESSED_TABLE_INIT_CAP constant sets the default capacity of a new compressedTable.
+const COMPRESSED_TABLE_INIT_CAP int = 8
+
 type compressedTable struct {
 	hashPath uint32
 	nodeMap  uint32
 	nodes    []nodeI
 }
 
-func newCompressedTable(depth uint, hashPath uint32, lf leafI) tableI {
-	var idx = index(hashPath, depth)
+func newRootCompressedTable(depth uint, hashPath uint32, lf leafI) tableI {
+	var idx = index(lf.Hash30(), depth)
 
 	var ct = new(compressedTable)
 	ct.hashPath = hashPath & hashPathMask(depth)
 	ct.nodeMap = uint32(1 << idx)
-	ct.nodes = make([]nodeI, 1)
+	ct.nodes = make([]nodeI, 1, COMPRESSED_TABLE_INIT_CAP)
 	ct.nodes[0] = lf
 
 	return ct
 }
 
-func newCompressedTable_2(depth uint, hashPath uint32, leaf1 leafI, leaf2 *flatLeaf) tableI {
+func newCompressedTable(depth uint, hashPath uint32, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	var retTable = new(compressedTable)
 	retTable.hashPath = hashPath & hashPathMask(depth)
 
 	var curTable = retTable
 	var d uint
 	for d = depth; d <= MAXDEPTH; d++ {
-		var idx1 = index(leaf1.hash30(), d)
-		var idx2 = index(leaf2.hash30(), d)
+		var idx1 = index(leaf1.Hash30(), d)
+		var idx2 = index(leaf2.Hash30(), d)
 
 		if idx1 != idx2 {
-			curTable.nodes = make([]nodeI, 2)
+			//curTable.nodes = make([]nodeI, 0, COMPRESSED_TABLE_INIT_CAP)
+			//curTable.set(idx1, leaf1)
+			//curTable.set(idx2, leaf2)
 
+			// This is faster
+			curTable.nodes = make([]nodeI, 2, COMPRESSED_TABLE_INIT_CAP)
 			curTable.nodeMap |= 1 << idx1
 			curTable.nodeMap |= 1 << idx2
 			if idx1 < idx2 {
@@ -51,30 +58,44 @@ func newCompressedTable_2(depth uint, hashPath uint32, leaf1 leafI, leaf2 *flatL
 		}
 		// idx1 == idx2 && continue
 
-		curTable.nodes = make([]nodeI, 1)
+		curTable.nodes = make([]nodeI, 0, COMPRESSED_TABLE_INIT_CAP)
 
 		var newTable = new(compressedTable)
 
 		hashPath = buildHashPath(hashPath, idx1, d)
 		newTable.hashPath = hashPath
 
-		curTable.nodeMap = uint32(1 << idx1) //Set the idx1'th bit
-		curTable.nodes[0] = newTable
+		curTable.set(idx1, newTable)
 
 		curTable = newTable
 	}
 	// We either BREAK out of the loop,
 	// OR we hit d > MAXDEPTH.
 	if d > MAXDEPTH {
-		// leaf1.hashcode() == leaf2.hashcode()
-		var idx = index(leaf1.hash30(), d)
-		hashPath = buildHashPath(hashPath, idx, d)
+		// leaf1.Hash30() == leaf2.Hash30()
+		log.Printf("newCompressedTable: d > MAXDEPTH branch taken.")
+		var idx = index(leaf1.Hash30(), MAXDEPTH)
 		var kvs = append(leaf1.keyVals(), leaf2.keyVals()...)
-		var leaf = newCollisionLeaf(hashPath, kvs)
+		var leaf = newCollisionLeaf(kvs)
 		curTable.set(idx, leaf)
 	}
 
 	return retTable
+}
+
+func nodeMapString(nodeMap uint32) string {
+	var strs = make([]string, 4)
+
+	var top2 = nodeMap >> 30
+	strs[0] = fmt.Sprintf("%02b", top2)
+
+	const tenBitMask uint32 = 1<<10 - 1
+	for i := uint(0); i < 3; i++ {
+		var tenBitVal = (nodeMap & (tenBitMask << (i * 10))) >> (i * 10)
+		strs[3-i] = fmt.Sprintf("%010b", tenBitVal)
+	}
+
+	return strings.Join(strs, " ")
 }
 
 // downgradeToCompressedTable() converts fullTable structs that have less than
@@ -99,7 +120,7 @@ func downgradeToCompressedTable(hashPath uint32, ents []tableEntry) *compressedT
 	return nt
 }
 
-func (t *compressedTable) hash30() uint32 {
+func (t *compressedTable) Hash30() uint32 {
 	return t.hashPath
 }
 
@@ -177,10 +198,26 @@ func (t *compressedTable) set(idx uint, nn nodeI) {
 		if (t.nodeMap & nodeBit) > 0 {
 			t.nodeMap &^= nodeBit
 			t.nodes = append(t.nodes[:i], t.nodes[i+1:]...)
-		} else if (t.nodeMap & nodeBit) == 0 {
-			log.Panicf("compressedTable.set(%02d, nil): when no node was set here in the first place", idx)
+		} /* else {
 			// do nothing
-		}
+		} */
 	}
 	return
+}
+
+//POPCNT Implementation
+// copied from https://github.com/jddixon/xlUtil_go/blob/master/popCount.go
+//  was MIT License
+
+const (
+	octo_fives  = uint32(0x55555555)
+	octo_threes = uint32(0x33333333)
+	octo_ones   = uint32(0x01010101)
+	octo_fs     = uint32(0x0f0f0f0f)
+)
+
+func bitCount32(n uint32) uint {
+	n = n - ((n >> 1) & octo_fives)
+	n = (n & octo_threes) + ((n >> 2) & octo_threes)
+	return uint((((n + (n >> 4)) & octo_fs) * octo_ones) >> 24)
 }

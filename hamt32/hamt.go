@@ -5,13 +5,14 @@ package hamt32
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/lleo/go-hamt/key"
 )
 
-// NBITS constant is the number of bits(5) a 30bit hash value is split into,
-// to provied the indexes of a HAMT.
+// NBITS constant is the number of bits(5) a 30bit hash value is split into
+// to provied the index of a HAMT.
 const NBITS uint = 5
 
 // MAXDEPTH constant is the maximum depth(5) of NBITS values that constitute
@@ -20,8 +21,16 @@ const NBITS uint = 5
 const MAXDEPTH uint = 5
 
 // TABLE_CAPACITY constant is the number of table entries in a each node of
-// a HAMT datastructure; its value is 1<<NBITS (ie 2^5 == 32).
+// a HAMT datastructure; its value is 2^5 == 32.
 const TABLE_CAPACITY uint = uint(1 << NBITS)
+
+// DOWNGRADE_THRESHOLD constant is the number of nodes a fullTable has shrunk to,
+// before it is converted to a compressedTable.
+const DOWNGRADE_THRESHOLD uint = TABLE_CAPACITY / 8
+
+// UPGRADE_THRESHOLD constan is the number of nodes a compressedTable has grown to,
+// before it is converted to a fullTable.
+const UPGRADE_THRESHOLD uint = TABLE_CAPACITY / 2
 
 func indexMask(depth uint) uint32 {
 	return uint32(uint8(1<<NBITS)-1) << (depth * NBITS)
@@ -31,21 +40,6 @@ func index(h30 uint32, depth uint) uint {
 	var idxMask = indexMask(depth)
 	var idx = uint((h30 & idxMask) >> (depth * NBITS))
 	return idx
-}
-
-func hashPathEqual(depth uint, a, b uint32) bool {
-	//pathMask := uint32(1<<(depth*NBITS)) - 1
-	var pathMask = hashPathMask(depth)
-
-	return (a & pathMask) == (b & pathMask)
-}
-
-func hashPathMask(depth uint) uint32 {
-	return uint32(1<<(depth*NBITS)) - 1
-}
-
-func buildHashPath(hashPath uint32, idx, depth uint) uint32 {
-	return hashPath | uint32(idx<<(depth*NBITS))
 }
 
 func hashPathString(hashPath uint32, depth uint) string {
@@ -66,29 +60,19 @@ func hash30String(h30 uint32) string {
 	return hashPathString(h30, 6)
 }
 
-func nodeMapString(nodeMap uint32) string {
-	var strs = make([]string, 4)
-
-	var top2 = nodeMap >> 30
-	strs[0] = fmt.Sprintf("%02b", top2)
-
-	const tenBitMask uint32 = 1<<10 - 1
-	for i := uint(0); i < 3; i++ {
-		var tenBitVal = (nodeMap & (tenBitMask << (i * 10))) >> (i * 10)
-		strs[3-i] = fmt.Sprintf("%010b", tenBitVal)
-	}
-
-	return strings.Join(strs, " ")
+func hashPathMask(depth uint) uint32 {
+	return uint32(1<<(depth*NBITS)) - 1
 }
 
-type Hamt struct {
-	root     tableI
-	nentries int
+func hashPathEqual(depth uint, a, b uint32) bool {
+	//pathMask := uint32(1<<(depth*NBITS)) - 1
+	var pathMask = hashPathMask(depth)
+
+	return (a & pathMask) == (b & pathMask)
 }
 
-func NewHamt() *Hamt {
-	var h = new(Hamt)
-	return h
+func buildHashPath(hashPath uint32, idx, depth uint) uint32 {
+	return hashPath | uint32(idx<<(depth*NBITS))
 }
 
 type keyVal struct {
@@ -100,6 +84,33 @@ func (kv keyVal) String() string {
 	return fmt.Sprintf("keyVal{%s, %v}", kv.key, kv.val)
 }
 
+const (
+	HYBRID = iota
+	COMPONLY
+	FULLONLY
+)
+
+type Hamt struct {
+	root            tableI
+	nentries        int
+	grade, fullinit bool
+}
+
+func New(opt int) *Hamt {
+	var h = new(Hamt)
+	if opt == COMPONLY {
+		h.grade = false
+		h.fullinit = false
+	} else if opt == FULLONLY {
+		h.grade = false
+		h.fullinit = true
+	} else /* opt == HYBRID */ {
+		h.grade = true
+		h.fullinit = false
+	}
+	return h
+}
+
 func (h *Hamt) IsEmpty() bool {
 	return h.root == nil
 }
@@ -109,13 +120,13 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 		return nil, false
 	}
 
-	var h30 = key.Hash30(k)
+	var h30 = k.Hash30()
 
 	var curTable = h.root //ISA tableI
 
 	for depth := uint(0); depth <= MAXDEPTH; depth++ {
 		var idx = index(h30, depth)
-		var curNode = curTable.get(idx) //nodeI
+		var curNode = curTable.get(idx)
 
 		if curNode == nil {
 			break
@@ -123,9 +134,9 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 
 		if leaf, isLeaf := curNode.(leafI); isLeaf {
 
-			if hashPathEqual(depth, h30, leaf.hash30()) {
-				var v, found = leaf.get(k)
-				return v, found
+			if hashPathEqual(depth, h30, leaf.Hash30()) {
+				var val, found = leaf.get(k)
+				return val, found
 			}
 
 			return nil, false
@@ -140,49 +151,79 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 }
 
 func (h *Hamt) Put(k key.Key, v interface{}) bool {
-	var h30 = key.Hash30(k)
-	var newLeaf = newFlatLeaf(h30, k, v)
+	//var newLeaf = newFlatLeaf(k, v)
 	var depth uint = 0
+	var hashPath uint32 = 0
+	var inserted = true
 
 	if h.IsEmpty() {
-		h.root = newCompressedTable(depth, h30, newLeaf)
+		h.root = h.newRootTable(depth, hashPath, newFlatLeaf(k, v))
 		h.nentries++
-		return true
+		return inserted
 	}
 
 	var path = newPathT()
-	var hashPath uint32 = 0
 	var curTable = h.root
-	var inserted = true
 
 	for depth = 0; depth <= MAXDEPTH; depth++ {
-		var idx = index(h30, depth)
+		var idx = index(k.Hash30(), depth)
 		var curNode = curTable.get(idx)
 
 		if curNode == nil {
-			curTable.set(idx, newLeaf)
+			curTable.set(idx, newFlatLeaf(k, v))
 			h.nentries++
-			break //from for-loop
+
+			// upgrade?
+			if h.grade {
+				_, isCompressedTable := curTable.(*compressedTable)
+				if isCompressedTable && curTable.nentries() >= UPGRADE_THRESHOLD {
+					curTable = upgradeToFullTable(hashPath, curTable.entries())
+					if depth == 0 {
+						h.root = curTable
+					} else {
+						parentTable := path.peek()
+						parentIdx := index(k.Hash30(), depth-1)
+						parentTable.set(parentIdx, curTable)
+					}
+				}
+			}
+
+			return true //inserted
 		}
 
-		if oldLeaf, isLeaf := curNode.(leafI); isLeaf {
-			if oldLeaf.hash30() == h30 {
-				var newLeaf leafI
-				newLeaf, inserted = oldLeaf.put(k, v)
+		if curLeaf, isLeaf := curNode.(leafI); isLeaf {
+			if curLeaf.Hash30() == k.Hash30() {
+				// Accumulate collisionLeaf
+				insLeaf, inserted := curLeaf.put(k, v)
 				if inserted {
-					curTable.set(idx, newLeaf)
+					curTable.set(idx, insLeaf)
+					h.nentries++
 				}
-			} else {
-				hashPath = buildHashPath(hashPath, idx, depth)
-				var newLeaf = newFlatLeaf(h30, k, v)
-				var collisionTable = newCompressedTable_2(depth+1, hashPath, oldLeaf, newLeaf)
-				//var collisionTable = newCompressedTable_2(depth, hashPath, oldLeaf, newLeaf)
-				curTable.set(idx, collisionTable)
+				return inserted
 			}
-			if inserted {
-				h.nentries++
+
+			if depth == MAXDEPTH {
+				if curLeaf.Hash30() != k.Hash30() {
+					// This should not happen cuz we had to walk up MAXDEPTH
+					// levels to get here.
+					panic("WTF!!!")
+				}
+
+				// Accumulate collisionLeaf
+				insLeaf, inserted := curLeaf.put(k, v)
+				if inserted {
+					curTable.set(idx, insLeaf)
+					h.nentries++
+				}
+				return inserted
 			}
-			break //from for-loop
+
+			hashPath = buildHashPath(hashPath, idx, depth)
+			var collisionTable = h.newTable(depth+1, hashPath, curLeaf, newFlatLeaf(k, v))
+			curTable.set(idx, collisionTable)
+			h.nentries++
+
+			return true
 		}
 
 		hashPath = buildHashPath(hashPath, idx, depth)
@@ -190,23 +231,10 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 		curTable = curNode.(tableI)
 	}
 
-	var _, isCompressedTable = curTable.(*compressedTable)
-	if isCompressedTable && curTable.nentries() > TABLE_CAPACITY/2 {
-		if curTable == h.root {
-			curTable = upgradeToFullTable(hashPath, curTable.entries())
+	log.Println(path)
+	log.Printf("k=%s, v=%v", k, v)
 
-			h.root = curTable
-		} else {
-			curTable = upgradeToFullTable(hashPath, curTable.entries())
-
-			var parentTable = path.peek()
-
-			var parentIdx = index(curTable.hash30(), depth-1)
-			parentTable.set(parentIdx, curTable)
-		}
-	}
-
-	return inserted
+	panic("WTF!!")
 }
 
 func (h *Hamt) Del(k key.Key) (interface{}, bool) {
@@ -214,80 +242,107 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 		return nil, false
 	}
 
-	var h30 = key.Hash30(k)
+	var h30 = k.Hash30()
 	var depth uint = 0
+	var hashPath uint32
 
 	var path = newPathT()
-	var hashPath uint32 = 0
 	var curTable = h.root
 
 	for depth = 0; depth <= MAXDEPTH; depth++ {
 		var idx = index(h30, depth)
 		var curNode = curTable.get(idx)
 
+		// Is curTalble.get(idx) empty?
 		if curNode == nil {
 			return nil, false
 		}
 
-		if oldLeaf, isLeaf := curNode.(leafI); isLeaf {
-			if oldLeaf.hash30() == h30 {
-				if v, newLeaf, deleted := oldLeaf.del(k); deleted {
-					//newLeaf MUST BE nil or a leaf slimmer by one
-					if newLeaf != oldLeaf {
-						//minor optimization, cuz curTable.set() can be non-trivial
-						curTable.set(idx, newLeaf)
-					}
-					h.nentries--
+		// Is curNode a leafI?
+		if curLeaf, isLeaf := curNode.(leafI); isLeaf {
+			// This is really debug code.
+			//if depth == MAXDEPTH {
+			//	if curLeaf.Hash30() != k.Hash30() {
+			//		// This should not happen cuz we had to walk up MAXDEPTH
+			//		// levels to get here.
+			//		panic("WTF!!!")
+			//	}
+			//}
 
-					// demote curTable if it is a fullTable && shrank to small
-					var _, isFullTable = curTable.(*fullTable)
-					if isFullTable && curTable.nentries() < TABLE_CAPACITY/2 {
-						if curTable == h.root {
-							curTable = downgradeToCompressedTable(hashPath, curTable.entries())
+			// delete key from leaf.
+			v, delLeaf, deleted := curLeaf.del(k)
+			if !deleted {
+				return nil, false
+			}
+			// else a leaf key/value was deleted
+			h.nentries--
+
+			// If curLeaf was a collisionLeaf,
+			// then delLeaf is either a slimmed down collisionLeaf or a flatLeaf.
+			// If curLeaf was a flatLeaf then delLeaf is nil.
+			curTable.set(idx, delLeaf)
+
+			// downgrade?
+			if h.grade {
+				if delLeaf == nil {
+					_, isFullTable := curTable.(*fullTable)
+					if isFullTable && curTable.nentries() <= DOWNGRADE_THRESHOLD {
+						curTable = downgradeToCompressedTable(hashPath, curTable.entries())
+						if depth == 0 {
 							h.root = curTable
 						} else {
-							curTable = downgradeToCompressedTable(hashPath, curTable.entries())
-							var parentTable = path.peek()
-							var parentIdx = index(curTable.hash30(), depth-1)
+							parentTable := path.peek()
+							parentIdx := index(h30, depth-1)
 							parentTable.set(parentIdx, curTable)
 						}
 					}
+				}
+			}
+			// If curTable has only one entry and that entry is a leafI,
+			// then collapse that leafI down to the position curTable holds
+			// in the parent Table; repeat test and collapse for parent table.
 
-					if curTable != h.root && curTable.nentries() == 1 {
-						var node = curTable.entries()[0].node
-						if leaf, isLeaf := node.(leafI); isLeaf {
-							// ONLY COLLAPSE LEAVES
-							for depth > 0 {
-								var parentTable = path.pop()
-								var parentIdx = index(curTable.hash30(), depth-1)
-								parentTable.set(parentIdx, leaf)
+			// Identical for conditionals !!!
+			//  curTable.nentries() == 1 && curTable != h.root
+			//  curTable.nentries() == 1 && len(path) > 0
+			for curTable.nentries() == 1 && depth > 0 {
+				// _ = ASSERT && Assert(curTable != h.root, "curTable == h.root")
+				// _ = ASSERT && Assert(depth == len(path), "depth != len(path)")
 
-								curTable = parentTable
-								depth--
+				var node = curTable.entries()[0].node
+				var leaf, isLeaf = node.(leafI)
+				if !isLeaf {
+					break
+				}
 
-								if parentTable.nentries() > 1 {
-									break
-								}
-							}
-						}
-					}
+				// Collapse leaf down to where curTable is in parentTable
 
-					if curTable == h.root && curTable.nentries() == 0 {
-						h.root = nil
-					}
+				var parentTable = path.pop()
+				depth-- // OR depth = len(path)
 
-					return v, true
-				} //if deleted
-			} //if h30 == leaf.hash30
+				//var parentIdx = index(curTable.Hash30(), depth-1)
+				parentIdx := index(curTable.Hash30(), depth)
+				parentTable.set(parentIdx, leaf)
 
-			return nil, false
+				curTable = parentTable
+			}
+
+			if curTable == h.root && curTable.nentries() == 0 {
+				h.root = nil
+			}
+
+			return v, true
 		} //if isLeaf
 
+		// curNode is not nil
+		// curNode is not a leafI
+		// curNode MUST be a tableI
 		hashPath = buildHashPath(hashPath, idx, depth)
 		path.push(curTable)
 		curTable = curNode.(tableI)
 	} //for depth loop
 
+	log.Printf("WTF! this should never be called; k=%s", k)
 	return nil, false
 }
 

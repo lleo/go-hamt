@@ -1,7 +1,11 @@
 package hamt32
 
+import (
+	"fmt"
+)
+
 type nodeI interface {
-	hash30() uint32
+	Hash30() uint32
 	String() string
 }
 
@@ -22,19 +26,20 @@ type tableEntry struct {
 	node nodeI
 }
 
-//POPCNT Implementation
-// copied from https://github.com/jddixon/xlUtil_go/blob/master/popCount.go
-//  was MIT License
+func (ent tableEntry) String() string {
+	return fmt.Sprintf("tableEntry{idx:%d, node:%s}", ent.idx, ent.node.String())
+}
 
-const (
-	octo_fives  = uint32(0x55555555)
-	octo_threes = uint32(0x33333333)
-	octo_ones   = uint32(0x01010101)
-	octo_fs     = uint32(0x0f0f0f0f)
-)
+func (h *Hamt) newRootTable(depth uint, hashPath uint32, lf leafI) tableI {
+	if h.fullinit {
+		return newRootFullTable(depth, hashPath, lf)
+	}
+	return newRootCompressedTable(depth, hashPath, lf)
+}
 
-func bitCount32(n uint32) uint {
-	n = n - ((n >> 1) & octo_fives)
-	n = (n & octo_threes) + ((n >> 2) & octo_threes)
-	return uint((((n + (n >> 4)) & octo_fs) * octo_ones) >> 24)
+func (h *Hamt) newTable(depth uint, hashPath uint32, leaf1 leafI, leaf2 *flatLeaf) tableI {
+	if h.fullinit {
+		return newFullTable(depth, hashPath, leaf1, leaf2)
+	}
+	return newCompressedTable(depth, hashPath, leaf1, leaf2)
 }
