@@ -91,28 +91,16 @@ func BenchmarkHamt32Put(b *testing.B) {
 func BenchmarkHamt32Del(b *testing.B) {
 	log.Printf("BenchmarkHamt32Del: b.N=%d", b.N)
 
-	StartTime["build BenchmarkHamt32Del:DeleteHamt32"] = time.Now()
+	// We rebuild the DeleteHamt32 datastructure because this Benchmark will probably be
+	// rereun with different b.N values to get a better/more-accurate benchmark.
 
-	//debug := false
-	for _, kv := range hugeKvs {
-		//if kv.key.(*stringkey.StringKey).Str() == "aaa" {
-		//	debug = true
-		//}
-		inserted := DeleteHamt32.Put(kv.key, kv.val)
-		if !inserted {
-			log.Printf("BenchmarkHamt32Del: inserted,%v := DeleteHamt32.Put(%s, %d)", inserted, kv.key, kv.val)
-			break
-		}
-	}
-
-	RunTime["build BenchmarkHamt32Del:DeleteHamt"] = time.Since(StartTime["build BenchmarkHamt32Del:DeleteHamt32"])
+	StartTime["BenchmarkHamt32Del:rebuildDeleteHamt32"] = time.Now()
+	rebuildDeleteHamt32(hugeKvs)
+	RunTime["BenchmarkHamt32Del:rebuildDeleteHamt"] = time.Since(StartTime["BenchmarkHamt32Del:rebuildDeleteHamt32"])
 
 	b.ResetTimer()
 
-	//log.Printf("BenchmarkHamt32Del: build BenchmarkHamt32Del:DeleteHamt32: took %s", RunTime["build numHugeKvs Hamt"])
-
 	StartTime["run BenchmarkHamt32Del"] = time.Now()
-	//s := "aaa"
 	for i := 0; i < b.N; i++ {
 		kv := hugeKvs[i]
 		key := kv.key
@@ -125,7 +113,6 @@ func BenchmarkHamt32Del(b *testing.B) {
 		if v != val {
 			b.Fatalf("DeleteHamt32.del(%s) v,%d != i,%d", key, v, val)
 		}
-		//s = stringutil.DigitalInc(s)
 	}
 
 	if DeleteHamt32.IsEmpty() {

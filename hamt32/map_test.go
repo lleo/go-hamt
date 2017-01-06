@@ -40,17 +40,9 @@ func BenchmarkMapPut(b *testing.B) {
 func BenchmarkMapDel(b *testing.B) {
 	log.Printf("BenchmarkMapDel: b.N=%d", b.N)
 
-	StartTime["BenchmarkMapDel:DeleteMap"] = time.Now()
-	for _, kv := range hugeKvs {
-		sk := kv.key.(*stringkey.StringKey)
-		str := sk.Str()
-		val := kv.val.(int)
-
-		if _, ok := DeleteMap[str]; !ok {
-			DeleteMap[str] = val
-		}
-	}
-	RunTime["build BenchmarkMapDel:DeleteMap"] = time.Since(StartTime["BenchmarkMapDel:DeleteMap"])
+	StartTime["BenchmarkMapDel:rebuildDeleteMap"] = time.Now()
+	rebuildDeleteMap(hugeKvs)
+	RunTime["build BenchmarkMapDel:rebuildDeleteMap"] = time.Since(StartTime["BenchmarkMapDel:rebuildDeleteMap"])
 
 	b.ResetTimer()
 
