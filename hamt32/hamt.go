@@ -64,13 +64,6 @@ func hashPathMask(depth uint) uint32 {
 	return uint32(1<<(depth*NBITS)) - 1
 }
 
-func hashPathEqual(depth uint, a, b uint32) bool {
-	//pathMask := uint32(1<<(depth*NBITS)) - 1
-	var pathMask = hashPathMask(depth)
-
-	return (a & pathMask) == (b & pathMask)
-}
-
 func buildHashPath(hashPath uint32, idx, depth uint) uint32 {
 	return hashPath | uint32(idx<<(depth*NBITS))
 }
@@ -90,12 +83,28 @@ const (
 	FULLONLY
 )
 
+var OPTIONS = make(map[int]string, 3)
+
+func init() {
+	OPTIONS[0] = "HYBRID"
+	OPTIONS[1] = "COMPONLY"
+	OPTIONS[2] = "FULLONLY"
+}
+
 type Hamt struct {
 	root            tableI
 	nentries        int
 	grade, fullinit bool
 }
 
+// Create a new hamt32.Hamt datastructure with the table options set to either
+//   hamt32.HYBRID - initially start out with compressedTable, but when the table is
+//                   half full upgrade to fullTable. If a fullTable shrinks to
+//                   TABLE_CAPACITY/8(4) entries downgrade to compressed table.
+//   hamt32.COMPONLY - Only use compressedTable no up/downgrading to/from fullTable.
+//                     This uses the least amount of space.
+//   hamt32.FULLONLY - Only use fullTable no up/downgrading from/to compressedTables.
+//                     This is the fastest performance.
 func New(opt int) *Hamt {
 	var h = new(Hamt)
 	if opt == COMPONLY {
@@ -133,13 +142,8 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 		}
 
 		if leaf, isLeaf := curNode.(leafI); isLeaf {
-
-			if hashPathEqual(depth, h30, leaf.Hash30()) {
-				var val, found = leaf.get(k)
-				return val, found
-			}
-
-			return nil, false
+			var val, found = leaf.get(k)
+			return val, found
 		}
 
 		//else curNode MUST BE A tableI
