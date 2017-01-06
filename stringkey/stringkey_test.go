@@ -9,8 +9,8 @@ import (
 func TestNew(t *testing.T) {
 	var k = stringkey.New("test")
 
-	//var hash30 uint32 = 0xbc2c0be9 // []byte of []("test")
-	var hash30 uint32 = 0x811c9dc5 // []byte of whole struct w/k.hash30 == 0
+	var hash30 uint32 = 0xbc2c0be9 // []byte of []("test")
+	//var hash30 uint32 = 0xca8c8619 // binary.Write uint32(0) & []byte(sk.s)
 
 	if k.Hash30() != hash30 {
 		t.Errorf("k.Hash30() != %#v", hash30)

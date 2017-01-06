@@ -18,7 +18,6 @@ type Key interface {
 	String() string // ISA/statisfies fmt.Stringer interface
 	Equals(Key) bool
 	Hash30() uint32
-	//toByteSlice() []byte
 }
 
 // Base struct of all structs that satisfy Key interface
@@ -60,7 +59,13 @@ func hash30String(h30 uint32) string {
 	return hashPathString(h30, 6)
 }
 
-func hash30(bs []byte) uint32 {
+// Fold the top two bits into the bottom 30 to get 30bits of hash
+// from: http://www.isthe.com/chongo/tech/comp/fnv/index.html#xor-fold
+func fold30(h32 uint32) uint32 {
+	return h32>>30 ^ h32&mask30
+}
+
+func hash32(bs []byte) uint32 {
 	var h = fnv.New32()
 	h.Write(bs)
 	return h.Sum32()
@@ -77,7 +82,7 @@ func (kb *KeyBase) String() string {
 // where k is interpreted as a *KeyBase and bs is a unique []byte to calculate
 // the 30bit hash from.
 func (kb *KeyBase) Initialize(bs []byte) {
-	kb.hash30 = hash30(bs)
+	kb.hash30 = fold30(hash32(bs))
 }
 
 func (kb KeyBase) Hash30() uint32 {
