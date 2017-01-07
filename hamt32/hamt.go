@@ -262,16 +262,6 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 		}
 
 		if curLeaf, isLeaf := curNode.(leafI); isLeaf {
-			// This is really debug code.
-			//if depth == MAXDEPTH {
-			//	if curLeaf.Hash30() != k.Hash30() {
-			//		// This should not happen cuz we had to walk up MAXDEPTH
-			//		// levels to get here.
-			//		panic("WTF!!!")
-			//	}
-			//}
-
-			// delete key from leaf.
 			v, delLeaf, deleted := curLeaf.del(k)
 			if !deleted {
 				return nil, false
