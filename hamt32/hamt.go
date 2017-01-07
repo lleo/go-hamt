@@ -5,7 +5,6 @@ package hamt32
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/lleo/go-hamt/key"
@@ -207,6 +206,7 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 			}
 
 			if depth == MAXDEPTH {
+				// this test should be delete cuz it is logically impossible
 				if curLeaf.Hash30() != k.Hash30() {
 					// This should not happen cuz we had to walk up MAXDEPTH
 					// levels to get here.
@@ -235,8 +235,8 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 		curTable = curNode.(tableI)
 	}
 
-	log.Println(path)
-	log.Printf("k=%s, v=%v", k, v)
+	//log.Println(path)
+	//log.Printf("k=%s, v=%v", k, v)
 
 	panic("WTF!!")
 }
@@ -247,7 +247,7 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 	}
 
 	var h30 = k.Hash30()
-	var depth uint = 0
+	var depth uint
 	var hashPath uint32
 
 	var path = newPathT()
@@ -257,12 +257,10 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 		var idx = index(h30, depth)
 		var curNode = curTable.get(idx)
 
-		// Is curTalble.get(idx) empty?
 		if curNode == nil {
 			return nil, false
 		}
 
-		// Is curNode a leafI?
 		if curLeaf, isLeaf := curNode.(leafI); isLeaf {
 			// This is really debug code.
 			//if depth == MAXDEPTH {
@@ -346,7 +344,7 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 		curTable = curNode.(tableI)
 	} //for depth loop
 
-	log.Printf("WTF! this should never be called; k=%s", k)
+	//log.Printf("WTF! this should never be called; k=%s", k)
 	return nil, false
 }
 
