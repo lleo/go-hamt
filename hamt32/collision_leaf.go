@@ -2,6 +2,7 @@ package hamt32
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/lleo/go-hamt/key"
@@ -14,13 +15,9 @@ type collisionLeaf struct {
 }
 
 func newCollisionLeaf(kvs []keyVal) *collisionLeaf {
-	for _, kv := range kvs {
-		if kvs[0].key.Hash30() != kv.key.Hash30() {
-			panic(fmt.Sprintf("kvs[0].key.Hash30() != kv.key.Hash30()"))
-		}
-	}
 	var leaf = new(collisionLeaf)
 	leaf.kvs = append(leaf.kvs, kvs...)
+
 	return leaf
 }
 
@@ -56,6 +53,9 @@ func (l collisionLeaf) put(key key.Key, val interface{}) (leafI, bool) {
 		}
 	}
 	l.kvs = append(l.kvs, keyVal{key, val})
+
+	log.Printf("%s : %d\n", hash30String(l.Hash30()), len(l.kvs))
+
 	return l, true // key,val was added
 }
 
