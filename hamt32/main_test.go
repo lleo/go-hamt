@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// If no flags given, run all tests.
-	if !(all && fullonly && componly && hybrid) {
+	if !(all || fullonly || componly || hybrid) {
 		all = true
 	}
 
@@ -128,8 +128,7 @@ func TestMain(m *testing.M) {
 		rebuildDeleteHamt32(hugeKvs)
 		xit = m.Run()
 
-		SKIPTESTS:
-
+	SKIPTESTS:
 	} else {
 		if fullonly {
 			options = FULLONLY
