@@ -74,8 +74,8 @@ func (l collisionLeaf) del(key key.Key) (interface{}, leafI, bool) {
 }
 
 func (l collisionLeaf) keyVals() []keyVal {
-	//var r []keyVal
-	//r = append(r, l.kvs...)
-	//return r
-	return l.kvs
+	var r = make([]keyVal, len(l.kvs))
+	r = append(r, l.kvs...)
+	return r
+	//return l.kvs
 }
