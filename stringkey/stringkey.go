@@ -1,6 +1,6 @@
 /*
-Package stringKey is an implementation of the
-"github.com/lleo/go-hamt/key.Key" interface.
+Package stringKey is an implementation of the "github.com/lleo/go-hamt/key"
+interface.
 
 Both of these packages are are in separate package namespaces to prevent circular
 references between "github.com/lleo/go-hamt" and "github.com/lleo/go-hamt/hamt32"
