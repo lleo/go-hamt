@@ -47,16 +47,16 @@ func hashPathString(hashPath uint32, depth uint) string {
 	}
 	var strs = make([]string, depth)
 
-	for d := depth; d > 0; d-- {
-		var idx = index(hashPath, d-1)
-		strs[d-1] = fmt.Sprintf("%02d", idx)
+	for d := uint(0); d < depth; d++ {
+		var idx = index(hashPath, d)
+		strs[d] = fmt.Sprintf("%02d", idx)
 	}
 
 	return "/" + strings.Join(strs, "/")
 }
 
 func hash30String(h30 uint32) string {
-	return hashPathString(h30, 6)
+	return hashPathString(h30, MAXDEPTH)
 }
 
 func hashPathMask(depth uint) uint32 {
@@ -154,15 +154,13 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 }
 
 func (h *Hamt) Put(k key.Key, v interface{}) bool {
-	//var newLeaf = newFlatLeaf(k, v)
-	var depth uint = 0
-	var hashPath uint32 = 0
-	var inserted = true
+	var depth uint
+	var hashPath uint32
 
 	if h.IsEmpty() {
 		h.root = h.newRootTable(depth, hashPath, newFlatLeaf(k, v))
 		h.nentries++
-		return inserted
+		return true
 	}
 
 	var path = newPathT()
@@ -262,7 +260,7 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 		}
 
 		if curLeaf, isLeaf := curNode.(leafI); isLeaf {
-			v, delLeaf, deleted := curLeaf.del(k)
+			val, delLeaf, deleted := curLeaf.del(k)
 			if !deleted {
 				return nil, false
 			}
@@ -290,13 +288,14 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 					}
 				}
 			}
+
 			// If curTable has only one entry and that entry is a leafI,
 			// then collapse that leafI down to the position curTable holds
 			// in the parent Table; repeat test and collapse for parent table.
-
-			// Identical for conditionals !!!
-			//  curTable.nentries() == 1 && curTable != h.root
-			//  curTable.nentries() == 1 && len(path) > 0
+			//
+			// These are identical for conditionals:
+			//  curTable != h.root AND len(path) > 0 AND depth > 0
+			//
 			for curTable.nentries() == 1 && depth > 0 {
 				// _ = ASSERT && Assert(curTable != h.root, "curTable == h.root")
 				// _ = ASSERT && Assert(depth == len(path), "depth != len(path)")
@@ -304,6 +303,7 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 				var node = curTable.entries()[0].node
 				var leaf, isLeaf = node.(leafI)
 				if !isLeaf {
+					// We only collapse leafs
 					break
 				}
 
@@ -312,18 +312,20 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 				var parentTable = path.pop()
 				depth-- // OR depth = len(path)
 
-				//var parentIdx = index(curTable.Hash30(), depth-1)
 				parentIdx := index(curTable.Hash30(), depth)
 				parentTable.set(parentIdx, leaf)
 
 				curTable = parentTable
 			}
 
+			// TODO: I should keep this table rather than throwing it away.
+			// Instead using h.root == nil to detect emptyness, we should
+			// trust our accounting and use h.nentries == 0.
 			if curTable == h.root && curTable.nentries() == 0 {
 				h.root = nil
 			}
 
-			return v, true
+			return val, true
 		} //if isLeaf
 
 		// curNode is not nil
