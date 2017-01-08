@@ -77,8 +77,6 @@ func TestMain(m *testing.M) {
 
 	hugeKvs = buildKeyVals(numHugeKvs)
 
-	StartTime["TestMain: build Lookup/Delete Hamt32"] = time.Now()
-
 	LookupHamt32 = New(options)
 	DeleteHamt32 = New(options)
 
@@ -99,7 +97,7 @@ func TestMain(m *testing.M) {
 		}
 	}
 
-	RunTime["TestMain: build Lookup/Delete Hamt32"] = time.Since(StartTime["TestMain: build Lookup/Delete Hamt32"])
+	RunTime["TestMain: build Lookup/Delete Map/Hamt32"] = time.Since(StartTime["TestMain: build Lookup/Delete Map/Hamt32"])
 
 	var xit int
 
