@@ -6,37 +6,39 @@ import (
 	"strings"
 )
 
+// COMPRESSED_TABLE_INIT_CAP constant sets the default capacity of a new compressedTable.
+const COMPRESSED_TABLE_INIT_CAP uint = DOWNGRADE_THRESHOLD * 2
+
 type compressedTable struct {
 	hashPath uint64
 	nodeMap  uint64
 	nodes    []nodeI
 }
 
-func newCompressedTable(depth uint, hashPath uint64, lf leafI) tableI {
-	var idx = index(hashPath, depth)
+func newRootCompressedTable(depth uint, hashPath uint64, lf leafI) tableI {
+	var idx = index(lf.Hash60(), depth)
 
 	var ct = new(compressedTable)
-	ct.hashPath = hashPath & hashPathMask(depth)
+	//ct.hashPath = hashPath & hashPathMask(depth) //This should always be 0
 	ct.nodeMap = uint64(1 << idx)
-	ct.nodes = make([]nodeI, 1)
+	ct.nodes = make([]nodeI, 1, COMPRESSED_TABLE_INIT_CAP)
 	ct.nodes[0] = lf
 
 	return ct
 }
 
-func newCompressedTable_2(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatLeaf) tableI {
+func newCompressedTable(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	var retTable = new(compressedTable)
 	retTable.hashPath = hashPath & hashPathMask(depth)
 
 	var curTable = retTable
 	var d uint
 	for d = depth; d <= MAXDEPTH; d++ {
-		var idx1 = index(leaf1.hash60(), d)
-		var idx2 = index(leaf2.hash60(), d)
+		var idx1 = index(leaf1.Hash60(), d)
+		var idx2 = index(leaf2.Hash60(), d)
 
 		if idx1 != idx2 {
-			curTable.nodes = make([]nodeI, 2)
-
+			curTable.nodes = make([]nodeI, 2, COMPRESSED_TABLE_INIT_CAP)
 			curTable.nodeMap |= 1 << idx1
 			curTable.nodeMap |= 1 << idx2
 			if idx1 < idx2 {
@@ -51,7 +53,7 @@ func newCompressedTable_2(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatL
 		}
 		// idx1 == idx2 && continue
 
-		curTable.nodes = make([]nodeI, 1)
+		curTable.nodes = make([]nodeI, 1, COMPRESSED_TABLE_INIT_CAP)
 
 		var newTable = new(compressedTable)
 
@@ -66,19 +68,33 @@ func newCompressedTable_2(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatL
 	// We either BREAK out of the loop,
 	// OR we hit d > MAXDEPTH.
 	if d > MAXDEPTH {
-		// leaf1.hashcode() == leaf2.hashcode()
-		var idx = index(leaf1.hash60(), d)
-		hashPath = buildHashPath(hashPath, idx, d)
+		// leaf1.Hash60() == leaf2.Hash60()
+		var idx = index(leaf1.Hash60(), MAXDEPTH)
 		var kvs = append(leaf1.keyVals(), leaf2.keyVals()...)
-		var leaf = newCollisionLeaf(hashPath, kvs)
+		var leaf = newCollisionLeaf(kvs)
 		curTable.set(idx, leaf)
 	}
 
 	return retTable
 }
 
-// downgradeToCompressedTable() converts fullTable structs that have less than
-// TABLE_CAPACITY/2 tableEntry's. One important thing we know is that none of
+func nodeMapString(nodeMap uint64) string {
+	var strs = make([]string, 7)
+
+	var top4 = nodeMap >> 60
+	strs[0] = fmt.Sprintf("%04b", top4)
+
+	const tenBitMask uint64 = 1<<10 - 1
+	for i := uint(0); i < 6; i++ {
+		var tenBitVal = (nodeMap & (tenBitMask << (i * 10))) >> (i * 10)
+		strs[6-i] = fmt.Sprintf("%010b", tenBitVal)
+	}
+
+	return strings.Join(strs, " ")
+}
+
+// downgradeToCompressedTable() converts fullTable structs that have less than or equal
+// to DOWNGRADE_THRESHOLD tableEntry's. One important thing we know is that none of
 // the entries will collide with another.
 //
 // The ents []tableEntry slice is guaranteed to be in order from lowest idx to
@@ -87,7 +103,7 @@ func downgradeToCompressedTable(hashPath uint64, ents []tableEntry) *compressedT
 	var nt = new(compressedTable)
 	nt.hashPath = hashPath
 	//nt.nodeMap = 0
-	nt.nodes = make([]nodeI, len(ents))
+	nt.nodes = make([]nodeI, len(ents), COMPRESSED_TABLE_INIT_CAP)
 
 	for i := 0; i < len(ents); i++ {
 		var ent = ents[i]
@@ -99,7 +115,7 @@ func downgradeToCompressedTable(hashPath uint64, ents []tableEntry) *compressedT
 	return nt
 }
 
-func (t *compressedTable) hash60() uint64 {
+func (t *compressedTable) Hash60() uint64 {
 	return t.hashPath
 }
 
@@ -129,7 +145,8 @@ func (t *compressedTable) LongString(indent string, depth uint) string {
 }
 
 func (t *compressedTable) nentries() uint {
-	return bitCount64(t.nodeMap)
+	return uint(len(t.nodes))
+	//return bitCount64(t.nodeMap)
 }
 
 func (t *compressedTable) entries() []tableEntry {
@@ -155,8 +172,8 @@ func (t *compressedTable) get(idx uint) nodeI {
 		return nil
 	}
 
-	var m = uint64(1<<idx) - 1
-	var i = bitCount64(t.nodeMap & m)
+	var bitMask = nodeBit - 1
+	var i = bitCount64(t.nodeMap & bitMask)
 
 	return t.nodes[i]
 }
@@ -183,4 +200,23 @@ func (t *compressedTable) set(idx uint, nn nodeI) {
 		}
 	}
 	return
+}
+
+//POPCNT Implementation
+// copied from https://github.com/jddixon/xlUtil_go/blob/master/popCount.go
+//  was MIT License
+// I found it explained at:
+// http://stackoverflow.com/questions/22081738/how-does-this-algorithm-to-count-the-number-of-set-bits-in-a-32-bit-integer-work
+
+const (
+	hexi_fives  = uint64(0x5555555555555555)
+	hexi_threes = uint64(0x3333333333333333)
+	hexi_ones   = uint64(0x0101010101010101)
+	hexi_fs     = uint64(0x0f0f0f0f0f0f0f0f)
+)
+
+func bitCount64(n uint64) uint {
+	n = n - ((n >> 1) & hexi_fives)
+	n = (n & hexi_threes) + ((n >> 2) & hexi_threes)
+	return uint((((n + (n >> 4)) & hexi_fs) * hexi_ones) >> 56)
 }
