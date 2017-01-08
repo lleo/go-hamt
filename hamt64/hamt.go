@@ -1,7 +1,34 @@
+/*
+Package hamt64 implements a 64 node wide Hashed Array Mapped Trie. The hash key
+is 60 bits wide and broken into ten numbers of 6bits each. Those 6bit numbers
+allows us to index into a 64 node array. Each node is either a leaf or another
+64 node table. So the 60bit hash allows us to index into a B+ Tree with a
+branching factor of 64 and a Maximum depth of 6.
+
+The basic insertion operation is to calculate a 60 bit hash value from your key
+(a string in the case you use hamt.StringKey), then split it into ten 6bit
+ numbers. These ten numbers represent a path thru the tree. For each level we
+use the coresponding number as an index into the 64 cell array. If the cell is
+empty we create a  leaf node there. If the cell is occupide by another table
+we continue walking up the tree. If the cell is occupide by a leaf we promote
+that cell to a new table and put the current leaf and new one into that table
+in cells corresponding to that new level. If we are at the MAXDEPTH of tree
+and there is already a leaf there we insert our key,value pair into that leaf.
+
+The retrieval operation is a simmilar tree walk guided by the ten 6bit numbers
+till we find a leaf with the key,value pair in it.
+
+The deletion operation is a walk to find the key, then delete the key from the
+leaf. An empty leaf is removed from it's table. If the table has only one other
+leaf in that level we will remove that leaf, replace the table in it's parent
+table placing that last leaf down one level.
+
+*/
 package hamt64
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/lleo/go-hamt/key"
@@ -9,7 +36,7 @@ import (
 
 // NBITS constant is the number of bits(6) a 60bit hash value is split into,
 // to provied the indexes of a HAMT.
-const NBITS uint = 5
+const NBITS uint = 6
 
 // MAXDEPTH constant is the maximum depth(9) of NBITS values that constitute
 // the path in a HAMT, from [0..MAXDEPTH] for a total of MAXDEPTH+1(10) levels.
@@ -19,6 +46,14 @@ const MAXDEPTH uint = 9
 // TABLE_CAPACITY constant is the number of table entries in a each node of
 // a HAMT datastructure; its value is 1<<NBITS (ie 2^6 == 64).
 const TABLE_CAPACITY uint = uint(1 << NBITS)
+
+// DOWNGRADE_THRESHOLD constant is the number of nodes a fullTable has shrunk to,
+// before it is converted to a compressedTable.
+const DOWNGRADE_THRESHOLD uint = TABLE_CAPACITY / 8
+
+// UPGRADE_THRESHOLD constan is the number of nodes a compressedTable has grown to,
+// before it is converted to a fullTable.
+const UPGRADE_THRESHOLD uint = TABLE_CAPACITY / 2
 
 func indexMask(depth uint) uint64 {
 	return uint64(uint8(1<<NBITS)-1) << (depth * NBITS)
@@ -30,30 +65,15 @@ func index(h60 uint64, depth uint) uint {
 	return idx
 }
 
-func hashPathEqual(depth uint, a, b uint64) bool {
-	//pathMask := uint64(1<<(depth*NBITS)) - 1
-	var pathMask = hashPathMask(depth)
-
-	return (a & pathMask) == (b & pathMask)
-}
-
-func hashPathMask(depth uint) uint64 {
-	return uint64(1<<(depth*NBITS)) - 1
-}
-
-func buildHashPath(hashPath uint64, idx, depth uint) uint64 {
-	return hashPath | uint64(idx<<(depth*NBITS))
-}
-
 func hashPathString(hashPath uint64, depth uint) string {
 	if depth == 0 {
 		return "/"
 	}
 	var strs = make([]string, depth)
 
-	for d := depth; d > 0; d-- {
-		var idx = index(hashPath, d-1)
-		strs[d-1] = fmt.Sprintf("%02d", idx)
+	for d := uint(0); d < depth; d++ {
+		var idx = index(hashPath, d)
+		strs[d] = fmt.Sprintf("%02d", idx)
 	}
 
 	return "/" + strings.Join(strs, "/")
@@ -63,29 +83,12 @@ func hash60String(h60 uint64) string {
 	return hashPathString(h60, MAXDEPTH)
 }
 
-func nodeMapString(nodeMap uint64) string {
-	var strs = make([]string, 4)
-
-	var top2 = nodeMap >> 60
-	strs[0] = fmt.Sprintf("%02b", top2)
-
-	const tenBitMask uint64 = 1<<10 - 1
-	for i := uint(0); i < 3; i++ {
-		var tenBitVal = (nodeMap & (tenBitMask << (i * 10))) >> (i * 10)
-		strs[3-i] = fmt.Sprintf("%010b", tenBitVal)
-	}
-
-	return strings.Join(strs, " ")
+func hashPathMask(depth uint) uint64 {
+	return uint64(1<<(depth*NBITS)) - 1
 }
 
-type Hamt struct {
-	root     tableI
-	nentries int
-}
-
-func NewHamt() *Hamt {
-	var h = new(Hamt)
-	return h
+func buildHashPath(hashPath uint64, idx, depth uint) uint64 {
+	return hashPath | uint64(idx<<(depth*NBITS))
 }
 
 type keyVal struct {
@@ -97,6 +100,49 @@ func (kv keyVal) String() string {
 	return fmt.Sprintf("keyVal{%s, %v}", kv.key, kv.val)
 }
 
+const (
+	HYBRID = iota
+	COMPONLY
+	FULLONLY
+)
+
+var OPTIONS = make(map[int]string, 3)
+
+func init() {
+	OPTIONS[0] = "HYBRID"
+	OPTIONS[1] = "COMPONLY"
+	OPTIONS[2] = "FULLONLY"
+}
+
+type Hamt struct {
+	root            tableI
+	nentries        int
+	grade, fullinit bool
+}
+
+// Create a new hamt64.Hamt datastructure with the table options set to either
+//   hamt64.HYBRID - initially start out with compressedTable, but when the table is
+//                   half full upgrade to fullTable. If a fullTable shrinks to
+//                   TABLE_CAPACITY/8(4) entries downgrade to compressed table.
+//   hamt64.COMPONLY - Only use compressedTable no up/downgrading to/from fullTable.
+//                     This uses the least amount of space.
+//   hamt64.FULLONLY - Only use fullTable no up/downgrading from/to compressedTables.
+//                     This is the fastest performance.
+func New(opt int) *Hamt {
+	var h = new(Hamt)
+	if opt == COMPONLY {
+		h.grade = false
+		h.fullinit = false
+	} else if opt == FULLONLY {
+		h.grade = false
+		h.fullinit = true
+	} else /* opt == HYBRID */ {
+		h.grade = true
+		h.fullinit = false
+	}
+	return h
+}
+
 func (h *Hamt) IsEmpty() bool {
 	return h.root == nil
 }
@@ -106,7 +152,7 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 		return nil, false
 	}
 
-	var h60 = key.Hash60(k)
+	var h60 = k.Hash60()
 
 	var curTable = h.root //ISA tableI
 
@@ -119,13 +165,8 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 		}
 
 		if leaf, isLeaf := curNode.(leafI); isLeaf {
-
-			if hashPathEqual(depth, h60, leaf.hash60()) {
-				var val, found = leaf.get(k)
-				return val, found
-			}
-
-			return nil, false
+			var val, found = leaf.get(k)
+			return val, found
 		}
 
 		//else curNode MUST BE A tableI
@@ -137,49 +178,82 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 }
 
 func (h *Hamt) Put(k key.Key, v interface{}) bool {
-	var h60 = key.Hash60(k)
-	var newLeaf = newFlatLeaf(h60, k, v)
-	var depth uint = 0
+	var depth uint
+	var hashPath uint64
 
 	if h.IsEmpty() {
-		h.root = newCompressedTable(depth, h60, newLeaf)
+		h.root = h.newRootTable(depth, hashPath, newFlatLeaf(k, v))
 		h.nentries++
 		return true
 	}
 
 	var path = newPathT()
-	var hashPath uint64 = 0
 	var curTable = h.root
-	var inserted = true
 
 	for depth = 0; depth <= MAXDEPTH; depth++ {
-		var idx = index(h60, depth)
+		var idx = index(k.Hash60(), depth)
 		var curNode = curTable.get(idx)
 
 		if curNode == nil {
-			curTable.set(idx, newLeaf)
+			curTable.set(idx, newFlatLeaf(k, v))
 			h.nentries++
-			break //from for-loop
+
+			// upgrade?
+			if h.grade {
+				_, isCompressedTable := curTable.(*compressedTable)
+				if isCompressedTable && curTable.nentries() >= UPGRADE_THRESHOLD {
+					curTable = upgradeToFullTable(hashPath, curTable.entries())
+					if depth == 0 {
+						h.root = curTable
+					} else {
+						parentTable := path.peek()
+						parentIdx := index(k.Hash60(), depth-1)
+						parentTable.set(parentIdx, curTable)
+					}
+				}
+			}
+
+			return true //inserted
 		}
 
-		if oldLeaf, isLeaf := curNode.(leafI); isLeaf {
-			if oldLeaf.hash60() == h60 {
-				var newLeaf leafI
-				newLeaf, inserted = oldLeaf.put(k, v)
+		if curLeaf, isLeaf := curNode.(leafI); isLeaf {
+			if curLeaf.Hash60() == k.Hash60() {
+				// This is a minor optimization but since these two leaves
+				// will collide all the way up the to MAXDEPTH, we can
+				// choose to create the collisionLeaf hear and now.
+
+				// Accumulate collisionLeaf
+				newLeaf, inserted := curLeaf.put(k, v)
 				if inserted {
 					curTable.set(idx, newLeaf)
+					h.nentries++
 				}
-			} else {
-				hashPath = buildHashPath(hashPath, idx, depth)
-				var newLeaf = newFlatLeaf(h60, k, v)
-				var collisionTable = newCompressedTable_2(depth+1, hashPath, oldLeaf, newLeaf)
-				//var collisionTable = newCompressedTable_2(depth, hashPath, oldLeaf, newLeaf)
-				curTable.set(idx, collisionTable)
+				return inserted
 			}
-			if inserted {
-				h.nentries++
+
+			if depth == MAXDEPTH {
+				// this test should be delete cuz it is logically impossible
+				if curLeaf.Hash60() != k.Hash60() {
+					// This should not happen cuz we had to walk up MAXDEPTH
+					// levels to get here.
+					panic("WTF!!!")
+				}
+
+				// Accumulate collisionLeaf
+				insLeaf, inserted := curLeaf.put(k, v)
+				if inserted {
+					curTable.set(idx, insLeaf)
+					h.nentries++
+				}
+				return inserted
 			}
-			break //from for-loop
+
+			hashPath = buildHashPath(hashPath, idx, depth)
+			var collisionTable = h.newTable(depth+1, hashPath, curLeaf, newFlatLeaf(k, v))
+			curTable.set(idx, collisionTable)
+			h.nentries++
+
+			return true
 		}
 
 		hashPath = buildHashPath(hashPath, idx, depth)
@@ -187,35 +261,20 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 		curTable = curNode.(tableI)
 	}
 
-	var _, isCompressedTable = curTable.(*compressedTable)
-	if isCompressedTable && curTable.nentries() > TABLE_CAPACITY/2 {
-		if curTable == h.root {
-			curTable = upgradeToFullTable(hashPath, curTable.entries())
-
-			h.root = curTable
-		} else {
-			curTable = upgradeToFullTable(hashPath, curTable.entries())
-
-			var parentTable = path.peek()
-
-			var parentIdx = index(curTable.hash60(), depth-1)
-			parentTable.set(parentIdx, curTable)
-		}
-	}
-
-	return inserted
+	panic("WTF!")
 }
 
 func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 	if h.IsEmpty() {
+		log.Printf("Hamt is empty h.nentries=%d, why call Del(%s)?", h.nentries, k)
 		return nil, false
 	}
 
-	var h60 = key.Hash60(k)
-	var depth uint = 0
+	var h60 = k.Hash60()
+	var depth uint
+	var hashPath uint64
 
 	var path = newPathT()
-	var hashPath uint64 = 0
 	var curTable = h.root
 
 	for depth = 0; depth <= MAXDEPTH; depth++ {
@@ -223,68 +282,92 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 		var curNode = curTable.get(idx)
 
 		if curNode == nil {
+			log.Printf("Hamt.Del: failed to find key=%s\n", k)
+			log.Printf("Hamt.Del: depth=%d; hashPath=%s; idx=%2d\n",
+				depth, hashPathString(hashPath, depth), idx)
 			return nil, false
 		}
 
-		if oldLeaf, isLeaf := curNode.(leafI); isLeaf {
-			if oldLeaf.hash60() == h60 {
-				if v, newLeaf, deleted := oldLeaf.del(k); deleted {
-					//newLeaf MUST BE nil or a leaf slimmer by one
-					if newLeaf != oldLeaf {
-						//minor optimization, cuz curTable.set() can be non-trivial
-						curTable.set(idx, newLeaf)
-					}
-					h.nentries--
+		if curLeaf, isLeaf := curNode.(leafI); isLeaf {
+			val, delLeaf, deleted := curLeaf.del(k)
+			if !deleted {
+				log.Printf("Hamt.Del: found a leaf, but curLeaf.del(%s) failed.\n")
+				log.Printf("Hamt.Del: curLeaf=%s\n", curLeaf)
+				return nil, false
+			}
+			// else a leaf key/value was deleted
+			h.nentries--
 
-					// demote curTable if it is a fullTable && shrank to small
-					var _, isFullTable = curTable.(*fullTable)
-					if isFullTable && curTable.nentries() < TABLE_CAPACITY/2 {
-						if curTable == h.root {
-							curTable = downgradeToCompressedTable(hashPath, curTable.entries())
+			// If curLeaf was a collisionLeaf,
+			// then delLeaf is either a slimmed down collisionLeaf or a flatLeaf.
+			// If curLeaf was a flatLeaf then delLeaf is nil.
+			curTable.set(idx, delLeaf)
+
+			// downgrade?
+			if h.grade {
+				if delLeaf == nil {
+					_, isFullTable := curTable.(*fullTable)
+					if isFullTable && curTable.nentries() <= DOWNGRADE_THRESHOLD {
+						curTable = downgradeToCompressedTable(hashPath, curTable.entries())
+						if depth == 0 {
 							h.root = curTable
 						} else {
-							curTable = downgradeToCompressedTable(hashPath, curTable.entries())
-							var parentTable = path.peek()
-							var parentIdx = index(curTable.hash60(), depth-1)
+							parentTable := path.peek()
+							parentIdx := index(h60, depth-1)
 							parentTable.set(parentIdx, curTable)
 						}
 					}
+				}
+			}
 
-					if curTable != h.root && curTable.nentries() == 1 {
-						var node = curTable.entries()[0].node
-						if leaf, isLeaf := node.(leafI); isLeaf {
-							// ONLY COLLAPSE LEAVES
-							for depth > 0 {
-								var parentTable = path.pop()
-								var parentIdx = index(curTable.hash60(), depth-1)
-								parentTable.set(parentIdx, leaf)
+			// If curTable has only one entry and that entry is a leafI,
+			// then collapse that leafI down to the position curTable holds
+			// in the parent Table; repeat test and collapse for parent table.
+			//
+			// These are identical for conditionals:
+			//  curTable != h.root AND len(path) > 0 AND depth > 0
+			//
+			for curTable.nentries() == 1 && depth > 0 {
+				// _ = ASSERT && Assert(curTable != h.root, "curTable == h.root")
+				// _ = ASSERT && Assert(depth == len(path), "depth != len(path)")
 
-								curTable = parentTable
-								depth--
+				var node = curTable.entries()[0].node
+				var leaf, isLeaf = node.(leafI)
+				if !isLeaf {
+					// We only collapse leafs
+					break
+				}
 
-								if parentTable.nentries() > 1 {
-									break
-								}
-							}
-						}
-					}
+				// Collapse leaf down to where curTable is in parentTable
 
-					if curTable == h.root && curTable.nentries() == 0 {
-						h.root = nil
-					}
+				var parentTable = path.pop()
+				depth-- // OR depth = len(path)
 
-					return v, true
-				} //if deleted
-			} //if h60 == leaf.hash60
+				parentIdx := index(curTable.Hash60(), depth)
+				parentTable.set(parentIdx, leaf)
 
-			return nil, false
+				curTable = parentTable
+			}
+
+			// TODO: I should keep this table rather than throwing it away.
+			// Instead using h.root == nil to detect emptyness, we should
+			// trust our accounting and use h.nentries == 0.
+			if curTable == h.root && curTable.nentries() == 0 {
+				h.root = nil
+			}
+
+			return val, true
 		} //if isLeaf
 
+		// curNode is not nil
+		// curNode is not a leafI
+		// curNode MUST be a tableI
 		hashPath = buildHashPath(hashPath, idx, depth)
 		path.push(curTable)
 		curTable = curNode.(tableI)
 	} //for depth loop
 
+	log.Printf("Hamt.Del: WTF! this should never be called; k=%s", k)
 	return nil, false
 }
 
