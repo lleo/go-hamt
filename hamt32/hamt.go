@@ -1,6 +1,29 @@
 /*
+Package hamt32 implements a 32 node wide Hashed Array Mapped Trie. The hash key
+is 30 bits wide and broken into 6 numbers of 5 bits each. Those 5bit numbers
+allows us to index into a 32 node array. Each node is either a leaf or another
+32 node table. So the 30bit hash allows us to index into a B+ Tree with a
+branching factor of 32 and a Maximum depth of 6.
 
- */
+The basic insertion operation is to calculate a 30 bit hash value from your key
+(a string in the case you use hamt.StringKey), then split it into six 5bit
+ numbers. These six numbers represent a path thru the tree. For each level we
+use the coresponding number as an index into the 32 cell array. If the cell is
+empty we create a  leaf node there. If the cell is occupide by another table
+we continue walking up the tree. If the cell is occupide by a leaf we promote
+that cell to a new table and put the current leaf and new one into that table
+in cells corresponding to that new level. If we are at the MAXDEPTH of tree
+and there is already a leaf there we insert our key,value pair into that leaf.
+
+The retrieval operation is a simmilar tree walk guided by the six 5bit numbers
+till we find a leaf with the key,value pair in it.
+
+The deletion operation is a walk to find the key, then delete the key from the
+leaf. An empty leaf is removed from it's table. If the table has only one other
+leaf in that level we will remove that leaf, replace the table in it's parent
+table placing that last leaf down one level.
+
+*/
 package hamt32
 
 import (
@@ -76,6 +99,7 @@ func (kv keyVal) String() string {
 	return fmt.Sprintf("keyVal{%s, %v}", kv.key, kv.val)
 }
 
+// These constants are the three configuration options to the hamt32.New()
 const (
 	HYBRID = iota
 	COMPONLY
@@ -194,10 +218,14 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 
 		if curLeaf, isLeaf := curNode.(leafI); isLeaf {
 			if curLeaf.Hash30() == k.Hash30() {
+				// This is a minor optimization but since these two leaves
+				// will collide all the way up the to MAXDEPTH, we can
+				// choose to create the collisionLeaf hear and now.
+
 				// Accumulate collisionLeaf
-				insLeaf, inserted := curLeaf.put(k, v)
+				colLeaf, inserted := curLeaf.put(k, v)
 				if inserted {
-					curTable.set(idx, insLeaf)
+					curTable.set(idx, colLeaf)
 					h.nentries++
 				}
 				return inserted
