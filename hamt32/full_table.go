@@ -16,7 +16,7 @@ func newRootFullTable(depth uint, hashPath uint32, lf leafI) tableI {
 
 	var ft = new(fullTable)
 	ft.hashPath = hashPath & hashPathMask(depth)
-	ft.nents = 0
+	//ft.nents = 0
 	ft.set(idx, lf)
 
 	return ft
@@ -62,15 +62,15 @@ func newFullTable(depth uint, hashPath uint32, leaf1 leafI, leaf2 *flatLeaf) tab
 }
 
 func upgradeToFullTable(hashPath uint32, ents []tableEntry) *fullTable {
-	var nt = new(fullTable)
-	nt.hashPath = hashPath
-	nt.nents = uint(len(ents))
+	var ft = new(fullTable)
+	ft.hashPath = hashPath
+	ft.nents = uint(len(ents))
 
-	for i := uint(0); i < nt.nents; i++ {
-		nt.nodes[ents[i].idx] = ents[i].node
+	for _, ent := range ents {
+		ft.nodes[ent.idx] = ent.node
 	}
 
-	return nt
+	return ft
 }
 
 func (t *fullTable) Hash30() uint32 {
