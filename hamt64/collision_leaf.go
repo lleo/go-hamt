@@ -7,20 +7,21 @@ import (
 	"github.com/lleo/go-hamt/key"
 )
 
+// implements nodeI
+// implements leafI
 type collisionLeaf struct {
-	_hash60 uint64
-	kvs     []keyVal
+	kvs []keyVal
 }
 
-func newCollisionLeaf(hash60 uint64, kvs []keyVal) *collisionLeaf {
+func newCollisionLeaf(kvs []keyVal) *collisionLeaf {
 	var leaf = new(collisionLeaf)
-	leaf._hash60 = hash60
 	leaf.kvs = append(leaf.kvs, kvs...)
+
 	return leaf
 }
 
-func (l collisionLeaf) hash60() uint64 {
-	return l._hash60
+func (l collisionLeaf) Hash60() uint64 {
+	return l.kvs[0].key.Hash60()
 }
 
 func (l collisionLeaf) String() string {
@@ -30,7 +31,8 @@ func (l collisionLeaf) String() string {
 	}
 	var jkvstr = strings.Join(kvstrs, ",")
 
-	return fmt.Sprintf("collisionLeaf{hash60:%s, kvs:[]kv{%s}}", hash60String(l._hash60), jkvstr)
+	return fmt.Sprintf("collisionLeaf{Hash60:%s, kvs:[]kv{%s}}",
+		hash60String(l.Hash60()), jkvstr)
 }
 
 func (l collisionLeaf) get(key key.Key) (interface{}, bool) {
@@ -58,7 +60,7 @@ func (l collisionLeaf) del(key key.Key) (interface{}, leafI, bool) {
 		if kv.key.Equals(key) {
 			l.kvs = append(l.kvs[:i], l.kvs[i+1:]...)
 			if len(l.kvs) == 1 {
-				var fl = newFlatLeaf(l.hash60(), l.kvs[0].key, l.kvs[0].val)
+				var fl = newFlatLeaf(l.kvs[0].key, l.kvs[0].val)
 				return kv.val, fl, true
 			}
 			return kv.val, l, true
@@ -68,8 +70,8 @@ func (l collisionLeaf) del(key key.Key) (interface{}, leafI, bool) {
 }
 
 func (l collisionLeaf) keyVals() []keyVal {
-	//var r []keyVal
-	//r = append(r, l.kvs...)
-	//return r
-	return l.kvs
+	var r = make([]keyVal, len(l.kvs))
+	r = append(r, l.kvs...)
+	return r
+	//return l.kvs
 }

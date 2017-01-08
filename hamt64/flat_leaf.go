@@ -7,25 +7,23 @@ import (
 )
 
 type flatLeaf struct {
-	_hash60 uint64
-	key     key.Key
-	val     interface{}
+	key key.Key
+	val interface{}
 }
 
-func newFlatLeaf(h60 uint64, key key.Key, val interface{}) *flatLeaf {
+func newFlatLeaf(key key.Key, val interface{}) *flatLeaf {
 	var fl = new(flatLeaf)
-	fl._hash60 = h60
 	fl.key = key
 	fl.val = val
 	return fl
 }
 
-func (l flatLeaf) hash60() uint64 {
-	return l._hash60
+func (l flatLeaf) Hash60() uint64 {
+	return l.key.Hash60()
 }
 
 func (l flatLeaf) String() string {
-	return fmt.Sprintf("flatLeaf{hash60: %s, key: %s, val: %v}", hash60String(l._hash60), l.key, l.val)
+	return fmt.Sprintf("flatLeaf{key: %s, val: %v}", l.key, l.val)
 }
 
 func (l flatLeaf) get(key key.Key) (interface{}, bool) {
@@ -40,7 +38,7 @@ func (l flatLeaf) put(key key.Key, val interface{}) (leafI, bool) {
 		l.val = val
 		return l, false
 	}
-	var newLeaf = newCollisionLeaf(l.hash60(), []keyVal{keyVal{l.key, l.val}, keyVal{key, val}})
+	var newLeaf = newCollisionLeaf([]keyVal{keyVal{l.key, l.val}, keyVal{key, val}})
 	return newLeaf, true // key,val was added
 }
 
