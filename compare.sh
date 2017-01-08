@@ -10,6 +10,7 @@ echo
 
 echo Comparing HYBRID hamt32.Hamt versus hamt64.Hamt
 benchcmp hamt32/hybrid.b hamt64/hybrid.b
+echo
 
 echo FOR EDUCATIONAL USE! here is how the two identical map.b benchmarks compare.
 benchcmp hamt32/map.b hamt64/map.b
