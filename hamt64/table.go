@@ -1,7 +1,11 @@
 package hamt64
 
+import (
+	"fmt"
+)
+
 type nodeI interface {
-	hash60() uint64
+	Hash60() uint64
 	String() string
 }
 
@@ -22,19 +26,20 @@ type tableEntry struct {
 	node nodeI
 }
 
-//POPCNT Implementation
-// copied from https://github.com/jddixon/xlUtil_go/blob/master/popCount.go
-//  was MIT License
+func (ent tableEntry) String() string {
+	return fmt.Sprintf("tableEntry{idx:%d, node:%s}", ent.idx, ent.node.String())
+}
 
-const (
-	hexi_fives  = uint64(0x5555555555555555)
-	hexi_threes = uint64(0x3333333333333333)
-	hexi_ones   = uint64(0x0101010101010101)
-	hexi_fs     = uint64(0x0f0f0f0f0f0f0f0f)
-)
+func (h *Hamt) newRootTable(depth uint, hashPath uint64, lf leafI) tableI {
+	if h.fullinit {
+		return newRootFullTable(depth, hashPath, lf)
+	}
+	return newRootCompressedTable(depth, hashPath, lf)
+}
 
-func bitCount64(n uint64) uint {
-	n = n - ((n >> 1) & hexi_fives)
-	n = (n & hexi_threes) + ((n >> 2) & hexi_threes)
-	return uint((((n + (n >> 4)) & hexi_fs) * hexi_ones) >> 56)
+func (h *Hamt) newTable(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatLeaf) tableI {
+	if h.fullinit {
+		return newFullTable(depth, hashPath, leaf1, leaf2)
+	}
+	return newCompressedTable(depth, hashPath, leaf1, leaf2)
 }
