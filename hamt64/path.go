@@ -1,6 +1,9 @@
 package hamt64
 
-import "strings"
+import (
+	"strings"
+	//. "github.com/lleo/go-assert"
+)
 
 type pathT []tableI
 
