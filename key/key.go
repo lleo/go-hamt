@@ -11,6 +11,7 @@ package key
 import (
 	"fmt"
 	"hash/fnv"
+	"strings"
 )
 
 type Key interface {
@@ -48,81 +49,73 @@ type KeyBase struct {
 // 	return index(uint64(h60), depth)
 // }
 
-////
-//// 30bit hash values & functions
-////
 //
-//const NBITS30 uint = 5
+// 30bit hash values & functions
 //
-//func indexMask30(depth uint) uint32 {
-//	return uint32(uint8(1<<NBITS30)-1) << (depth * NBITS30)
-//}
+
+const NBITS30 uint = 5
+
+func indexMask30(depth uint) uint32 {
+	return uint32(uint8(1<<NBITS30)-1) << (depth * NBITS30)
+}
+
+func index30(h30 uint32, depth uint) uint {
+	var idxMask = indexMask30(depth)
+	var idx = uint((h30 & idxMask) >> (depth * NBITS30))
+	return idx
+}
+
+func hashPathString30(hashPath uint32, depth uint) string {
+	if depth == 0 {
+		return "/"
+	}
+	var strs = make([]string, depth+1)
+
+	for d := uint(0); d <= depth; d++ {
+		var idx = index30(hashPath, d)
+		strs[d] = fmt.Sprintf("%02d", idx)
+	}
+
+	return "/" + strings.Join(strs, "/")
+}
+
+func hash30String(h30 uint32) string {
+	return hashPathString30(h30, 5)
+}
+
 //
-//func index30(h30 uint32, depth uint) uint {
-//	var idxMask = indexMask30(depth)
-//	var idx = uint((h30 & idxMask) >> (depth * NBITS30))
-//	return idx
-//}
+// 60bit hash values & functions
 //
-//func hashPathString30(hashPath uint32, depth uint) string {
-//	if depth == 0 {
-//		return "/"
-//	}
-//	var strs = make([]string, depth)
-//
-//	for d := depth; d > 0; d-- {
-//		var idx = index30(hashPath, d-1)
-//		strs[d-1] = fmt.Sprintf("%02d", idx)
-//	}
-//
-//	return "/" + strings.Join(strs, "/")
-//}
-//
-//func hash30String(h30 uint32) string {
-//	return hashPathString30(h30, 6)
-//}
-//
-//func hash30String(h30 uint32) string {
-//	return hashPathString30(h30, 6)
-//}
-//
-////
-//// 60bit hash values & functions
-////
-//
-//const NBITS60 uint = 6
-//
-//func indexMask60(depth uint) uint64 {
-//	return uint64(uint8(1<<NBITS60)-1) << (depth * NBITS60)
-//}
-//
-//func index60(h60 uint64, depth uint) uint {
-//	var idxMask = indexMask60(depth)
-//	var idx = uint((h60 & idxMask) >> (depth * NBITS60))
-//	return idx
-//}
-//
-//func hashPathString60(hashPath uint64, depth uint) string {
-//	if depth == 0 {
-//		return "/"
-//	}
-//	var strs = make([]string, depth)
-//
-//	for d := depth; d > 0; d-- {
-//		var idx = index60(hashPath, d-1)
-//		strs[d-1] = fmt.Sprintf("%02d", idx)
-//	}
-//
-//	return "/" + strings.Join(strs, "/")
-//}
-//
-//func hash60String(h60 uint64) string {
-//	return hashPathString60(h60, 6)
-//}
-//
-//func hash60String(h60 uint64) string {
-//	return hashPathString60(h60, 6)
-//}
+
+const NBITS60 uint = 6
+
+func indexMask60(depth uint) uint64 {
+	return uint64(uint64(1<<NBITS60)-1) << (depth * NBITS60)
+}
+
+func index60(h60 uint64, depth uint) uint {
+	var idxMask = indexMask60(depth)
+	var idx = uint((h60 & idxMask) >> (depth * NBITS60))
+	return idx
+}
+
+func hashPathString60(hashPath uint64, depth uint) string {
+	if depth == 0 {
+		return "/"
+	}
+	var strs = make([]string, depth+1)
+
+	for d := uint(0); d <= depth; d++ {
+		var idx = index60(hashPath, d)
+		strs[d] = fmt.Sprintf("%02d", idx)
+	}
+
+	return "/" + strings.Join(strs, "/")
+}
+
+func hash60String(h60 uint64) string {
+	return hashPathString60(h60, 9)
+}
 
 const mask30 = uint32(1<<30) - 1
 
@@ -153,7 +146,9 @@ func hash64(bs []byte) uint64 {
 }
 
 func (kb *KeyBase) String() string {
-	return fmt.Sprintf("KeyBase{hash30:%d}", kb.hash30)
+	return fmt.Sprintf("KeyBase{hash30:(%d)%s, hash60:(%d)%s}",
+		kb.hash30, hash30String(kb.hash30),
+		kb.hash60, hash60String(kb.hash60))
 }
 
 // Initialize the KeyBase part of any struct that has the KeyBase struct embeded.
@@ -166,10 +161,10 @@ func (kb *KeyBase) Initialize(bs []byte) {
 	kb.hash60 = fold60(hash64(bs))
 }
 
-func (kb KeyBase) Hash30() uint32 {
+func (kb *KeyBase) Hash30() uint32 {
 	return kb.hash30
 }
 
-func (kb KeyBase) Hash60() uint64 {
+func (kb *KeyBase) Hash60() uint64 {
 	return kb.hash60
 }
