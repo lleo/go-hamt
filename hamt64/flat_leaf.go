@@ -38,7 +38,7 @@ func (l flatLeaf) put(key key.Key, val interface{}) (leafI, bool) {
 		l.val = val
 		return l, false
 	}
-	var newLeaf = newCollisionLeaf([]keyVal{keyVal{l.key, l.val}, keyVal{key, val}})
+	var newLeaf = newCollisionLeaf([]keyVal{{l.key, l.val}, {key, val}})
 	return newLeaf, true // key,val was added
 }
 
@@ -50,5 +50,5 @@ func (l flatLeaf) del(key key.Key) (interface{}, leafI, bool) {
 }
 
 func (l flatLeaf) keyVals() []keyVal {
-	return []keyVal{keyVal{l.key, l.val}}
+	return []keyVal{{l.key, l.val}}
 }
