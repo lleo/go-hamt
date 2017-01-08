@@ -137,7 +137,6 @@ func TestMain(m *testing.M) {
 		if hybrid || (!fullonly && !componly) {
 			options = HYBRID
 		}
-		log.Printf("\noptions=%d\n", options)
 
 		log.Printf("options == %s", OPTIONS[options])
 
