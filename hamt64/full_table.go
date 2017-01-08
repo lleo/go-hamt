@@ -7,25 +7,73 @@ import (
 
 type fullTable struct {
 	hashPath uint64
-	nodeMap  uint64
+	nents    uint
 	nodes    [TABLE_CAPACITY]nodeI
 }
 
-func upgradeToFullTable(hashPath uint64, tabEnts []tableEntry) tableI {
+func newRootFullTable(depth uint, hashPath uint64, lf leafI) tableI {
+	var idx = index(lf.Hash60(), depth)
+
+	var ft = new(fullTable)
+	ft.hashPath = hashPath & hashPathMask(depth)
+	//ft.nents = 0
+	ft.set(idx, lf)
+
+	return ft
+}
+
+func newFullTable(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatLeaf) tableI {
+	var retTable = new(fullTable)
+	retTable.hashPath = hashPath & hashPathMask(depth)
+
+	var curTable = retTable
+	var d uint
+	for d = depth; d <= MAXDEPTH; d++ {
+		var idx1 = index(leaf1.Hash60(), d)
+		var idx2 = index(leaf2.Hash60(), d)
+
+		if idx1 != idx2 {
+			curTable.set(idx1, leaf1)
+			curTable.set(idx2, leaf2)
+
+			break
+		}
+		// idx1 == idx2 ...
+
+		var newTable = new(fullTable)
+
+		hashPath = buildHashPath(hashPath, idx1, d)
+		newTable.hashPath = hashPath
+
+		curTable.set(idx1, newTable)
+
+		curTable = newTable
+	}
+	// We either BREAK out of loops,
+	// OR we hit d > MAXDEPTH.
+	if d > MAXDEPTH {
+		var idx = index(leaf1.Hash60(), MAXDEPTH)
+		var kvs = append(leaf1.keyVals(), leaf2.keyVals()...)
+		var leaf = newCollisionLeaf(kvs)
+		curTable.set(idx, leaf)
+	}
+
+	return retTable
+}
+
+func upgradeToFullTable(hashPath uint64, ents []tableEntry) tableI {
 	var ft = new(fullTable)
 	ft.hashPath = hashPath
-	//ft.nodeMap = 0 //unnecessary
+	ft.nents = uint(len(ents))
 
-	for _, ent := range tabEnts {
-		var nodeBit = uint64(1 << ent.idx)
-		ft.nodeMap |= nodeBit
+	for _, ent := range ents {
 		ft.nodes[ent.idx] = ent.node
 	}
 
 	return ft
 }
 
-func (t *fullTable) hash60() uint64 {
+func (t *fullTable) Hash60() uint64 {
 	return t.hashPath
 }
 
@@ -36,7 +84,8 @@ func (t *fullTable) String() string {
 func (t *fullTable) LongString(indent string, depth uint) string {
 	var strs = make([]string, 3+len(t.nodes))
 
-	strs[1] = indent + "\tnodeMap=" + nodeMapString(t.nodeMap) + ","
+	strs[0] = indent + "fullTable{"
+	strs[1] = indent + fmt.Sprintf("\t=%s,", t.nents)
 
 	for i, n := range t.nodes {
 		if t.nodes[i] == nil {
@@ -56,15 +105,15 @@ func (t *fullTable) LongString(indent string, depth uint) string {
 }
 
 func (t *fullTable) nentries() uint {
-	return bitCount64(t.nodeMap)
+	return t.nents
 }
 
 func (t *fullTable) entries() []tableEntry {
 	var n = t.nentries()
 	var ents = make([]tableEntry, n)
-	for i, j := uint(0), 0; i < TABLE_CAPACITY; i++ {
-		var nodeBit = uint64(1 << i)
-		if (t.nodeMap & nodeBit) > 0 {
+	var i, j uint
+	for i, j = 0, 0; j < n && i < TABLE_CAPACITY; i++ {
+		if t.nodes[i] != nil {
 			ents[j] = tableEntry{i, t.nodes[i]}
 			j++
 		}
@@ -73,25 +122,16 @@ func (t *fullTable) entries() []tableEntry {
 }
 
 func (t *fullTable) get(idx uint) nodeI {
-	var nodeBit = uint64(1 << idx)
-
-	if (t.nodeMap & nodeBit) == 0 {
-		return nil
-	}
-
 	return t.nodes[idx]
 }
 
 func (t *fullTable) set(idx uint, nn nodeI) {
-	var nodeBit = uint64(1 << idx)
-
-	if nn != nil {
-		t.nodeMap |= nodeBit
-		t.nodes[idx] = nn
-	} else /* if nn == nil */ {
-		t.nodeMap &^= nodeBit
-		t.nodes[idx] = nn
+	if nn != nil && t.nodes[idx] == nil {
+		t.nents++
+	} else if nn == nil && t.nodes[idx] != nil {
+		t.nents--
 	}
+	t.nodes[idx] = nn
 
 	return
 }
