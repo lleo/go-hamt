@@ -1,4 +1,4 @@
-package hamt32
+package hamt
 
 import (
 	"log"
