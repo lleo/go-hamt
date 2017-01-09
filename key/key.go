@@ -1,9 +1,16 @@
 /*
 Package key contains a single Key interface. The key package was
-created to prevent cicular depedencies betwee "github.com/lleo/go-hamt" and
+created to prevent cicular dependencies between "github.com/lleo/go-hamt" and
 either "github.com/lleo/go-hamt/hamt32" or "github.com/lleo/go-hamt/hamt64".
 
-However the key pacakge is also used by the functional HAMT variation in
+Additionally, the github.com/lleo/go-hamt/key provides a Base structure.
+The Base structure if added to a derivative key type will provide the
+Hamt30() and Hamt60() methods. Base needs to be populated by the derivative
+key constructor calling the Initialize([]byte) method.
+
+Any key created useing the Key interface must be read only after construction.
+
+The key package is used by the functional HAMT variation in
 "github.com/lleo/go-hamt-functional".
 */
 package key
@@ -14,6 +21,9 @@ import (
 	"strings"
 )
 
+// Key interface descibes the methods any struct needs to implement to be used
+// in either the github.com/lleo/go-hamt or github.com/lleo/go-hamt-functional
+// packages.
 type Key interface {
 	String() string // ISA/statisfies fmt.Stringer interface
 	Equals(Key) bool
@@ -21,8 +31,10 @@ type Key interface {
 	Hash60() uint64
 }
 
-// Base struct of all structs that satisfy Key interface
-type KeyBase struct {
+// Base struct is intended to be the base struct of all structs that satisfy
+// Key interface. It caches the calculated hash30 and hash60 generated when
+// the method Initialize([]byte) is called.
+type Base struct {
 	hash30 uint32
 	hash60 uint64
 }
@@ -50,18 +62,20 @@ type KeyBase struct {
 // }
 
 //
-// 30bit hash values & functions
+// 30bit hash value and string generator functions
+// Hash values are generated when Initialize([]byte) is called.
+// Hash strings are generated as needed.
 //
 
-const NBITS30 uint = 5
+const nBits30 uint = 5
 
 func indexMask30(depth uint) uint32 {
-	return uint32(uint8(1<<NBITS30)-1) << (depth * NBITS30)
+	return uint32(uint8(1<<nBits30)-1) << (depth * nBits30)
 }
 
 func index30(h30 uint32, depth uint) uint {
 	var idxMask = indexMask30(depth)
-	var idx = uint((h30 & idxMask) >> (depth * NBITS30))
+	var idx = uint((h30 & idxMask) >> (depth * nBits30))
 	return idx
 }
 
@@ -84,18 +98,20 @@ func hash30String(h30 uint32) string {
 }
 
 //
-// 60bit hash values & functions
+// 60bit hash value and string generator functions.
+// Hash values are generated when Initialize([]byte) is called.
+// Hash strings are generated as needed.
 //
 
-const NBITS60 uint = 6
+const nBits60 uint = 6
 
 func indexMask60(depth uint) uint64 {
-	return uint64(uint64(1<<NBITS60)-1) << (depth * NBITS60)
+	return uint64(uint64(1<<nBits60)-1) << (depth * nBits60)
 }
 
 func index60(h60 uint64, depth uint) uint {
 	var idxMask = indexMask60(depth)
-	var idx = uint((h60 & idxMask) >> (depth * NBITS60))
+	var idx = uint((h60 & idxMask) >> (depth * nBits60))
 	return idx
 }
 
@@ -119,12 +135,13 @@ func hash60String(h60 uint64) string {
 
 const mask30 = uint32(1<<30) - 1
 
-// Fold the top two bits into the bottom 30 to get 30bits of hash
+// fold30 folds the top 2 bits into the bottom 30 to get 30bits of hash
 // from: http://www.isthe.com/chongo/tech/comp/fnv/index.html#xor-fold
 func fold30(h32 uint32) uint32 {
 	return h32>>30 ^ h32&mask30
 }
 
+// hash64 calculates the 64bit hash value of a byte string using hash/fnv.
 func hash32(bs []byte) uint32 {
 	var h = fnv.New32()
 	h.Write(bs)
@@ -133,38 +150,44 @@ func hash32(bs []byte) uint32 {
 
 const mask60 = uint64(1<<60) - 1
 
-// Fold the top four bits into the bottom 60 to get 60bits of hash
+// fold60 folds the top 4 bits into the bottom 60 to get 60bits of hash
 // from: http://www.isthe.com/chongo/tech/comp/fnv/index.html#xor-fold
 func fold60(h64 uint64) uint64 {
 	return h64>>60 ^ h64&mask60
 }
 
+// hash64 calculates the 64bit hash value of a byte string using hash/fnv.
 func hash64(bs []byte) uint64 {
 	var h = fnv.New64()
 	h.Write(bs)
 	return h.Sum64()
 }
 
-func (kb *KeyBase) String() string {
-	return fmt.Sprintf("KeyBase{hash30:(%d)%s, hash60:(%d)%s}",
+// String provides a human readable form of the Base's hash30 and hash60
+// values. Both in raw integer and slash '/' separated integers of the 5 and
+// 6 bit path values; for hash30 and hash60 respectively.
+func (kb *Base) String() string {
+	return fmt.Sprintf("Base{(%d)%s, (%d)%s}",
 		kb.hash30, hash30String(kb.hash30),
 		kb.hash60, hash60String(kb.hash60))
 }
 
-// Initialize the KeyBase part of any struct that has the KeyBase struct embeded.
+// Initialize the Base part of any struct that has the Base struct embeded.
 // will be called by the New() function of any decendent class.
 //     k.Initialize(bs)
-// where k is interpreted as a *KeyBase and bs is a unique []byte to calculate
+// where k is interpreted as a *Base and bs is a unique []byte to calculate
 // the 30bit hash from.
-func (kb *KeyBase) Initialize(bs []byte) {
+func (kb *Base) Initialize(bs []byte) {
 	kb.hash30 = fold30(hash32(bs))
 	kb.hash60 = fold60(hash64(bs))
 }
 
-func (kb *KeyBase) Hash30() uint32 {
+// Hash30 returns the uint32 that contains the 30bit hash value.
+func (kb *Base) Hash30() uint32 {
 	return kb.hash30
 }
 
-func (kb *KeyBase) Hash60() uint64 {
+// Hash60 returns the uint32 that contains the 60bit hash value.
+func (kb *Base) Hash60() uint64 {
 	return kb.hash60
 }
