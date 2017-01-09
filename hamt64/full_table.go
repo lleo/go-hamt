@@ -8,7 +8,7 @@ import (
 type fullTable struct {
 	hashPath uint64
 	nents    uint
-	nodes    [TABLE_CAPACITY]nodeI
+	nodes    [tableCapacity]nodeI
 }
 
 func newRootFullTable(depth uint, hashPath uint64, lf leafI) tableI {
@@ -28,7 +28,7 @@ func newFullTable(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatLeaf) tab
 
 	var curTable = retTable
 	var d uint
-	for d = depth; d <= MAXDEPTH; d++ {
+	for d = depth; d <= maxDepth; d++ {
 		var idx1 = index(leaf1.Hash60(), d)
 		var idx2 = index(leaf2.Hash60(), d)
 
@@ -50,9 +50,9 @@ func newFullTable(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatLeaf) tab
 		curTable = newTable
 	}
 	// We either BREAK out of loops,
-	// OR we hit d > MAXDEPTH.
-	if d > MAXDEPTH {
-		var idx = index(leaf1.Hash60(), MAXDEPTH)
+	// OR we hit d > maxDepth.
+	if d > maxDepth {
+		var idx = index(leaf1.Hash60(), maxDepth)
 		var kvs = append(leaf1.keyVals(), leaf2.keyVals()...)
 		var leaf = newCollisionLeaf(kvs)
 		curTable.set(idx, leaf)
@@ -112,7 +112,7 @@ func (t *fullTable) entries() []tableEntry {
 	var n = t.nentries()
 	var ents = make([]tableEntry, n)
 	var i, j uint
-	for i, j = 0, 0; j < n && i < TABLE_CAPACITY; i++ {
+	for i, j = 0, 0; j < n && i < tableCapacity; i++ {
 		if t.nodes[i] != nil {
 			ents[j] = tableEntry{i, t.nodes[i]}
 			j++

@@ -12,8 +12,9 @@ use the coresponding number as an index into the 32 cell array. If the cell is
 empty we create a  leaf node there. If the cell is occupide by another table
 we continue walking up the tree. If the cell is occupide by a leaf we promote
 that cell to a new table and put the current leaf and new one into that table
-in cells corresponding to that new level. If we are at the MAXDEPTH of tree
-and there is already a leaf there we insert our key,value pair into that leaf.
+in cells corresponding to that new level. If we are at the maximun depth of
+the  tree and there is already a leaf there we insert our key,value pair into
+that leaf.
 
 The retrieval operation is a simmilar tree walk guided by the six 5bit numbers
 till we find a leaf with the key,value pair in it.
@@ -33,34 +34,34 @@ import (
 	"github.com/lleo/go-hamt/key"
 )
 
-// NBITS constant is the number of bits(5) a 30bit hash value is split into
+// nBits constant is the number of bits(5) a 30bit hash value is split into
 // to provied the index of a HAMT.
-const NBITS uint = 5
+const nBits uint = 5
 
-// MAXDEPTH constant is the maximum depth(5) of NBITS values that constitute
-// the path in a HAMT, from [0..MAXDEPTH] for a total of MAXDEPTH+1(6) levels.
-// NBITS*(MAXDEPTH+1) == HASHBITS (ie 5*(5+1) == 30).
-const MAXDEPTH uint = 5
+// maxDepth constant is the maximum depth(5) of nBits values that constitute
+// the path in a HAMT, from [0..maxDepth] for a total of maxDepth+1(6) levels.
+// nBits*(maxDepth+1) == HASHBITS (ie 5*(5+1) == 30).
+const maxDepth uint = 5
 
-// TABLE_CAPACITY constant is the number of table entries in a each node of
+// tableCapacity constant is the number of table entries in a each node of
 // a HAMT datastructure; its value is 2^5 == 32.
-const TABLE_CAPACITY uint = uint(1 << NBITS)
+const tableCapacity uint = uint(1 << nBits)
 
-// DOWNGRADE_THRESHOLD constant is the number of nodes a fullTable has shrunk to,
+// downgradeThreshold constant is the number of nodes a fullTable has shrunk to,
 // before it is converted to a compressedTable.
-const DOWNGRADE_THRESHOLD uint = TABLE_CAPACITY / 8
+const downgradeThreshold uint = tableCapacity / 8
 
-// UPGRADE_THRESHOLD constan is the number of nodes a compressedTable has grown to,
+// upgradeThreshold constan is the number of nodes a compressedTable has grown to,
 // before it is converted to a fullTable.
-const UPGRADE_THRESHOLD uint = TABLE_CAPACITY / 2
+const upgradeThreshold uint = tableCapacity / 2
 
 func indexMask(depth uint) uint32 {
-	return uint32(uint8(1<<NBITS)-1) << (depth * NBITS)
+	return uint32(uint8(1<<nBits)-1) << (depth * nBits)
 }
 
 func index(h30 uint32, depth uint) uint {
 	var idxMask = indexMask(depth)
-	var idx = uint((h30 & idxMask) >> (depth * NBITS))
+	var idx = uint((h30 & idxMask) >> (depth * nBits))
 	return idx
 }
 
@@ -79,15 +80,15 @@ func hashPathString(hashPath uint32, depth uint) string {
 }
 
 func hash30String(h30 uint32) string {
-	return hashPathString(h30, MAXDEPTH)
+	return hashPathString(h30, maxDepth)
 }
 
 func hashPathMask(depth uint) uint32 {
-	return uint32(1<<(depth*NBITS)) - 1
+	return uint32(1<<(depth*nBits)) - 1
 }
 
 func buildHashPath(hashPath uint32, idx, depth uint) uint32 {
-	return hashPath | uint32(idx<<(depth*NBITS))
+	return hashPath | uint32(idx<<(depth*nBits))
 }
 
 type keyVal struct {
@@ -101,17 +102,17 @@ func (kv keyVal) String() string {
 
 // These constants are the three configuration options to the hamt32.New()
 const (
-	HYBRID = iota
-	COMPONLY
-	FULLONLY
+	Hybrid = iota
+	CompressedOnly
+	FullOnly
 )
 
-var OPTIONS = make(map[int]string, 3)
+var optionsMap = make(map[int]string, 3)
 
 func init() {
-	OPTIONS[0] = "HYBRID"
-	OPTIONS[1] = "COMPONLY"
-	OPTIONS[2] = "FULLONLY"
+	optionsMap[Hybrid] = "Hybrid"
+	optionsMap[CompressedOnly] = "CompressedOnly"
+	optionsMap[FullOnly] = "FullOnly"
 }
 
 type Hamt struct {
@@ -120,23 +121,23 @@ type Hamt struct {
 	grade, fullinit bool
 }
 
-// Create a new hamt32.Hamt datastructure with the table options set to either
-//   hamt32.HYBRID - initially start out with compressedTable, but when the table is
+// Create a new hamt32.Hamt datastructure with the table optionsMap set to either
+//   hamt32.Hybrid - initially start out with compressedTable, but when the table is
 //                   half full upgrade to fullTable. If a fullTable shrinks to
-//                   TABLE_CAPACITY/8(4) entries downgrade to compressed table.
-//   hamt32.COMPONLY - Only use compressedTable no up/downgrading to/from fullTable.
-//                     This uses the least amount of space.
-//   hamt32.FULLONLY - Only use fullTable no up/downgrading from/to compressedTables.
+//                   tableCapacity/8(4) entries downgrade to compressed table.
+//   hamt32.CompressedOnly - Only use compressedTable no up/downgrading to/from fullTable.
+//                           This uses the least amount of space.
+//   hamt32.FullOnly - Only use fullTable no up/downgrading from/to compressedTables.
 //                     This is the fastest performance.
 func New(opt int) *Hamt {
 	var h = new(Hamt)
-	if opt == COMPONLY {
+	if opt == CompressedOnly {
 		h.grade = false
 		h.fullinit = false
-	} else if opt == FULLONLY {
+	} else if opt == FullOnly {
 		h.grade = false
 		h.fullinit = true
-	} else /* opt == HYBRID */ {
+	} else /* opt == Hybrid */ {
 		h.grade = true
 		h.fullinit = false
 	}
@@ -156,7 +157,7 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 
 	var curTable = h.root //ISA tableI
 
-	for depth := uint(0); depth <= MAXDEPTH; depth++ {
+	for depth := uint(0); depth <= maxDepth; depth++ {
 		var idx = index(h30, depth)
 		var curNode = curTable.get(idx)
 
@@ -172,7 +173,7 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 		//else curNode MUST BE A tableI
 		curTable = curNode.(tableI)
 	}
-	// curNode == nil || depth > MAXDEPTH
+	// curNode == nil || depth > maxDepth
 
 	return nil, false
 }
@@ -190,7 +191,7 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 	var path = newPathT()
 	var curTable = h.root
 
-	for depth = 0; depth <= MAXDEPTH; depth++ {
+	for depth = 0; depth <= maxDepth; depth++ {
 		var idx = index(k.Hash30(), depth)
 		var curNode = curTable.get(idx)
 
@@ -201,7 +202,7 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 			// upgrade?
 			if h.grade {
 				_, isCompressedTable := curTable.(*compressedTable)
-				if isCompressedTable && curTable.nentries() >= UPGRADE_THRESHOLD {
+				if isCompressedTable && curTable.nentries() >= upgradeThreshold {
 					curTable = upgradeToFullTable(hashPath, curTable.entries())
 					if depth == 0 {
 						h.root = curTable
@@ -219,7 +220,7 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 		if curLeaf, isLeaf := curNode.(leafI); isLeaf {
 			if curLeaf.Hash30() == k.Hash30() {
 				// This is a minor optimization but since these two leaves
-				// will collide all the way up the to MAXDEPTH, we can
+				// will collide all the way up the to maxDepth, we can
 				// choose to create the collisionLeaf hear and now.
 
 				// Accumulate collisionLeaf
@@ -231,10 +232,10 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 				return inserted
 			}
 
-			if depth == MAXDEPTH {
+			if depth == maxDepth {
 				// this test should be delete cuz it is logically impossible
 				if curLeaf.Hash30() != k.Hash30() {
-					// This should not happen cuz we had to walk up MAXDEPTH
+					// This should not happen cuz we had to walk up maxDepth
 					// levels to get here.
 					panic("WTF!!!")
 				}
@@ -279,7 +280,7 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 	var path = newPathT()
 	var curTable = h.root
 
-	for depth = 0; depth <= MAXDEPTH; depth++ {
+	for depth = 0; depth <= maxDepth; depth++ {
 		var idx = index(h30, depth)
 		var curNode = curTable.get(idx)
 
@@ -304,7 +305,7 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 			if h.grade {
 				if delLeaf == nil {
 					_, isFullTable := curTable.(*fullTable)
-					if isFullTable && curTable.nentries() <= DOWNGRADE_THRESHOLD {
+					if isFullTable && curTable.nentries() <= downgradeThreshold {
 						curTable = downgradeToCompressedTable(hashPath, curTable.entries())
 						if depth == 0 {
 							h.root = curTable

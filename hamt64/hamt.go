@@ -12,7 +12,7 @@ use the coresponding number as an index into the 64 cell array. If the cell is
 empty we create a  leaf node there. If the cell is occupide by another table
 we continue walking up the tree. If the cell is occupide by a leaf we promote
 that cell to a new table and put the current leaf and new one into that table
-in cells corresponding to that new level. If we are at the MAXDEPTH of tree
+in cells corresponding to that new level. If we are at the maxDepth of tree
 and there is already a leaf there we insert our key,value pair into that leaf.
 
 The retrieval operation is a simmilar tree walk guided by the ten 6bit numbers
@@ -34,34 +34,34 @@ import (
 	"github.com/lleo/go-hamt/key"
 )
 
-// NBITS constant is the number of bits(6) a 60bit hash value is split into,
+// nBits constant is the number of bits(6) a 60bit hash value is split into,
 // to provied the indexes of a HAMT.
-const NBITS uint = 6
+const nBits uint = 6
 
-// MAXDEPTH constant is the maximum depth(9) of NBITS values that constitute
-// the path in a HAMT, from [0..MAXDEPTH] for a total of MAXDEPTH+1(10) levels.
-// NBITS*(MAXDEPTH+1) == HASHBITS (ie 6*(9+1) == 60).
-const MAXDEPTH uint = 9
+// maxDepth constant is the maximum depth(9) of nBits values that constitute
+// the path in a HAMT, from [0..maxDepth] for a total of maxDepth+1(10) levels.
+// nBits*(maxDepth+1) == HASHBITS (ie 6*(9+1) == 60).
+const maxDepth uint = 9
 
-// TABLE_CAPACITY constant is the number of table entries in a each node of
-// a HAMT datastructure; its value is 1<<NBITS (ie 2^6 == 64).
-const TABLE_CAPACITY uint = uint(1 << NBITS)
+// tableCapacity constant is the number of table entries in a each node of
+// a HAMT datastructure; its value is 1<<nBits (ie 2^6 == 64).
+const tableCapacity uint = uint(1 << nBits)
 
-// DOWNGRADE_THRESHOLD constant is the number of nodes a fullTable has shrunk to,
+// downgradeThreshold constant is the number of nodes a fullTable has shrunk to,
 // before it is converted to a compressedTable.
-const DOWNGRADE_THRESHOLD uint = TABLE_CAPACITY / 8
+const downgradeThreshold uint = tableCapacity / 8
 
-// UPGRADE_THRESHOLD constan is the number of nodes a compressedTable has grown to,
+// upgradeThreshold constan is the number of nodes a compressedTable has grown to,
 // before it is converted to a fullTable.
-const UPGRADE_THRESHOLD uint = TABLE_CAPACITY / 2
+const upgradeThreshold uint = tableCapacity / 2
 
 func indexMask(depth uint) uint64 {
-	return uint64(uint8(1<<NBITS)-1) << (depth * NBITS)
+	return uint64(uint8(1<<nBits)-1) << (depth * nBits)
 }
 
 func index(h60 uint64, depth uint) uint {
 	var idxMask = indexMask(depth)
-	var idx = uint((h60 & idxMask) >> (depth * NBITS))
+	var idx = uint((h60 & idxMask) >> (depth * nBits))
 	return idx
 }
 
@@ -80,15 +80,15 @@ func hashPathString(hashPath uint64, depth uint) string {
 }
 
 func hash60String(h60 uint64) string {
-	return hashPathString(h60, MAXDEPTH)
+	return hashPathString(h60, maxDepth)
 }
 
 func hashPathMask(depth uint) uint64 {
-	return uint64(1<<(depth*NBITS)) - 1
+	return uint64(1<<(depth*nBits)) - 1
 }
 
 func buildHashPath(hashPath uint64, idx, depth uint) uint64 {
-	return hashPath | uint64(idx<<(depth*NBITS))
+	return hashPath | uint64(idx<<(depth*nBits))
 }
 
 type keyVal struct {
@@ -101,17 +101,17 @@ func (kv keyVal) String() string {
 }
 
 const (
-	HYBRID = iota
-	COMPONLY
-	FULLONLY
+	Hybrid = iota
+	CompressedOnly
+	FullOnly
 )
 
-var OPTIONS = make(map[int]string, 3)
+var options = make(map[int]string, 3)
 
 func init() {
-	OPTIONS[0] = "HYBRID"
-	OPTIONS[1] = "COMPONLY"
-	OPTIONS[2] = "FULLONLY"
+	options[0] = "Hybrid"
+	options[1] = "CompressedOnly"
+	options[2] = "FullOnly"
 }
 
 type Hamt struct {
@@ -121,22 +121,22 @@ type Hamt struct {
 }
 
 // Create a new hamt64.Hamt datastructure with the table options set to either
-//   hamt64.HYBRID - initially start out with compressedTable, but when the table is
+//   hamt64.Hybrid - initially start out with compressedTable, but when the table is
 //                   half full upgrade to fullTable. If a fullTable shrinks to
-//                   TABLE_CAPACITY/8(4) entries downgrade to compressed table.
-//   hamt64.COMPONLY - Only use compressedTable no up/downgrading to/from fullTable.
+//                   tableCapacity/8(4) entries downgrade to compressed table.
+//   hamt64.CompressedOnly - Only use compressedTable no up/downgrading to/from fullTable.
 //                     This uses the least amount of space.
-//   hamt64.FULLONLY - Only use fullTable no up/downgrading from/to compressedTables.
+//   hamt64.FullOnly - Only use fullTable no up/downgrading from/to compressedTables.
 //                     This is the fastest performance.
 func New(opt int) *Hamt {
 	var h = new(Hamt)
-	if opt == COMPONLY {
+	if opt == CompressedOnly {
 		h.grade = false
 		h.fullinit = false
-	} else if opt == FULLONLY {
+	} else if opt == FullOnly {
 		h.grade = false
 		h.fullinit = true
-	} else /* opt == HYBRID */ {
+	} else /* opt == Hybrid */ {
 		h.grade = true
 		h.fullinit = false
 	}
@@ -156,7 +156,7 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 
 	var curTable = h.root //ISA tableI
 
-	for depth := uint(0); depth <= MAXDEPTH; depth++ {
+	for depth := uint(0); depth <= maxDepth; depth++ {
 		var idx = index(h60, depth)
 		var curNode = curTable.get(idx) //nodeI
 
@@ -172,7 +172,7 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 		//else curNode MUST BE A tableI
 		curTable = curNode.(tableI)
 	}
-	// curNode == nil || depth > MAXDEPTH
+	// curNode == nil || depth > maxDepth
 
 	return nil, false
 }
@@ -190,7 +190,7 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 	var path = newPathT()
 	var curTable = h.root
 
-	for depth = 0; depth <= MAXDEPTH; depth++ {
+	for depth = 0; depth <= maxDepth; depth++ {
 		var idx = index(k.Hash60(), depth)
 		var curNode = curTable.get(idx)
 
@@ -201,7 +201,7 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 			// upgrade?
 			if h.grade {
 				_, isCompressedTable := curTable.(*compressedTable)
-				if isCompressedTable && curTable.nentries() >= UPGRADE_THRESHOLD {
+				if isCompressedTable && curTable.nentries() >= upgradeThreshold {
 					curTable = upgradeToFullTable(hashPath, curTable.entries())
 					if depth == 0 {
 						h.root = curTable
@@ -219,7 +219,7 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 		if curLeaf, isLeaf := curNode.(leafI); isLeaf {
 			if curLeaf.Hash60() == k.Hash60() {
 				// This is a minor optimization but since these two leaves
-				// will collide all the way up the to MAXDEPTH, we can
+				// will collide all the way up the to maxDepth, we can
 				// choose to create the collisionLeaf hear and now.
 
 				// Accumulate collisionLeaf
@@ -231,10 +231,10 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 				return inserted
 			}
 
-			if depth == MAXDEPTH {
+			if depth == maxDepth {
 				// this test should be delete cuz it is logically impossible
 				if curLeaf.Hash60() != k.Hash60() {
-					// This should not happen cuz we had to walk up MAXDEPTH
+					// This should not happen cuz we had to walk up maxDepth
 					// levels to get here.
 					panic("WTF!!!")
 				}
@@ -277,7 +277,7 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 	var path = newPathT()
 	var curTable = h.root
 
-	for depth = 0; depth <= MAXDEPTH; depth++ {
+	for depth = 0; depth <= maxDepth; depth++ {
 		var idx = index(h60, depth)
 		var curNode = curTable.get(idx)
 
@@ -307,7 +307,7 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 			if h.grade {
 				if delLeaf == nil {
 					_, isFullTable := curTable.(*fullTable)
-					if isFullTable && curTable.nentries() <= DOWNGRADE_THRESHOLD {
+					if isFullTable && curTable.nentries() <= downgradeThreshold {
 						curTable = downgradeToCompressedTable(hashPath, curTable.entries())
 						if depth == 0 {
 							h.root = curTable

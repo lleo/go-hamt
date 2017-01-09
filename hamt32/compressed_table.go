@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// COMPRESSED_TABLE_INIT_CAP constant sets the default capacity of a new compressedTable.
-const COMPRESSED_TABLE_INIT_CAP int = 8
+// compressedTableInitCap constant sets the default capacity of a new compressedTable.
+const compressedTableInitCap int = 8
 
 type compressedTable struct {
 	hashPath uint32
@@ -21,7 +21,7 @@ func newRootCompressedTable(depth uint, hashPath uint32, lf leafI) tableI {
 	var ct = new(compressedTable)
 	//ct.hashPath = hashPath & hashPathMask(depth) //This should always be 0
 	ct.nodeMap = uint32(1 << idx)
-	ct.nodes = make([]nodeI, 1, COMPRESSED_TABLE_INIT_CAP)
+	ct.nodes = make([]nodeI, 1, compressedTableInitCap)
 	ct.nodes[0] = lf
 
 	return ct
@@ -33,17 +33,17 @@ func newCompressedTable(depth uint, hashPath uint32, leaf1 leafI, leaf2 *flatLea
 
 	var curTable = retTable
 	var d uint
-	for d = depth; d <= MAXDEPTH; d++ {
+	for d = depth; d <= maxDepth; d++ {
 		var idx1 = index(leaf1.Hash30(), d)
 		var idx2 = index(leaf2.Hash30(), d)
 
 		if idx1 != idx2 {
-			//curTable.nodes = make([]nodeI, 0, COMPRESSED_TABLE_INIT_CAP)
+			//curTable.nodes = make([]nodeI, 0, compressedTableInitCap)
 			//curTable.set(idx1, leaf1)
 			//curTable.set(idx2, leaf2)
 
 			// This is faster
-			curTable.nodes = make([]nodeI, 2, COMPRESSED_TABLE_INIT_CAP)
+			curTable.nodes = make([]nodeI, 2, compressedTableInitCap)
 			curTable.nodeMap |= 1 << idx1
 			curTable.nodeMap |= 1 << idx2
 			if idx1 < idx2 {
@@ -58,7 +58,7 @@ func newCompressedTable(depth uint, hashPath uint32, leaf1 leafI, leaf2 *flatLea
 		}
 		// idx1 == idx2 && continue
 
-		curTable.nodes = make([]nodeI, 1, COMPRESSED_TABLE_INIT_CAP)
+		curTable.nodes = make([]nodeI, 1, compressedTableInitCap)
 
 		var newTable = new(compressedTable)
 
@@ -71,11 +71,11 @@ func newCompressedTable(depth uint, hashPath uint32, leaf1 leafI, leaf2 *flatLea
 		curTable = newTable
 	}
 	// We either BREAK out of the loop,
-	// OR we hit d > MAXDEPTH.
-	if d > MAXDEPTH {
+	// OR we hit d > maxDepth.
+	if d > maxDepth {
 		// leaf1.Hash30() == leaf2.Hash30()
-		log.Printf("newCompressedTable: d > MAXDEPTH branch taken.")
-		var idx = index(leaf1.Hash30(), MAXDEPTH)
+		log.Printf("newCompressedTable: d > maxDepth branch taken.")
+		var idx = index(leaf1.Hash30(), maxDepth)
 		var kvs = append(leaf1.keyVals(), leaf2.keyVals()...)
 		var leaf = newCollisionLeaf(kvs)
 		curTable.set(idx, leaf)
@@ -100,7 +100,7 @@ func nodeMapString(nodeMap uint32) string {
 }
 
 // downgradeToCompressedTable() converts fullTable structs that have less than or equal
-// to DOWNGRADE_THRESHOLD tableEntry's. One important thing we know is that none of
+// to downgradeThreshold tableEntry's. One important thing we know is that none of
 // the entries will collide with another.
 //
 // The ents []tableEntry slice is guaranteed to be in order from lowest idx to
@@ -109,7 +109,7 @@ func downgradeToCompressedTable(hashPath uint32, ents []tableEntry) *compressedT
 	var nt = new(compressedTable)
 	nt.hashPath = hashPath
 	//nt.nodeMap = 0
-	nt.nodes = make([]nodeI, len(ents), COMPRESSED_TABLE_INIT_CAP)
+	nt.nodes = make([]nodeI, len(ents), compressedTableInitCap)
 
 	for i := 0; i < len(ents); i++ {
 		var ent = ents[i]
@@ -159,7 +159,7 @@ func (t *compressedTable) entries() []tableEntry {
 	var n = t.nentries()
 	var ents = make([]tableEntry, n)
 
-	for i, j := uint(0), uint(0); i < TABLE_CAPACITY; i++ {
+	for i, j := uint(0), uint(0); i < tableCapacity; i++ {
 		var nodeBit = uint32(1 << i)
 
 		if (t.nodeMap & nodeBit) > 0 {
