@@ -1,4 +1,4 @@
-package hamt32
+package hamt32_test
 
 import (
 	"log"
@@ -6,19 +6,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lleo/go-hamt/hamt32"
 	"github.com/lleo/go-hamt/stringkey"
 	"github.com/lleo/stringutil"
 )
 
-func TestNewHamt32(t *testing.T) {
-	var h = New(options)
+func TestHamt32New(t *testing.T) {
+	var h = hamt32.New(options)
 	if h == nil {
 		t.Fatal("no new Hamt struct")
 	}
 }
 
 func TestBuildHamt32(t *testing.T) {
-	var h = New(options)
+	var h = hamt32.New(options)
 
 	for _, kv := range hugeKvs {
 		inserted := h.Put(kv.key, kv.val)
@@ -28,9 +29,10 @@ func TestBuildHamt32(t *testing.T) {
 	}
 }
 
-func TestDeleteHamt32(t *testing.T) {
-	var h = New(options)
+func TestDeleteHamt32Del(t *testing.T) {
+	var h = hamt32.New(options)
 
+	// build one up
 	for _, kv := range hugeKvs {
 		inserted := h.Put(kv.key, kv.val)
 		if !inserted {
@@ -38,7 +40,7 @@ func TestDeleteHamt32(t *testing.T) {
 		}
 	}
 
-	//for _, kv := range genRandomizedKvs(hugeKvs) {
+	// then tear it down.
 	for _, kv := range hugeKvs {
 		val, deleted := h.Del(kv.key)
 		if !deleted {
@@ -49,6 +51,7 @@ func TestDeleteHamt32(t *testing.T) {
 		}
 	}
 
+	// make sure it is empty
 	if !h.IsEmpty() {
 		t.Fatalf("failed to empty h")
 	}
@@ -78,7 +81,7 @@ func BenchmarkHamt32Get(b *testing.B) {
 func BenchmarkHamt32Put(b *testing.B) {
 	log.Printf("BenchmarkHamt32Put: b.N=%d", b.N)
 
-	var h = New(options)
+	var h = hamt32.New(options)
 	var s = "aaa"
 	for i := 0; i < b.N; i++ {
 		key := stringkey.New(s)

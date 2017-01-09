@@ -101,17 +101,17 @@ func (kv keyVal) String() string {
 }
 
 const (
-	Hybrid = iota
-	CompressedOnly
-	FullOnly
+	HybridTables = iota
+	CompTablesOnly
+	FullTablesOnly
 )
 
-var options = make(map[int]string, 3)
+var TableOptionName = make(map[int]string, 3)
 
 func init() {
-	options[0] = "Hybrid"
-	options[1] = "CompressedOnly"
-	options[2] = "FullOnly"
+	TableOptionName[0] = "HybridTables"
+	TableOptionName[1] = "CompTablesOnly"
+	TableOptionName[2] = "FullTablesOnly"
 }
 
 type Hamt struct {
@@ -120,23 +120,30 @@ type Hamt struct {
 	grade, fullinit bool
 }
 
-// Create a new hamt64.Hamt datastructure with the table options set to either
-//   hamt64.Hybrid - initially start out with compressedTable, but when the table is
-//                   half full upgrade to fullTable. If a fullTable shrinks to
-//                   tableCapacity/8(4) entries downgrade to compressed table.
-//   hamt64.CompressedOnly - Only use compressedTable no up/downgrading to/from fullTable.
-//                     This uses the least amount of space.
-//   hamt64.FullOnly - Only use fullTable no up/downgrading from/to compressedTables.
-//                     This is the fastest performance.
+// Create a new hamt64.Hamt data structure with the table option set to either:
+//
+// `hamt64.HybridTables`:
+// Initially start out with compressedTable, but when the table is half full
+// upgrade to fullTable. If a fullTable shrinks to tableCapacity/8(4) entries
+// downgrade to compressedTable.
+//
+// `hamt64.CompTablesOnly`:
+// Use compressedTable ONLY with no up/downgrading to/from fullTable. This
+// uses the least amount of space.
+//
+// `hamt64.FullTablesOnly`:
+// Only use fullTable no up/downgrading from/to compressedTables. This is
+// the fastest performance.
+//
 func New(opt int) *Hamt {
 	var h = new(Hamt)
-	if opt == CompressedOnly {
+	if opt == CompTablesOnly {
 		h.grade = false
 		h.fullinit = false
-	} else if opt == FullOnly {
+	} else if opt == FullTablesOnly {
 		h.grade = false
 		h.fullinit = true
-	} else /* opt == Hybrid */ {
+	} else /* opt == HybridTables */ {
 		h.grade = true
 		h.fullinit = false
 	}

@@ -1,4 +1,4 @@
-package hamt64
+package hamt64_test
 
 import (
 	"flag"
@@ -9,10 +9,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lleo/go-hamt/hamt64"
+	"github.com/lleo/go-hamt/key"
 	"github.com/lleo/go-hamt/stringkey"
 	"github.com/lleo/stringutil"
 	"github.com/pkg/errors"
 )
+
+type keyVal struct {
+	key key.Key
+	val interface{}
+}
+
+func (kv keyVal) String() string {
+	return fmt.Sprintf("keyVal{%s, %v}", kv.key, kv.val)
+}
 
 var numHugeKvs int = 5 * 1024 * 1024
 
@@ -24,8 +35,8 @@ var maxKvs []keyVal
 var LookupMap = make(map[string]int, numHugeKvs)
 var DeleteMap = make(map[string]int, numHugeKvs)
 
-var LookupHamt64 *Hamt
-var DeleteHamt64 *Hamt
+var LookupHamt64 *hamt64.Hamt
+var DeleteHamt64 *hamt64.Hamt
 
 var StartTime = make(map[string]time.Time)
 var RunTime = make(map[string]time.Duration)
@@ -34,10 +45,10 @@ var options int
 
 func TestMain(m *testing.M) {
 	var fullonly, componly, hybrid, all bool
-	flag.BoolVar(&fullonly, "F", false, "Use fullTables only and exclude C and H options.")
-	flag.BoolVar(&componly, "C", false, "Use compressedTables only and exclude F and H options.")
+	flag.BoolVar(&fullonly, "F", false, "Use full tables only and exclude C and H options.")
+	flag.BoolVar(&componly, "C", false, "Use compressed tables only and exclude F and H options.")
 	flag.BoolVar(&hybrid, "H", false, "Use compressed tables initially and exclude F and C options.")
-	flag.BoolVar(&all, "A", false, "Run all Tests w/ options set to FULLONLY, COMPONLY, and HYBRID; in that order.")
+	flag.BoolVar(&all, "A", false, "Run all Tests w/ options set to hamt64.FullTablesOnly, hamt64.CompTablesOnly, and hamt64.HybridTables; in that order.")
 
 	flag.Parse()
 
@@ -77,8 +88,8 @@ func TestMain(m *testing.M) {
 
 	hugeKvs = buildKeyVals(numHugeKvs)
 
-	LookupHamt64 = New(options)
-	DeleteHamt64 = New(options)
+	LookupHamt64 = hamt64.New(options)
+	DeleteHamt64 = hamt64.New(options)
 
 	for _, kv := range genRandomizedKvs(hugeKvs) {
 		strkey := kv.key.(*stringkey.StringKey).Str()
@@ -102,8 +113,8 @@ func TestMain(m *testing.M) {
 	var xit int
 
 	if all {
-		options = FULLONLY
-		log.Printf("options == %s", OPTIONS[options])
+		options = hamt64.FullTablesOnly
+		log.Printf("options == %s", hamt64.TableOptionName[options])
 		rebuildDeleteMap(hugeKvs)
 		rebuildDeleteHamt64(hugeKvs)
 		xit = m.Run()
@@ -111,8 +122,8 @@ func TestMain(m *testing.M) {
 			goto SKIPTESTS
 		}
 
-		options = COMPONLY
-		log.Printf("options == %s", OPTIONS[options])
+		options = hamt64.CompTablesOnly
+		log.Printf("options == %s", hamt64.TableOptionName[options])
 		rebuildDeleteMap(hugeKvs)
 		rebuildDeleteHamt64(hugeKvs)
 		xit = m.Run()
@@ -120,8 +131,8 @@ func TestMain(m *testing.M) {
 			goto SKIPTESTS
 		}
 
-		options = HYBRID
-		log.Printf("options == %s", OPTIONS[options])
+		options = hamt64.HybridTables
+		log.Printf("options == %s", hamt64.TableOptionName[options])
 		rebuildDeleteMap(hugeKvs)
 		rebuildDeleteHamt64(hugeKvs)
 		xit = m.Run()
@@ -129,16 +140,16 @@ func TestMain(m *testing.M) {
 	SKIPTESTS:
 	} else {
 		if fullonly {
-			options = FULLONLY
+			options = hamt64.FullTablesOnly
 		}
 		if componly {
-			options = COMPONLY
+			options = hamt64.CompTablesOnly
 		}
 		if hybrid || (!fullonly && !componly) {
-			options = HYBRID
+			options = hamt64.HybridTables
 		}
 
-		log.Printf("options == %s", OPTIONS[options])
+		log.Printf("options == %s", hamt64.TableOptionName[options])
 
 		xit = m.Run()
 	}

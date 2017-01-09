@@ -100,19 +100,26 @@ func (kv keyVal) String() string {
 	return fmt.Sprintf("keyVal{%s, %v}", kv.key, kv.val)
 }
 
-// These constants are the three configuration options to the hamt32.New()
+// These constants are the three configuration options to the `hamt32.New(int)`
 const (
-	Hybrid = iota
-	CompressedOnly
-	FullOnly
+	// Use compressedTable initially, when a table is half full upgrade to fullTable.
+	HybridTables = iota
+	// Use compressedTables only.
+	CompTablesOnly
+	// Use fullTables only.
+	FullTablesOnly
 )
 
-var optionsMap = make(map[int]string, 3)
+// TableOptionName is a map of the table option value Hybrid, CompTablesOnly,
+// or FullTableOnly to a string representing that option.
+//      var options = hamt32.FullTablesOnly
+//      hamt32.TableOptionName[hamt32.FullTablesOnly] == "FullTablesOnly"
+var TableOptionName = make(map[int]string, 3)
 
 func init() {
-	optionsMap[Hybrid] = "Hybrid"
-	optionsMap[CompressedOnly] = "CompressedOnly"
-	optionsMap[FullOnly] = "FullOnly"
+	TableOptionName[HybridTables] = "HybridTables"
+	TableOptionName[CompTablesOnly] = "CompTablesOnly"
+	TableOptionName[FullTablesOnly] = "FullTablesOnly"
 }
 
 type Hamt struct {
@@ -121,23 +128,30 @@ type Hamt struct {
 	grade, fullinit bool
 }
 
-// Create a new hamt32.Hamt datastructure with the table optionsMap set to either
-//   hamt32.Hybrid - initially start out with compressedTable, but when the table is
-//                   half full upgrade to fullTable. If a fullTable shrinks to
-//                   tableCapacity/8(4) entries downgrade to compressed table.
-//   hamt32.CompressedOnly - Only use compressedTable no up/downgrading to/from fullTable.
-//                           This uses the least amount of space.
-//   hamt32.FullOnly - Only use fullTable no up/downgrading from/to compressedTables.
-//                     This is the fastest performance.
+// Create a new hamt32.Hamt data structure with the table option set to either:
+//
+// `hamt32.HybridTables`:
+// Initially start out with compressedTable, but when the table is half full
+// upgrade to fullTable. If a fullTable shrinks to tableCapacity/8(4) entries
+// downgrade to compressedTable.
+//
+// `hamt32.CompTablesOnly`:
+// Use compressedTable ONLY with no up/downgrading to/from fullTable. This
+// uses the least amount of space.
+//
+// `hamt32.FullTablesOnly`:
+// Only use fullTable no up/downgrading from/to compressedTables. This is
+// the fastest performance.
+//
 func New(opt int) *Hamt {
 	var h = new(Hamt)
-	if opt == CompressedOnly {
+	if opt == CompTablesOnly {
 		h.grade = false
 		h.fullinit = false
-	} else if opt == FullOnly {
+	} else if opt == FullTablesOnly {
 		h.grade = false
 		h.fullinit = true
-	} else /* opt == Hybrid */ {
+	} else /* opt == HybridTables */ {
 		h.grade = true
 		h.fullinit = false
 	}

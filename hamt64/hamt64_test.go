@@ -1,4 +1,4 @@
-package hamt64
+package hamt64_test
 
 import (
 	"log"
@@ -6,19 +6,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lleo/go-hamt/hamt64"
 	"github.com/lleo/go-hamt/stringkey"
 	"github.com/lleo/stringutil"
 )
 
 func TestNewHamt64(t *testing.T) {
-	var h = New(options)
+	var h = hamt64.New(options)
 	if h == nil {
 		t.Fatal("no new Hamt struct")
 	}
 }
 
 func TestBuildHamt64(t *testing.T) {
-	var h = New(options)
+	var h = hamt64.New(options)
 
 	for _, kv := range hugeKvs {
 		inserted := h.Put(kv.key, kv.val)
@@ -29,7 +30,7 @@ func TestBuildHamt64(t *testing.T) {
 }
 
 func TestDeleteHamt64(t *testing.T) {
-	var h = New(options)
+	var h = hamt64.New(options)
 
 	for _, kv := range hugeKvs {
 		inserted := h.Put(kv.key, kv.val)
@@ -78,7 +79,7 @@ func BenchmarkHamt64Get(b *testing.B) {
 func BenchmarkHamt64Put(b *testing.B) {
 	log.Printf("BenchmarkHamt64Put: b.N=%d", b.N)
 
-	var h = New(options)
+	var h = hamt64.New(options)
 	var s = "aaa"
 	for i := 0; i < b.N; i++ {
 		key := stringkey.New(s)
