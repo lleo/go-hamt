@@ -11,6 +11,8 @@ import (
 	//"github.com/lleo/go-hamt/hamt64"
 
 	"github.com/lleo/go-hamt"
+	"github.com/lleo/go-hamt/key"
+	"github.com/lleo/go-hamt/stringkey"
 	"github.com/lleo/stringutil"
 	"github.com/pkg/errors"
 )
@@ -19,6 +21,7 @@ import (
 // testing harness kept calling the test with greater and greater b.N values.
 // It toped out at 3,000,000 .
 var numHugeKvs = 5 * 1024 * 1024 // five mega-entries
+var hugeKvs []key.KeyVal
 
 var LookupMap map[string]int
 var DeleteMap map[string]int
@@ -67,23 +70,19 @@ func TestMain(m *testing.M) {
 
 	StartTime["TestMain: build Looup/Delete Map"] = time.Now()
 
-	//hugeKvs = buildKeyVals(numHugeKvs)
+	hugeKvs = buildKeyVals(numHugeKvs)
 
 	LookupMap = make(map[string]int, numHugeKvs)
 	DeleteMap = make(map[string]int, numHugeKvs)
 	keyStrings = make([]string, numHugeKvs)
 
-	str := "aaa"
-	//for i, kv := range hugeKvs {
-	for i := 0; i < numHugeKvs; i++ {
-		//var str = kv.Key.(*stringkey.StringKey).Str()
+	for i, kv := range hugeKvs {
+		var str = kv.Key.(*stringkey.StringKey).Str()
 		var val = i
 
 		LookupMap[str] = val
 		DeleteMap[str] = val
 		keyStrings[i] = str
-
-		str = Inc(str)
 	}
 
 	RunTime["TestMain: build Looup/Delete Map"] = time.Since(StartTime["TestMain: build Looup/Delete Map"])
@@ -100,19 +99,19 @@ func TestMain(m *testing.M) {
 	os.Exit(xit)
 }
 
-//func buildKeyVals(num int) []key.KeyVal {
-//	var kvs = make([]key.KeyVal, num, num)
-//
-//	s := "aaa"
-//	for i := 0; i < num; i++ {
-//		kvs[i].Key = stringkey.New(s)
-//		kvs[i].Val = i
-//
-//		s = Inc(s)
-//	}
-//
-//	return kvs
-//}
+func buildKeyVals(num int) []key.KeyVal {
+	var kvs = make([]key.KeyVal, num, num)
+
+	s := "aaa"
+	for i := 0; i < num; i++ {
+		kvs[i].Key = stringkey.New(s)
+		kvs[i].Val = i
+
+		s = Inc(s)
+	}
+
+	return kvs
+}
 
 //func genRandomizedKvs(kvs []key.KeyVal) []key.KeyVal {
 //	randKvs := make([]key.KeyVal, len(kvs))

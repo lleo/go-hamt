@@ -68,12 +68,14 @@ func TestMain(m *testing.M) {
 
 	log.Println("TestMain: and so it begins...")
 
+	hugeKvs = buildKeyVals(numHugeKvs)
+
 	// execute
 	var xit int
 	if all {
 		TableOption = hamt32.FullTablesOnly
 		log.Printf("TestMain: TableOption == %s\n", hamt32.TableOptionName[TableOption])
-		initialize(numHugeKvs, TableOption)
+		initialize(TableOption)
 		xit = m.Run()
 		if xit != 0 {
 			os.Exit(1)
@@ -81,7 +83,7 @@ func TestMain(m *testing.M) {
 
 		TableOption = hamt32.CompTablesOnly
 		log.Printf("TestMain: TableOption == %s\n", hamt32.TableOptionName[TableOption])
-		initialize(numHugeKvs, TableOption)
+		initialize(TableOption)
 		xit = m.Run()
 		if xit != 0 {
 			os.Exit(1)
@@ -89,7 +91,7 @@ func TestMain(m *testing.M) {
 
 		TableOption = hamt32.HybridTables
 		log.Printf("TestMain: TableOption == %s\n", hamt32.TableOptionName[TableOption])
-		initialize(numHugeKvs, TableOption)
+		initialize(TableOption)
 		xit = m.Run()
 	} else {
 		if hybrid {
@@ -101,7 +103,7 @@ func TestMain(m *testing.M) {
 		}
 
 		log.Printf("TestMain: TableOption == %s\n", hamt32.TableOptionName[TableOption])
-		initialize(numHugeKvs, TableOption)
+		initialize(TableOption)
 		xit = m.Run()
 	}
 
@@ -122,15 +124,11 @@ func RunTimes() string {
 	return s
 }
 
-func initialize(numKvs int, tableOption int) {
-	var funcName = fmt.Sprintf("hamt32: initialize(%d, %s)", numKvs, hamt32.TableOptionName[tableOption])
-
-	//log.Printf("begin: %s", funcName)
+func initialize(tableOption int) {
+	var funcName = fmt.Sprintf("hamt32: initialize(%s)", hamt32.TableOptionName[tableOption])
 
 	var metricName = fmt.Sprintf("%s: build Lookup/Delete Hamt32", funcName)
 	StartTime[metricName] = time.Now()
-
-	hugeKvs = buildKeyVals(numKvs)
 
 	LookupHamt32 = hamt32.New(tableOption)
 	DeleteHamt32 = hamt32.New(tableOption)
@@ -148,8 +146,6 @@ func initialize(numKvs int, tableOption int) {
 	}
 
 	RunTime[metricName] = time.Since(StartTime[metricName])
-
-	//log.Printf("end: %s", funcName)
 }
 
 func buildKeyVals(num int) []key.KeyVal {
