@@ -118,6 +118,9 @@ func init() {
 	TableOptionName[FullTablesOnly] = "FullTablesOnly"
 }
 
+// Hamt is a Hashed Array Map Trie data structure. It has a branching factor of
+// 32 and is at most 6 nodes deep. See:
+// https://en.wikipedia.org/wiki/Hash_array_mapped_trie
 type Hamt struct {
 	root            tableI
 	nentries        int
