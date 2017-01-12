@@ -209,14 +209,14 @@ func (t *compressedTable) set(idx uint, nn nodeI) {
 // http://stackoverflow.com/questions/22081738/how-does-this-algorithm-to-count-the-number-of-set-bits-in-a-32-bit-integer-work
 
 const (
-	hexi_fives  = uint64(0x5555555555555555)
-	hexi_threes = uint64(0x3333333333333333)
-	hexi_ones   = uint64(0x0101010101010101)
-	hexi_fs     = uint64(0x0f0f0f0f0f0f0f0f)
+	hexiFives  = uint64(0x5555555555555555)
+	hexiThrees = uint64(0x3333333333333333)
+	hexiOnes   = uint64(0x0101010101010101)
+	hexiFs     = uint64(0x0f0f0f0f0f0f0f0f)
 )
 
 func bitCount64(n uint64) uint {
-	n = n - ((n >> 1) & hexi_fives)
-	n = (n & hexi_threes) + ((n >> 2) & hexi_threes)
-	return uint((((n + (n >> 4)) & hexi_fs) * hexi_ones) >> 56)
+	n = n - ((n >> 1) & hexiFives)
+	n = (n & hexiThrees) + ((n >> 2) & hexiThrees)
+	return uint((((n + (n >> 4)) & hexiFs) * hexiOnes) >> 56)
 }
