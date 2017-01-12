@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-echo "Map verus Hamt32 w/fullTables only"
-benchcmp map.b fullonly.b
-echo
+#echo "Map verus Hamt32 w/fullTables only"
+#benchcmp map.b fullonly.b
+#echo
 echo "fullTables only versus compressedTables only"
 benchcmp fullonly.b componly.b
 echo

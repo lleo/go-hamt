@@ -1,5 +1,5 @@
-BenchmarkGet-8   	 1000000	      1122 ns/op
-BenchmarkPut-8   	 1000000	      1042 ns/op
-BenchmarkDel-8   	 1000000	      1003 ns/op
+BenchmarkGet-8   	 1000000	      1364 ns/op
+BenchmarkPut-8   	 1000000	      1013 ns/op
+BenchmarkDel-8   	 1000000	      1250 ns/op
 PASS
-ok  	github.com/lleo/go-hamt/hamt32	39.913s
+ok  	github.com/lleo/go-hamt/hamt32	38.419s
