@@ -8,7 +8,7 @@ The Base structure if added to a derivative key type will provide the
 Hamt30() and Hamt60() methods. Base needs to be populated by the derivative
 key constructor calling the Initialize([]byte) method.
 
-Any key created useing the Key interface must be read only after construction.
+Any key created using the Key interface must be read only after construction.
 
 The key package is used by the functional HAMT variation in
 "github.com/lleo/go-hamt-functional".
@@ -21,6 +21,8 @@ import (
 	"strings"
 )
 
+// KeyVal is a simple struct used to transfer lists ([]KeyVal) from one
+// function to another.
 type KeyVal struct {
 	Key Key
 	Val interface{}
@@ -181,8 +183,8 @@ func (kb *Base) String() string {
 		kb.hash60, hash60String(kb.hash60))
 }
 
-// Initialize the Base part of any struct that has the Base struct embeded.
-// will be called by the New() function of any decendent class.
+// Initialize the Base part of any struct that has the Base struct embedded.
+// will be called by the New() function of any descendant class.
 //     k.Initialize(bs)
 // where k is interpreted as a *Base and bs is a unique []byte to calculate
 // the 30bit hash from.

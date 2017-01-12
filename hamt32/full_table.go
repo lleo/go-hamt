@@ -89,12 +89,12 @@ func (t *fullTable) LongString(indent string, depth uint) string {
 
 	for i, n := range t.nodes {
 		if t.nodes[i] == nil {
-			strs[2+i] = indent + fmt.Sprintf("\tt.nodes[%d]: nil", i)
+			strs[2+i] = indent + fmt.Sprintf("\tnodes[%d]: nil", i)
 		} else {
 			if t, isTable := t.nodes[i].(tableI); isTable {
-				strs[2+i] = indent + fmt.Sprintf("\tt.nodes[%d]:\n%s", i, t.LongString(indent+"\t", depth+1))
+				strs[2+i] = indent + fmt.Sprintf("\tnodes[%d]:\n%s", i, t.LongString(indent+"\t", depth+1))
 			} else {
-				strs[2+i] = indent + fmt.Sprintf("\tt.nodes[%d]: %s", i, n)
+				strs[2+i] = indent + fmt.Sprintf("\tnodes[%d]: %s", i, n)
 			}
 		}
 	}

@@ -90,7 +90,7 @@ func TestMain(m *testing.M) {
 	//hamt32_test.Initialize(hugeKvs)
 	//hamt64_test.Initialize(hugeKvs)
 
-	log.Println("TestMain: before Runing Tests")
+	log.Println("TestMain: before Running Tests")
 
 	//RUN
 	var xit = m.Run()

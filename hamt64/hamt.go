@@ -15,7 +15,7 @@ that cell to a new table and put the current leaf and new one into that table
 in cells corresponding to that new level. If we are at the maxDepth of tree
 and there is already a leaf there we insert our key,value pair into that leaf.
 
-The retrieval operation is a simmilar tree walk guided by the ten 6bit numbers
+The retrieval operation is a similar tree walk guided by the ten 6bit numbers
 till we find a leaf with the key,value pair in it.
 
 The deletion operation is a walk to find the key, then delete the key from the
@@ -28,7 +28,6 @@ package hamt64
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/lleo/go-hamt/key"
@@ -91,12 +90,23 @@ func buildHashPath(hashPath uint64, idx, depth uint) uint64 {
 	return hashPath | uint64(idx<<(depth*nBits))
 }
 
+// Configuration contants to be passed to `hamt64.New(int) *Hamt`.
 const (
+	// HybridTables indicates the structure should use compressedTable
+	// initially, then upgrad to fullTable when appropriate.
 	HybridTables = iota
+	// CompTablesOnly indicates the structure should use compressedTables ONLY.
+	// This was intended just save space, but also seems to be faster; CPU cache
+	// locality maybe?
 	CompTablesOnly
+	// FullTableOnly indicates the structure should use fullTables ONLY.
+	// This was intended to be for speed, as compressed tables use a software
+	// bitCount function to access individual cells. Turns out, not so much.
 	FullTablesOnly
 )
 
+// TableOptionName is a pedantic lookup table; given the configuration option
+// it maps to the configuration option's name.
 var TableOptionName = make(map[int]string, 3)
 
 func init() {
@@ -141,10 +151,12 @@ func New(opt int) *Hamt {
 	return h
 }
 
+// IsEmpty returns a boolean indicating if this Hamt structure has no entries.
 func (h *Hamt) IsEmpty() bool {
 	return h.root == nil
 }
 
+// Get Hamt method looks up a given key in the Hamt data structure.
 func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
@@ -175,6 +187,9 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 	return nil, false
 }
 
+// Put Hamt method inserts a given key/val pair into the Hamt data structure.
+// It returns a boolean indicating if the key/val was inserted or whether or
+// not the key already existed and the val was merely overwritten.
 func (h *Hamt) Put(k key.Key, v interface{}) bool {
 	var depth uint
 	var hashPath uint64
@@ -262,9 +277,11 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 	panic("WTF!")
 }
 
+// Del Hamt Method removes a given key from the Hamt data structure. It returns
+// a pair of values: the value stored and a boolean indicating if the key was
+// even found and deleted.
 func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 	if h.IsEmpty() {
-		log.Printf("Hamt is empty h.nentries=%d, why call Del(%s)?", h.nentries, k)
 		return nil, false
 	}
 
@@ -280,17 +297,12 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 		var curNode = curTable.get(idx)
 
 		if curNode == nil {
-			log.Printf("Hamt.Del: failed to find key=%s\n", k)
-			log.Printf("Hamt.Del: depth=%d; hashPath=%s; idx=%2d\n",
-				depth, hashPathString(hashPath, depth), idx)
 			return nil, false
 		}
 
 		if curLeaf, isLeaf := curNode.(leafI); isLeaf {
 			val, delLeaf, deleted := curLeaf.del(k)
 			if !deleted {
-				log.Printf("Hamt.Del: found a leaf, but curLeaf.del(%s) failed.\n")
-				log.Printf("Hamt.Del: curLeaf=%s\n", curLeaf)
 				return nil, false
 			}
 			// else a leaf key/value was deleted
@@ -365,14 +377,16 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 		curTable = curNode.(tableI)
 	} //for depth loop
 
-	log.Printf("Hamt.Del: WTF! this should never be called; k=%s", k)
+	//log.Printf("Hamt.Del: WTF! this should never be called; k=%s", k)
 	return nil, false
 }
 
+// String returns a string representation of the Hamt string.
 func (h *Hamt) String() string {
 	return fmt.Sprintf("Hamt{ nentries: %d, root: %s }", h.nentries, h.root.LongString("", 0))
 }
 
+// LongString returns a complete listing of the entire Hamt data structure.
 func (h *Hamt) LongString(indent string) string {
 	var str string
 	if h.root != nil {

@@ -16,7 +16,7 @@ in cells corresponding to that new level. If we are at the maximun depth of
 the  tree and there is already a leaf there we insert our key,value pair into
 that leaf.
 
-The retrieval operation is a simmilar tree walk guided by the six 5bit numbers
+The retrieval operation is a similar tree walk guided by the six 5bit numbers
 till we find a leaf with the key,value pair in it.
 
 The deletion operation is a walk to find the key, then delete the key from the
@@ -91,13 +91,18 @@ func buildHashPath(hashPath uint32, idx, depth uint) uint32 {
 	return hashPath | uint32(idx<<(depth*nBits))
 }
 
-// These constants are the three configuration options to the `hamt32.New(int)`
+// Configuration contants to be passed to `hamt32.New(int) *Hamt`.
 const (
-	// Use compressedTable initially, when a table is half full upgrade to fullTable.
+	// HybridTables indicates the structure should use compressedTable
+	// initially, then upgrad to fullTable when appropriate.
 	HybridTables = iota
-	// Use compressedTables only.
+	// CompTablesOnly indicates the structure should use compressedTables ONLY.
+	// This was intended just save space, but also seems to be faster; CPU cache
+	// locality maybe?
 	CompTablesOnly
-	// Use fullTables only.
+	// FullTableOnly indicates the structure should use fullTables ONLY.
+	// This was intended to be for speed, as compressed tables use a software
+	// bitCount function to access individual cells. Turns out, not so much.
 	FullTablesOnly
 )
 
@@ -149,10 +154,12 @@ func New(opt int) *Hamt {
 	return h
 }
 
+// IsEmpty Hamt method returns a boolean indicating if this Hamt structure has no entries.
 func (h *Hamt) IsEmpty() bool {
 	return h.root == nil
 }
 
+// Get Hamt method looks up a given key in the Hamt data structure.
 func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
@@ -183,6 +190,9 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 	return nil, false
 }
 
+// Put Hamt method inserts a given key/val pair into the Hamt data structure.
+// It returns a boolean indicating if the key/val was inserted or whether or
+// not the key already existed and the val was merely overwritten.
 func (h *Hamt) Put(k key.Key, v interface{}) bool {
 	var depth uint
 	var hashPath uint32
@@ -273,6 +283,9 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 	panic("WTF!!")
 }
 
+// Del Hamt Method removes a given key from the Hamt data structure. It returns
+// a pair of values: the value stored and a boolean indicating if the key was
+// even found and deleted.
 func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
@@ -374,10 +387,12 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 	return nil, false
 }
 
+// String returns a string representation of the Hamt string.
 func (h *Hamt) String() string {
 	return fmt.Sprintf("Hamt{ nentries: %d, root: %s }", h.nentries, h.root.LongString("", 0))
 }
 
+// LongString returns a complete listing of the entire Hamt data structure.
 func (h *Hamt) LongString(indent string) string {
 	var str string
 	if h.root != nil {
