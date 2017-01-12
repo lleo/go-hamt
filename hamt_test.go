@@ -1,88 +1,123 @@
 package hamt
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
 	"testing"
+	"time"
 
-	"github.com/lleo/go-hamt/string_key"
-
+	//"github.com/lleo/go-hamt/hamt32"
+	//"github.com/lleo/go-hamt/hamt64"
+	"github.com/lleo/go-hamt/key"
+	"github.com/lleo/go-hamt/stringkey"
 	"github.com/lleo/stringutil"
+	"github.com/pkg/errors"
 )
 
-var numMidKvs int
-var numHugeKvs int
-var midKvs []keyVal
-var hugeKvs []keyVal
+// This number was found by experimenting with TestBenchmarkDel() and the
+// testing harness kept calling the test with greater and greater b.N values.
+// It toped out at 3,000,000 .
+var numHugeKvs = 5 * 1024 * 1024 // five mega-entries
+var hugeKvs []key.KeyVal
 
-var M map[string]int
-var H32 Hamt
-var H64 Hamt
+var LookupMap map[string]int
+var DeleteMap map[string]int
+
+var Inc = stringutil.Lower.Inc
+
+var StartTime = make(map[string]time.Time)
+var RunTime = make(map[string]time.Duration)
 
 func TestMain(m *testing.M) {
-	//SETUP
-	//var fh, err = os.OpenFile("test.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-	//if err != nil {
-	//	os.Exit(1)
-	//}
-	//defer fh.Close()
+	//	var fullonly, componly, hybrid, all bool
+	//	flag.BoolVar(&fullonly, "F", false, "Use full tables only and exclude C and H Options.")
+	//	flag.BoolVar(&componly, "C", false, "Use compressed tables only and exclude F and H Options.")
+	//	flag.BoolVar(&hybrid, "H", false, "Use compressed tables initially and exclude F and C Options.")
+	//	flag.BoolVar(&all, "A", false, "Run all Tests w/ Options set to hamt32.FullTablesOnly, hamt32.CompTablesOnly, and hamt32.HybridTables; in that order.")
+	//
+	//	flag.Parse()
+	//
+	//	// If all flag set, ignore fullonly, componly, and hybrid.
+	//	if !all {
+	//
+	//		// only one flag may be set between fullonly, componly, and hybrid
+	//		if (fullonly && (componly || hybrid)) ||
+	//			(componly && (fullonly || hybrid)) ||
+	//			(hybrid && (componly || fullonly)) {
+	//			flag.PrintDefaults()
+	//			os.Exit(1)
+	//		}
+	//	}
+	//
+	//	// If no flags given, run all tests.
+	//	if !(all || fullonly || componly || hybrid) {
+	//		all = true
+	//	}
 
 	log.SetFlags(log.Lshortfile)
-	//log.SetOutput(fh)
 
-	midKvs = make([]keyVal, 0, 32)
-	var s0 = stringutil.Str("aaa")
-	//numMidKvs := 10000 //ten thousand
-	numMidKvs = 1000 // 10 million
-
-	for i := 0; i < numMidKvs; i++ {
-		var key = string_key.StringKey(s0)
-		var val = i
-
-		//log.Printf("numHugeKvs[%d] val=%d; key=%s", i, i, s1)
-		midKvs = append(midKvs, keyVal{key, val})
-		s0 = s0.DigitalInc(1) //get off "" first
+	var logfile, err = os.Create("test.log")
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "failed to os.Create(\"test.log\")"))
 	}
+	defer logfile.Close()
 
-	hugeKvs = make([]keyVal, 0, 32)
-	var s1 = stringutil.Str("aaa")
-	//numHugeKvs = 8 * 1024
-	numHugeKvs = 1 * 1024 * 1024 // one mega-entries
-	//numHugeKvs = 256 * 1024 * 1024 //256 MB
+	log.SetOutput(logfile)
+
+	StartTime["TestMain: build Looup/Delete Map"] = time.Now()
+
+	//hugeKvs = buildKeyVals(numHugeKvs)
+
+	LookupMap = make(map[string]int, numHugeKvs)
+	DeleteMap = make(map[string]int, numHugeKvs)
+
+	str := "aaa"
+	//for i, kv := range hugeKvs {
 	for i := 0; i < numHugeKvs; i++ {
-		var key = string_key.StringKey(s1)
+		//var str = kv.Key.(*stringkey.StringKey).Str()
 		var val = i
 
-		//log.Printf("numHugeKvs[%d] val=%d; key=%s", i, i, s1)
-		hugeKvs = append(hugeKvs, keyVal{key, val})
-		s1 = s1.DigitalInc(1)
+		LookupMap[str] = val
+		DeleteMap[str] = val
+
+		str = Inc(str)
 	}
 
-	// Build map & hamt, for h.Get() and h.Del() benchmarks
-	M = make(map[string]int)
-	H32 = NewHamt32()
-	H64 = NewHamt64()
-	var s = stringutil.Str("aaa")
-	for i := 0; i < numHugeKvs; i++ {
-		var key = string_key.StringKey(s)
-		var val = i
+	RunTime["TestMain: build Looup/Delete Map"] = time.Since(StartTime["TestMain: build Looup/Delete Map"])
 
-		M[string(s)] = val
-		H32.Put(key, val)
-		H64.Put(key, val)
-		s = s.DigitalInc(1)
-	}
+	//hamt32_test.Initialize(hugeKvs)
+	//hamt64_test.Initialize(hugeKvs)
+
+	log.Println("TestMain: before Runing Tests")
 
 	//RUN
 	var xit = m.Run()
+
+	log.Println("TestMain: after Running Tests")
+	log.Println("TestMain:\n", RunTimes())
 
 	//TEARDOWN
 	os.Exit(xit)
 }
 
-func genRandomizedKvs(kvs []keyVal) []keyVal {
-	randKvs := make([]keyVal, len(kvs))
+func buildKeyVals(num int) []key.KeyVal {
+	var kvs = make([]key.KeyVal, num, num)
+
+	s := "aaa"
+	for i := 0; i < num; i++ {
+		kvs[i].Key = stringkey.New(s)
+		kvs[i].Val = i
+
+		s = Inc(s)
+	}
+
+	return kvs
+}
+
+func genRandomizedKvs(kvs []key.KeyVal) []key.KeyVal {
+	randKvs := make([]key.KeyVal, len(kvs))
 	copy(randKvs, kvs)
 
 	//From: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
@@ -94,289 +129,30 @@ func genRandomizedKvs(kvs []keyVal) []keyVal {
 	return randKvs
 }
 
+func RunTimes() string {
+	var s = ""
+
+	s += "Key                                      Val\n"
+	s += "========================================+==========\n"
+
+	for key, val := range RunTime {
+		s += fmt.Sprintf("%-40s %s\n", key, val)
+	}
+	return s
+}
+
 func TestNewHamt32(t *testing.T) {
-	//log.Println("=== TestNewHamt32 ===")
+	log.Println("TestNewHamt32:")
 	var h = NewHamt32()
 	if !h.IsEmpty() {
 		t.Fatal("!?!? a brand new Hamt !IsEmpty()")
 	}
-	//log.Println("TestNewHamt32 ok")
 }
 
-func TestHamt32PutGetOne(t *testing.T) {
-	//log.Println("=== TestPutGetOne ===")
+func TestNewHamt64(t *testing.T) {
+	log.Println("TestNewHamt64:")
 	var h = NewHamt32()
-
-	var s = stringutil.Str("aaa")
-	var k = string_key.StringKey(s)
-	var v int = 1
-
-	var inserted = h.Put(k, v)
-	if !inserted {
-		t.Fatalf("h.Put(%s, %v) returned false", k, v)
-	}
-
-	//log.Println(h.LongString(""))
-
-	var vv, found = h.Get(k)
-	if !found {
-		t.Fatalf("h.Get(%s) returned !found", k)
-	}
-	var val = vv.(int)
-	if val != v {
-		t.Fatalf("h.Get(%s) val,%d != v,%d", k, val, v)
-	}
-
-}
-
-func TestHamt32PutDelOne(t *testing.T) {
-	//log.Println("=== TestHamt32PutDelOne ===")
-	var h = NewHamt32()
-
-	var s = stringutil.Str("aaa")
-	var k = string_key.StringKey(s)
-	var v int = 1
-
-	var inserted = h.Put(k, v)
-	if !inserted {
-		t.Fatalf("h.Put(%s, %v) returned false", k, v)
-	}
-
-	//log.Println(h.LongString(""))
-
-	var vv, deleted = h.Del(k)
-	if !deleted {
-		t.Fatalf("h.Del(%s) returned !deleted", k)
-	}
-	var val = vv.(int)
-	if val != v {
-		t.Fatalf("h.Del(%s) val,%d != v,%d", k, val, v)
-	}
-
-	//log.Println("h = ", h.LongString(""))
-
 	if !h.IsEmpty() {
-		t.Fatalf("h is not empty h=\n%s", h.LongString(""))
-	}
-}
-
-func TestHamt32PutGetMid(t *testing.T) {
-	//log.Println("=== TestHamt32PutGetMid ===")
-	var h = NewHamt32()
-
-	for i := 0; i < numMidKvs; i++ {
-		var key = midKvs[i].key
-		var val = midKvs[i].val
-
-		var inserted = h.Put(key, val)
-		if !inserted {
-			t.Fatalf("h.Put(%s, %v): for i=%d returned false", key, val, i)
-		}
-	}
-
-	for i := 0; i < numMidKvs; i++ {
-		var key = midKvs[i].key
-		var val = midKvs[i].val
-
-		var vv, found = h.Get(key)
-		if !found {
-			t.Fatalf("h.Get(%s): for i=%d returned !found", key, i)
-		}
-		//v := vv.(int)
-		if vv != midKvs[i].val {
-			t.Fatalf("h.Get(%s): returned vv,%v != midKvs[%d].val,%v", key, vv, i, val)
-		}
-	}
-}
-
-func TestHamt32PutDelMid(t *testing.T) {
-	//log.Println("=== TestHamt32PutDelMid ===")
-	var h = NewHamt32()
-
-	for i := 0; i < numMidKvs; i++ {
-		var key = midKvs[i].key
-		var val = midKvs[i].val
-
-		var inserted = h.Put(key, val)
-		if !inserted {
-			t.Fatalf("h.Put(%s, %v): for i=%d returned false", key, val, i)
-		}
-	}
-
-	//log.Println("h =", h.LongString(""))
-
-	for i := 0; i < numMidKvs; i++ {
-		var key = midKvs[i].key
-		var val = midKvs[i].val
-
-		var vv, deleted = h.Del(key)
-		if !deleted {
-			t.Fatalf("h.Del(%s): for i=%d return !deleted", key, i)
-		}
-		if vv != val {
-			t.Fatalf("h.Del(%s): returned vv,%v != midKvs[%d].val,%v", key, vv, i, val)
-		}
-		//log.Println("h =", h.LongString(""))
-	}
-}
-
-func TestHamt32PutGetHuge(t *testing.T) {
-	//log.Println("=== TestHamt32PutGetHuge ===")
-	var h = NewHamt32()
-
-	for i := 0; i < numHugeKvs; i++ {
-		var key = hugeKvs[i].key
-		var val = hugeKvs[i].val
-
-		var inserted = h.Put(key, val)
-		if !inserted {
-			t.Fatalf("h.Put(%s, %v): for i=%d returned false", key, val, i)
-		}
-	}
-
-	for i := 0; i < numHugeKvs; i++ {
-		var key = hugeKvs[i].key
-		var val = hugeKvs[i].val
-
-		var vv, found = h.Get(key)
-		if !found {
-			t.Fatalf("h.Get(%s): for i=%d returned !found", key, i)
-		}
-		//v := vv.(int)
-		if vv != val {
-			t.Fatalf("h.Get(%s): returned vv,%v != hugeKvs[%d].val,%v", key, vv, i, val)
-		}
-	}
-}
-
-func TestHamt64PutGetHuge(t *testing.T) {
-	//log.Println("=== TestHamt64PutGetHuge ===")
-	var h = NewHamt64()
-
-	for i := 0; i < numHugeKvs; i++ {
-		var key = hugeKvs[i].key
-		var val = hugeKvs[i].val
-
-		var inserted = h.Put(key, val)
-		if !inserted {
-			t.Fatalf("h.Put(%s, %v): for i=%d returned false", key, val, i)
-		}
-	}
-
-	for i := 0; i < numHugeKvs; i++ {
-		var key = hugeKvs[i].key
-		var val = hugeKvs[i].val
-
-		var vv, found = h.Get(key)
-		if !found {
-			t.Fatalf("h.Get(%s): for i=%d returned !found", key, i)
-		}
-		//v := vv.(int)
-		if vv != val {
-			t.Fatalf("h.Get(%s): returned vv,%v != hugeKvs[%d].val,%v", key, vv, i, val)
-		}
-	}
-}
-
-func TestHamt64PutDelHuge(t *testing.T) {
-	//log.Println("=== TestPutDelHuge ===")
-	var h = NewHamt64()
-
-	for i := 0; i < numHugeKvs; i++ {
-		key := hugeKvs[i].key
-		val := hugeKvs[i].val
-
-		var inserted = h.Put(key, val)
-		if !inserted {
-			t.Fatalf("h.Put(%s, %v): for i=%d returned false", key, val, i)
-		}
-	}
-
-	for i := 0; i < numHugeKvs; i++ {
-		key := hugeKvs[i].key
-		val := hugeKvs[i].val
-
-		var vv, deleted = h.Del(key)
-		if !deleted {
-			t.Fatalf("h.Del(%s): for i=%d returned !deleted", key, i)
-		}
-		if vv != val {
-			t.Fatalf("h.Del(%s): returned vv,%v != hugeKvs[%d].val,%v", key, vv, i, val)
-		}
-	}
-}
-
-func BenchmarkMapGet(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		var j = int(rand.Int31()) % numHugeKvs
-		var s = hugeKvs[j].key.String()
-		var val, ok = M[s]
-		if !ok {
-			b.Fatalf("M[%s] not ok", string(s))
-		}
-		if val != hugeKvs[j].val {
-			b.Fatalf("val,%v != hugeKvs[%d].val,%v", val, j, hugeKvs[j].val)
-		}
-	}
-}
-
-func BenchmarkHamt32Get(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		var j = int(rand.Int31()) % numHugeKvs
-		var key = hugeKvs[j].key
-		var val0 = hugeKvs[j].val
-		var val, found = H32.Get(key)
-		if !found {
-			b.Fatalf("H.Get(%s) not found", key)
-		}
-		if val != val0 {
-			b.Fatalf("val,%v != hugeKvs[%d].val,%v", val, j, val0)
-		}
-	}
-}
-
-func BenchmarkHamt64Get(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		var j = int(rand.Int31()) % numHugeKvs
-		var key = hugeKvs[j].key
-		var val0 = hugeKvs[j].val
-		var val, found = H64.Get(key)
-		if !found {
-			b.Fatalf("H.Get(%s) not found", key)
-		}
-		if val != val0 {
-			b.Fatalf("val,%v != hugeKvs[%d].val,%v", val, j, val0)
-		}
-	}
-}
-
-func BenchmarkMapPut(b *testing.B) {
-	var m = make(map[string]int)
-	var s = stringutil.Str("aaa")
-	for i := 0; i < b.N; i++ {
-		m[string(s)] = i + 1
-		s = s.DigitalInc(1)
-	}
-}
-
-func BenchmarkHamt32Put(b *testing.B) {
-	var h = NewHamt32()
-	var s = stringutil.Str("aaa")
-	for i := 0; i < b.N; i++ {
-		key := string_key.StringKey(s)
-		val := i + 1
-		h.Put(key, val)
-		s = s.DigitalInc(1)
-	}
-}
-
-func BenchmarkHamt64Put(b *testing.B) {
-	var h = NewHamt64()
-	var s = stringutil.Str("aaa")
-	for i := 0; i < b.N; i++ {
-		key := string_key.StringKey(s)
-		val := i + 1
-		h.Put(key, val)
-		s = s.DigitalInc(1)
+		t.Fatal("!?!? a brand new Hamt !IsEmpty()")
 	}
 }

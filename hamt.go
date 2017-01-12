@@ -62,10 +62,10 @@ type Hamt interface {
 // NewHamt32 ...
 func NewHamt32() Hamt {
 	//return hamt32.NewHamt()
-	return hamt32.New(hamt32.Hybrid)
+	return hamt32.New(hamt32.HybridTables)
 }
 
 // NewHamt64 ...
 func NewHamt64() Hamt {
-	return hamt64.NewHamt(hamt64.Hybrid)
+	return hamt64.New(hamt64.HybridTables)
 }

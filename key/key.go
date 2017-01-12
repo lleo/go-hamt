@@ -21,6 +21,15 @@ import (
 	"strings"
 )
 
+type KeyVal struct {
+	Key Key
+	Val interface{}
+}
+
+func (kv KeyVal) String() string {
+	return fmt.Sprintf("KeyVal{%s, %v}", kv.Key, kv.Val)
+}
+
 // Key interface descibes the methods any struct needs to implement to be used
 // in either the github.com/lleo/go-hamt or github.com/lleo/go-hamt-functional
 // packages.

@@ -6,22 +6,36 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lleo/go-hamt/key"
 	"github.com/lleo/go-hamt/stringkey"
 	"github.com/lleo/stringutil"
 )
+
+func rebuildDeleteMap(kvs []key.KeyVal) {
+	for i, kv := range kvs {
+		s := kv.Key.(*stringkey.StringKey).Str()
+
+		_, exists := DeleteMap[s]
+		if exists {
+			break
+		}
+
+		DeleteMap[s] = i
+	}
+}
 
 func BenchmarkMapGet(b *testing.B) {
 	log.Printf("BenchmarkMapGet: b.N=%d", b.N)
 
 	for i := 0; i < b.N; i++ {
 		var j = int(rand.Int31()) % numHugeKvs
-		var s = hugeKvs[j].key.(*stringkey.StringKey).Str()
+		var s = hugeKvs[j].Key.(*stringkey.StringKey).Str()
 		var val, ok = LookupMap[s]
 		if !ok {
 			b.Fatalf("LookupMap[%s] not ok", string(s))
 		}
-		if val != hugeKvs[j].val {
-			b.Fatalf("val,%v != hugeKvs[%d].val,%v", val, j, hugeKvs[j].val)
+		if val != hugeKvs[j].Val {
+			b.Fatalf("val,%v != hugeKvs[%d].val,%v", val, j, hugeKvs[j].Val)
 		}
 	}
 }
@@ -32,8 +46,8 @@ func BenchmarkMapPut(b *testing.B) {
 	var m = make(map[string]int)
 	var s = "aaa"
 	for i := 0; i < b.N; i++ {
-		m[string(s)] = i + 1
-		s = stringutil.DigitalInc(s)
+		m[s] = i + 1
+		s = Inc(s)
 	}
 }
 
