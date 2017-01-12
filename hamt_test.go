@@ -1,17 +1,16 @@
-package hamt
+package hamt_test
 
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"testing"
 	"time"
 
 	//"github.com/lleo/go-hamt/hamt32"
 	//"github.com/lleo/go-hamt/hamt64"
-	"github.com/lleo/go-hamt/key"
-	"github.com/lleo/go-hamt/stringkey"
+
+	"github.com/lleo/go-hamt"
 	"github.com/lleo/stringutil"
 	"github.com/pkg/errors"
 )
@@ -20,10 +19,10 @@ import (
 // testing harness kept calling the test with greater and greater b.N values.
 // It toped out at 3,000,000 .
 var numHugeKvs = 5 * 1024 * 1024 // five mega-entries
-var hugeKvs []key.KeyVal
 
 var LookupMap map[string]int
 var DeleteMap map[string]int
+var keyStrings []string
 
 var Inc = stringutil.Lower.Inc
 
@@ -72,6 +71,7 @@ func TestMain(m *testing.M) {
 
 	LookupMap = make(map[string]int, numHugeKvs)
 	DeleteMap = make(map[string]int, numHugeKvs)
+	keyStrings = make([]string, numHugeKvs)
 
 	str := "aaa"
 	//for i, kv := range hugeKvs {
@@ -81,14 +81,12 @@ func TestMain(m *testing.M) {
 
 		LookupMap[str] = val
 		DeleteMap[str] = val
+		keyStrings[i] = str
 
 		str = Inc(str)
 	}
 
 	RunTime["TestMain: build Looup/Delete Map"] = time.Since(StartTime["TestMain: build Looup/Delete Map"])
-
-	//hamt32_test.Initialize(hugeKvs)
-	//hamt64_test.Initialize(hugeKvs)
 
 	log.Println("TestMain: before Running Tests")
 
@@ -102,31 +100,42 @@ func TestMain(m *testing.M) {
 	os.Exit(xit)
 }
 
-func buildKeyVals(num int) []key.KeyVal {
-	var kvs = make([]key.KeyVal, num, num)
+//func buildKeyVals(num int) []key.KeyVal {
+//	var kvs = make([]key.KeyVal, num, num)
+//
+//	s := "aaa"
+//	for i := 0; i < num; i++ {
+//		kvs[i].Key = stringkey.New(s)
+//		kvs[i].Val = i
+//
+//		s = Inc(s)
+//	}
+//
+//	return kvs
+//}
 
-	s := "aaa"
-	for i := 0; i < num; i++ {
-		kvs[i].Key = stringkey.New(s)
-		kvs[i].Val = i
+//func genRandomizedKvs(kvs []key.KeyVal) []key.KeyVal {
+//	randKvs := make([]key.KeyVal, len(kvs))
+//	copy(randKvs, kvs)
+//
+//	//From: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
+//	for i := len(randKvs) - 1; i > 0; i-- {
+//		j := rand.Intn(i + 1)
+//		randKvs[i], randKvs[j] = randKvs[j], randKvs[i]
+//	}
+//
+//	return randKvs
+//}
 
-		s = Inc(s)
+func rebuildDeleteMap(strs []string) {
+	for val, str := range strs {
+		_, exists := DeleteMap[str]
+		if exists {
+			break
+		}
+
+		DeleteMap[str] = val
 	}
-
-	return kvs
-}
-
-func genRandomizedKvs(kvs []key.KeyVal) []key.KeyVal {
-	randKvs := make([]key.KeyVal, len(kvs))
-	copy(randKvs, kvs)
-
-	//From: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
-	for i := len(randKvs) - 1; i > 0; i-- {
-		j := rand.Intn(i + 1)
-		randKvs[i], randKvs[j] = randKvs[j], randKvs[i]
-	}
-
-	return randKvs
 }
 
 func RunTimes() string {
@@ -143,7 +152,7 @@ func RunTimes() string {
 
 func TestNewHamt32(t *testing.T) {
 	log.Println("TestNewHamt32:")
-	var h = NewHamt32()
+	var h = hamt.NewHamt32()
 	if !h.IsEmpty() {
 		t.Fatal("!?!? a brand new Hamt !IsEmpty()")
 	}
@@ -151,7 +160,7 @@ func TestNewHamt32(t *testing.T) {
 
 func TestNewHamt64(t *testing.T) {
 	log.Println("TestNewHamt64:")
-	var h = NewHamt32()
+	var h = hamt.NewHamt32()
 	if !h.IsEmpty() {
 		t.Fatal("!?!? a brand new Hamt !IsEmpty()")
 	}
