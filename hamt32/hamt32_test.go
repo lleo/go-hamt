@@ -12,42 +12,42 @@ import (
 )
 
 func TestHamt32New(t *testing.T) {
-	var h = hamt32.New(options)
+	var h = hamt32.New(TableOption)
 	if h == nil {
 		t.Fatal("no new Hamt struct")
 	}
 }
 
 func TestBuildHamt32(t *testing.T) {
-	var h = hamt32.New(options)
+	var h = hamt32.New(TableOption)
 
 	for _, kv := range hugeKvs {
-		inserted := h.Put(kv.key, kv.val)
+		inserted := h.Put(kv.Key, kv.Val)
 		if !inserted {
-			t.Fatalf("failed to h.Put(%s, %v)", kv.key, kv.val)
+			t.Fatalf("failed to h.Put(%s, %v)", kv.Key, kv.Val)
 		}
 	}
 }
 
 func TestDeleteHamt32Del(t *testing.T) {
-	var h = hamt32.New(options)
+	var h = hamt32.New(TableOption)
 
 	// build one up
 	for _, kv := range hugeKvs {
-		inserted := h.Put(kv.key, kv.val)
+		inserted := h.Put(kv.Key, kv.Val)
 		if !inserted {
-			t.Fatalf("failed to h.Put(%s, %v)", kv.key, kv.val)
+			t.Fatalf("failed to h.Put(%s, %v)", kv.Key, kv.Val)
 		}
 	}
 
 	// then tear it down.
 	for _, kv := range hugeKvs {
-		val, deleted := h.Del(kv.key)
+		val, deleted := h.Del(kv.Key)
 		if !deleted {
-			t.Fatalf("failed to h.Del(%q)", kv.key)
+			t.Fatalf("failed to h.Del(%q)", kv.Key)
 		}
-		if val != kv.val {
-			t.Fatalf("bad result of h.Del(%q); %v != %v", kv.key, kv.val, val)
+		if val != kv.Val {
+			t.Fatalf("bad result of h.Del(%q); %v != %v", kv.Key, kv.Val, val)
 		}
 	}
 
@@ -62,18 +62,18 @@ func BenchmarkHamt32Get(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		var j = int(rand.Int31()) % numHugeKvs
-		var key = hugeKvs[j].key
-		var val0 = hugeKvs[j].val
+		var key = hugeKvs[j].Key
+		var val0 = hugeKvs[j].Val
 		//var j = int(rand.Int31()) % numMidKvs
-		//var key = midKvs[j].key
-		//var val0 = midKvs[j].val
+		//var key = midKvs[j].Key
+		//var val0 = midKvs[j].Val
 		var val, found = LookupHamt32.Get(key)
 		if !found {
 			b.Fatalf("H.Get(%s) not found", key)
 		}
 		if val != val0 {
-			b.Fatalf("val,%v != hugeKvs[%d].val,%v", val, j, val0)
-			//b.Fatalf("val,%v != midKvs[%d].val,%v", val, j, val0)
+			b.Fatalf("val,%v != hugeKvs[%d].Val,%v", val, j, val0)
+			//b.Fatalf("val,%v != midKvs[%d].Val,%v", val, j, val0)
 		}
 	}
 }
@@ -81,7 +81,7 @@ func BenchmarkHamt32Get(b *testing.B) {
 func BenchmarkHamt32Put(b *testing.B) {
 	log.Printf("BenchmarkHamt32Put: b.N=%d", b.N)
 
-	var h = hamt32.New(options)
+	var h = hamt32.New(TableOption)
 	var s = "aaa"
 	for i := 0; i < b.N; i++ {
 		key := stringkey.New(s)
@@ -106,8 +106,8 @@ func BenchmarkHamt32Del(b *testing.B) {
 	StartTime["run BenchmarkHamt32Del"] = time.Now()
 	for i := 0; i < b.N; i++ {
 		kv := hugeKvs[i]
-		key := kv.key
-		val := kv.val
+		key := kv.Key
+		val := kv.Val
 
 		v, ok := DeleteHamt32.Del(key)
 		if !ok {

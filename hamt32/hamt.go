@@ -91,15 +91,6 @@ func buildHashPath(hashPath uint32, idx, depth uint) uint32 {
 	return hashPath | uint32(idx<<(depth*nBits))
 }
 
-type keyVal struct {
-	key key.Key
-	val interface{}
-}
-
-func (kv keyVal) String() string {
-	return fmt.Sprintf("keyVal{%s, %v}", kv.key, kv.val)
-}
-
 // These constants are the three configuration options to the `hamt32.New(int)`
 const (
 	// Use compressedTable initially, when a table is half full upgrade to fullTable.

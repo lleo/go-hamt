@@ -11,10 +11,10 @@ import (
 // implements nodeI
 // implements leafI
 type collisionLeaf struct {
-	kvs []keyVal
+	kvs []key.KeyVal
 }
 
-func newCollisionLeaf(kvs []keyVal) *collisionLeaf {
+func newCollisionLeaf(kvs []key.KeyVal) *collisionLeaf {
 	var leaf = new(collisionLeaf)
 	leaf.kvs = append(leaf.kvs, kvs...)
 
@@ -22,7 +22,7 @@ func newCollisionLeaf(kvs []keyVal) *collisionLeaf {
 }
 
 func (l collisionLeaf) Hash30() uint32 {
-	return l.kvs[0].key.Hash30()
+	return l.kvs[0].Key.Hash30()
 }
 
 func (l collisionLeaf) String() string {
@@ -38,43 +38,43 @@ func (l collisionLeaf) String() string {
 
 func (l collisionLeaf) get(key key.Key) (interface{}, bool) {
 	for _, kv := range l.kvs {
-		if kv.key.Equals(key) {
-			return kv.val, true
+		if kv.Key.Equals(key) {
+			return kv.Val, true
 		}
 	}
 	return nil, false
 }
 
-func (l collisionLeaf) put(key key.Key, val interface{}) (leafI, bool) {
+func (l collisionLeaf) put(k key.Key, v interface{}) (leafI, bool) {
 	for _, kv := range l.kvs {
-		if kv.key.Equals(key) {
-			kv.val = val
+		if kv.Key.Equals(k) {
+			kv.Val = v
 			return l, false //key,val was not added, merely replaced
 		}
 	}
-	l.kvs = append(l.kvs, keyVal{key, val})
+	l.kvs = append(l.kvs, key.KeyVal{k, v})
 
 	log.Printf("%s : %d\n", hash30String(l.Hash30()), len(l.kvs))
 
-	return l, true // key,val was added
+	return l, true // key_,val was added
 }
 
 func (l collisionLeaf) del(key key.Key) (interface{}, leafI, bool) {
 	for i, kv := range l.kvs {
-		if kv.key.Equals(key) {
+		if kv.Key.Equals(key) {
 			l.kvs = append(l.kvs[:i], l.kvs[i+1:]...)
 			if len(l.kvs) == 1 {
-				var fl = newFlatLeaf(l.kvs[0].key, l.kvs[0].val)
-				return kv.val, fl, true
+				var fl = newFlatLeaf(l.kvs[0].Key, l.kvs[0].Val)
+				return kv.Val, fl, true
 			}
-			return kv.val, l, true
+			return kv.Val, l, true
 		}
 	}
 	return nil, l, false
 }
 
-func (l collisionLeaf) keyVals() []keyVal {
-	var r = make([]keyVal, len(l.kvs))
+func (l collisionLeaf) keyVals() []key.KeyVal {
+	var r = make([]key.KeyVal, len(l.kvs))
 	r = append(r, l.kvs...)
 	return r
 	//return l.kvs
