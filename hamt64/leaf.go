@@ -11,5 +11,5 @@ type leafI interface {
 	get(key key.Key) (interface{}, bool)
 	put(key key.Key, val interface{}) (leafI, bool)
 	del(key key.Key) (interface{}, leafI, bool)
-	keyVals() []keyVal
+	keyVals() []key.KeyVal
 }

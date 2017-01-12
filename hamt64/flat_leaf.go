@@ -33,12 +33,12 @@ func (l flatLeaf) get(key key.Key) (interface{}, bool) {
 	return nil, false
 }
 
-func (l flatLeaf) put(key key.Key, val interface{}) (leafI, bool) {
-	if l.key.Equals(key) {
-		l.val = val
+func (l flatLeaf) put(k key.Key, v interface{}) (leafI, bool) {
+	if l.key.Equals(k) {
+		l.val = v
 		return l, false
 	}
-	var newLeaf = newCollisionLeaf([]keyVal{{l.key, l.val}, {key, val}})
+	var newLeaf = newCollisionLeaf([]key.KeyVal{{l.key, l.val}, {k, v}})
 	return newLeaf, true // key,val was added
 }
 
@@ -49,6 +49,6 @@ func (l flatLeaf) del(key key.Key) (interface{}, leafI, bool) {
 	return nil, l, false
 }
 
-func (l flatLeaf) keyVals() []keyVal {
-	return []keyVal{{l.key, l.val}}
+func (l flatLeaf) keyVals() []key.KeyVal {
+	return []key.KeyVal{{l.key, l.val}}
 }

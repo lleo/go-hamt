@@ -12,41 +12,41 @@ import (
 )
 
 func TestNewHamt64(t *testing.T) {
-	var h = hamt64.New(options)
+	var h = hamt64.New(TableOption)
 	if h == nil {
 		t.Fatal("no new Hamt struct")
 	}
 }
 
 func TestBuildHamt64(t *testing.T) {
-	var h = hamt64.New(options)
+	var h = hamt64.New(TableOption)
 
 	for _, kv := range hugeKvs {
-		inserted := h.Put(kv.key, kv.val)
+		inserted := h.Put(kv.Key, kv.Val)
 		if !inserted {
-			t.Fatalf("failed to h.Put(%s, %v)", kv.key, kv.val)
+			t.Fatalf("failed to h.Put(%s, %v)", kv.Key, kv.Val)
 		}
 	}
 }
 
 func TestDeleteHamt64(t *testing.T) {
-	var h = hamt64.New(options)
+	var h = hamt64.New(TableOption)
 
 	for _, kv := range hugeKvs {
-		inserted := h.Put(kv.key, kv.val)
+		inserted := h.Put(kv.Key, kv.Val)
 		if !inserted {
-			t.Fatalf("failed to h.Put(%s, %v)", kv.key, kv.val)
+			t.Fatalf("failed to h.Put(%s, %v)", kv.Key, kv.Val)
 		}
 	}
 
 	//for _, kv := range genRandomizedKvs(hugeKvs) {
 	for _, kv := range hugeKvs {
-		val, deleted := h.Del(kv.key)
+		val, deleted := h.Del(kv.Key)
 		if !deleted {
-			t.Fatalf("failed to h.Del(%q)", kv.key)
+			t.Fatalf("failed to h.Del(%q)", kv.Key)
 		}
-		if val != kv.val {
-			t.Fatalf("bad result of h.Del(%q); %v != %v", kv.key, kv.val, val)
+		if val != kv.Val {
+			t.Fatalf("bad result of h.Del(%q); %v != %v", kv.Key, kv.Val, val)
 		}
 	}
 
@@ -60,10 +60,10 @@ func BenchmarkHamt64Get(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		var j = int(rand.Int31()) % numHugeKvs
-		var key = hugeKvs[j].key
-		var val0 = hugeKvs[j].val
+		var key = hugeKvs[j].Key
+		var val0 = hugeKvs[j].Val
 		//var j = int(rand.Int31()) % numMidKvs
-		//var key = midKvs[j].key
+		//var key = midKvs[j].Key
 		//var val0 = midKvs[j].val
 		var val, found = LookupHamt64.Get(key)
 		if !found {
@@ -79,7 +79,7 @@ func BenchmarkHamt64Get(b *testing.B) {
 func BenchmarkHamt64Put(b *testing.B) {
 	log.Printf("BenchmarkHamt64Put: b.N=%d", b.N)
 
-	var h = hamt64.New(options)
+	var h = hamt64.New(TableOption)
 	var s = "aaa"
 	for i := 0; i < b.N; i++ {
 		key := stringkey.New(s)
@@ -104,8 +104,8 @@ func BenchmarkHamt64Del(b *testing.B) {
 	StartTime["run BenchmarkHamt64Del"] = time.Now()
 	for i := 0; i < b.N; i++ {
 		kv := hugeKvs[i]
-		key := kv.key
-		val := kv.val
+		key := kv.Key
+		val := kv.Val
 
 		v, ok := DeleteHamt64.Del(key)
 		if !ok {

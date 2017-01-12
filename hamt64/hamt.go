@@ -91,15 +91,6 @@ func buildHashPath(hashPath uint64, idx, depth uint) uint64 {
 	return hashPath | uint64(idx<<(depth*nBits))
 }
 
-type keyVal struct {
-	key key.Key
-	val interface{}
-}
-
-func (kv keyVal) String() string {
-	return fmt.Sprintf("keyVal{%s, %v}", kv.key, kv.val)
-}
-
 const (
 	HybridTables = iota
 	CompTablesOnly
