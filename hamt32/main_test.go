@@ -27,7 +27,7 @@ var RunTime = make(map[string]time.Duration)
 
 var Inc = stringutil.Lower.Inc
 
-var TableOption int
+//var TableOption int
 
 func TestMain(m *testing.M) {
 	// flags
@@ -72,38 +72,39 @@ func TestMain(m *testing.M) {
 
 	// execute
 	var xit int
+	var tableOption int
 	if all {
-		TableOption = hamt32.FullTablesOnly
-		log.Printf("TestMain: TableOption == %s\n", hamt32.TableOptionName[TableOption])
-		initialize(TableOption)
+		tableOption = hamt32.FullTablesOnly
+		log.Printf("TestMain: tableOption == %s\n", hamt32.tableOptionName[tableOption])
+		initialize(tableOption)
 		xit = m.Run()
 		if xit != 0 {
 			os.Exit(1)
 		}
 
-		TableOption = hamt32.CompTablesOnly
-		log.Printf("TestMain: TableOption == %s\n", hamt32.TableOptionName[TableOption])
-		initialize(TableOption)
+		tableOption = hamt32.CompTablesOnly
+		log.Printf("TestMain: tableOption == %s\n", hamt32.tableOptionName[tableOption])
+		initialize(tableOption)
 		xit = m.Run()
 		if xit != 0 {
 			os.Exit(1)
 		}
 
-		TableOption = hamt32.HybridTables
-		log.Printf("TestMain: TableOption == %s\n", hamt32.TableOptionName[TableOption])
-		initialize(TableOption)
+		tableOption = hamt32.HybridTables
+		log.Printf("TestMain: tableOption == %s\n", hamt32.tableOptionName[tableOption])
+		initialize(tableOption)
 		xit = m.Run()
 	} else {
 		if hybrid {
-			TableOption = hamt32.HybridTables
+			tableOption = hamt32.HybridTables
 		} else if fullonly {
-			TableOption = hamt32.FullTablesOnly
+			tableOption = hamt32.FullTablesOnly
 		} else /* if componly */ {
-			TableOption = hamt32.CompTablesOnly
+			tableOption = hamt32.CompTablesOnly
 		}
 
-		log.Printf("TestMain: TableOption == %s\n", hamt32.TableOptionName[TableOption])
-		initialize(TableOption)
+		log.Printf("TestMain: tableOption == %s\n", hamt32.tableOptionName[tableOption])
+		initialize(tableOption)
 		xit = m.Run()
 	}
 
