@@ -124,7 +124,8 @@ type Hamt struct {
 	grade, fullinit bool
 }
 
-// Create a new hamt64.Hamt data structure with the table option set to either:
+// New creates a new hamt64.Hamt data structure with the table option set to
+// either:
 //
 // `hamt64.HybridTables`:
 // Initially start out with compressedTable, but when the table is half full
