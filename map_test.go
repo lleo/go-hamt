@@ -7,6 +7,17 @@ import (
 	"time"
 )
 
+func rebuildDeleteMap(strs []string) {
+	for val, str := range strs {
+		_, exists := DeleteMap[str]
+		if exists {
+			break
+		}
+
+		DeleteMap[str] = val
+	}
+}
+
 func BenchmarkMapGet(b *testing.B) {
 	log.Printf("BenchmarkMapGet: b.N=%d", b.N)
 
