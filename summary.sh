@@ -14,6 +14,7 @@ do
 	[ -f $f ] || msgExit 1 "I can't find a $f file."
 done
 
+# dup but it doesn't matter
 perl -pi -e 's/Map//' map.b
 perl -pi -e 's/Hamt32//' fullonly-hamt32.b
 perl -pi -e 's/Hamt32//' componly-hamt32.b

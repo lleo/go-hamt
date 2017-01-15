@@ -49,6 +49,33 @@ import (
 	"github.com/lleo/go-hamt/key"
 )
 
+// Configuration contants to be passed to `hamt64.New(int) *Hamt`.
+// WARNING!!! Duplicated code with both hamt32 and hamt64. Must have
+// test to guarantee they stay in lock step.
+const (
+	// HybridTables indicates the structure should use compressedTable
+	// initially, then upgrad to fullTable when appropriate.
+	HybridTables = iota
+	// CompTablesOnly indicates the structure should use compressedTables ONLY.
+	// This was intended just save space, but also seems to be faster; CPU cache
+	// locality maybe?
+	CompTablesOnly
+	// FullTableOnly indicates the structure should use fullTables ONLY.
+	// This was intended to be for speed, as compressed tables use a software
+	// bitCount function to access individual cells. Turns out, not so much.
+	FullTablesOnly
+)
+
+// TableOptionName is a pedantic lookup table; given the configuration option
+// it maps to the configuration option's name.
+var TableOptionName = make(map[int]string, 3)
+
+func init() {
+	TableOptionName[0] = "HybridTables"
+	TableOptionName[1] = "CompTablesOnly"
+	TableOptionName[2] = "FullTablesOnly"
+}
+
 // Hamt interface defines all behavior for implementations of the
 // Hash Array Mapped Trie datastructures in hammt32/ and hamt64/.
 type Hamt interface {
