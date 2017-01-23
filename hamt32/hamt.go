@@ -118,31 +118,30 @@ func init() {
 	TableOptionName[FullTablesOnly] = "FullTablesOnly"
 }
 
-// Hamt is a Hashed Array Map Trie data structure. It has a branching factor of
-// 32 and is at most 6 nodes deep. See:
-// https://en.wikipedia.org/wiki/Hash_array_mapped_trie
+//Hamt is a Hashed Array Map Trie data structure. It has a branching factor of
+//32 and is at most 6 nodes deep. See:
+//https://en.wikipedia.org/wiki/Hash_array_mapped_trie
 type Hamt struct {
 	root            tableI
 	nentries        int
 	grade, fullinit bool
 }
 
-// New creates a new hamt32.Hamt data structure with the table option set to
-// either:
+//New creates a new hamt32.Hamt data structure with the table option set to
+//either:
 //
-// `hamt32.HybridTables`:
-// Initially start out with compressedTable, but when the table is half full
-// upgrade to fullTable. If a fullTable shrinks to tableCapacity/8(4) entries
-// downgrade to compressedTable.
+//`hamt32.HybridTables`:
+//Initially start out with compressedTable, but when the table is half full
+//upgrade to fullTable. If a fullTable shrinks to tableCapacity/8(4) entries
+//downgrade to compressedTable.
 //
-// `hamt32.CompTablesOnly`:
-// Use compressedTable ONLY with no up/downgrading to/from fullTable. This
-// uses the least amount of space.
+//`hamt32.CompTablesOnly`:
+//Use compressedTable ONLY with no up/downgrading to/from fullTable. This
+//uses the least amount of space.
 //
-// `hamt32.FullTablesOnly`:
-// Only use fullTable no up/downgrading from/to compressedTables. This is
-// the fastest performance.
-//
+//`hamt32.FullTablesOnly`:
+//Only use fullTable no up/downgrading from/to compressedTables. This is
+//the fastest performance.
 func New(opt int) *Hamt {
 	var h = new(Hamt)
 	if opt == CompTablesOnly {
