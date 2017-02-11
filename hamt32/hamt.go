@@ -95,15 +95,15 @@ func buildHashPath(hashPath uint32, idx, depth uint) uint32 {
 const (
 	// HybridTables indicates the structure should use compressedTable
 	// initially, then upgrad to fullTable when appropriate.
-	HybridTables = iota
+	HybridTables = iota //0
 	// CompTablesOnly indicates the structure should use compressedTables ONLY.
 	// This was intended just save space, but also seems to be faster; CPU cache
 	// locality maybe?
-	CompTablesOnly
+	CompTablesOnly //1
 	// FullTableOnly indicates the structure should use fullTables ONLY.
 	// This was intended to be for speed, as compressed tables use a software
 	// bitCount function to access individual cells. Turns out, not so much.
-	FullTablesOnly
+	FullTablesOnly //2
 )
 
 // TableOptionName is a map of the table option value Hybrid, CompTablesOnly,
