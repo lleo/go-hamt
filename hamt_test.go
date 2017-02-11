@@ -18,6 +18,7 @@ import (
 	"github.com/lleo/go-hamt/key"
 	"github.com/lleo/go-hamt/stringkey"
 	"github.com/lleo/stringutil"
+
 	"github.com/pkg/errors"
 )
 
