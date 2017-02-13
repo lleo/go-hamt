@@ -37,6 +37,8 @@ func (kv KeyVal) String() string {
 // packages.
 type Key interface {
 	String() string // ISA/statisfies fmt.Stringer interface
+	String30() string
+	String60() string
 	Equals(Key) bool
 	Hash30() uint32
 	Hash60() uint64
@@ -177,10 +179,16 @@ func hash64(bs []byte) uint64 {
 // String provides a human readable form of the Base's hash30 and hash60
 // values. Both in raw integer and slash '/' separated integers of the 5 and
 // 6 bit path values; for hash30 and hash60 respectively.
-func (kb *Base) String() string {
-	return fmt.Sprintf("Base{(%d)%s, (%d)%s}",
-		kb.hash30, hash30String(kb.hash30),
-		kb.hash60, hash60String(kb.hash60))
+func (kb Base) String() string {
+	return fmt.Sprintf("Base{%s, %s}", hash30String(kb.hash30), hash60String(kb.hash60))
+}
+
+func (kb Base) String30() string {
+	return hash30String(kb.hash30)
+}
+
+func (kb Base) String60() string {
+	return hash60String(kb.hash60)
 }
 
 // Initialize the Base part of any struct that has the Base struct embedded.
@@ -194,11 +202,11 @@ func (kb *Base) Initialize(bs []byte) {
 }
 
 // Hash30 returns the uint32 that contains the 30bit hash value.
-func (kb *Base) Hash30() uint32 {
+func (kb Base) Hash30() uint32 {
 	return kb.hash30
 }
 
 // Hash60 returns the uint32 that contains the 60bit hash value.
-func (kb *Base) Hash60() uint64 {
+func (kb Base) Hash60() uint64 {
 	return kb.hash60
 }
