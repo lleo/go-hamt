@@ -26,6 +26,9 @@ type StringKey struct {
 // New allocates and initializes a StringKey data structure.
 func New(str string) *StringKey {
 	var k = new(StringKey)
+
+	//Bad for straight assignment  all strings are pointers to structs.
+	//But thats ok, cuz all strings are immutable.
 	k.str = str
 
 	k.Initialize([]byte(k.str))
@@ -34,19 +37,31 @@ func New(str string) *StringKey {
 }
 
 // String return a string representation of StringKey data structure.
-func (sk *StringKey) String() string {
+func (sk StringKey) String() string {
 	return fmt.Sprintf("StringKey{%s, str:%q}", sk.Base.String(), sk.str)
+}
+
+func (sk StringKey) String30() string {
+	return fmt.Sprintf("{%s, %q}", sk.Base.String30(), sk.str)
+}
+
+func (sk StringKey) String60() string {
+	return fmt.Sprintf("{%s, %q}", sk.Base.String60(), sk.str)
 }
 
 // Equals returns true iff the StringKey exactly matches the key passed it. If
 // The key.Key passed as an argument is not also a StringKey Equals()
 // automatically returns false.
-func (sk *StringKey) Equals(key key.Key) bool {
-	var k, typeMatches = key.(*StringKey)
-	if !typeMatches {
+func (sk StringKey) Equals(key key.Key) bool {
+	var k, isStrinKey = key.(*StringKey)
+	if !isStrinKey {
 		panic("type mismatch")
 	}
 	return sk.str == k.str
+}
+
+func (sk StringKey) toByteSlice() []byte {
+	return []byte(sk.str)
 }
 
 func toByteSlice(str string) []byte {
@@ -93,6 +108,6 @@ func toByteSlice(str string) []byte {
 
 // Str returns the internal string of StringKey. This allows for read-only
 // access to the string field of StringKey.
-func (sk *StringKey) Str() string {
+func (sk StringKey) Str() string {
 	return sk.str
 }
