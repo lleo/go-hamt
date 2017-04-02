@@ -27,8 +27,6 @@ type StringKey struct {
 func New(str string) *StringKey {
 	var k = new(StringKey)
 
-	//Bad for straight assignment  all strings are pointers to structs.
-	//But thats ok, cuz all strings are immutable.
 	k.str = str
 
 	k.Initialize([]byte(k.str))
