@@ -8,41 +8,41 @@ function msgExit() {
 	exit $xit
 }
 
-for f in map.b fullonly-hamt32.b componly-hamt32.b hybrid-hamt32.b \
-			   fullonly-hamt64.b componly-hamt64.b hybrid-hamt64.b ;
+for f in map.b hamt32-hybrid.b hamt32-comp.b hamt32-full.b \
+			   hamt64-hybrid.b hamt64-comp.b hamt64-full.b ;
 do
 	[ -f $f ] || msgExit 1 "I can't find a $f file."
 done
 
 # dup but it doesn't matter
 perl -pi -e 's/Map//' map.b
-perl -pi -e 's/Hamt32//' fullonly-hamt32.b
-perl -pi -e 's/Hamt32//' componly-hamt32.b
-perl -pi -e 's/Hamt32//' hybrid-hamt32.b
-perl -pi -e 's/Hamt64//' fullonly-hamt64.b
-perl -pi -e 's/Hamt64//' componly-hamt64.b
-perl -pi -e 's/Hamt64//' hybrid-hamt64.b
+perl -pi -e 's/Hamt32//' hamt32-hybrid.b
+perl -pi -e 's/Hamt32//' hamt32-comp.b
+perl -pi -e 's/Hamt32//' hamt32-full.b
+perl -pi -e 's/Hamt64//' hamt64-hybrid.b
+perl -pi -e 's/Hamt64//' hamt64-comp.b
+perl -pi -e 's/Hamt64//' hamt64-full.b
 
-echo "Go's Map VS Hamt32 FullTablesOnly"
-benchcmp map.b fullonly-hamt32.b
-echo
+#echo
+echo "Go's Map" vs "Hamt32 FullTablesOnly"
+benchcmp map.b hamt32-full.b
 
-echo "Go's Map VS Hamt64 FullTablesOnly"
-benchcmp map.b fullonly-hamt64.b
 echo
+echo "Go's Map" vs "Hamt64 FullTablesOnly"
+benchcmp map.b hamt64-full.b
 
-echo "Go's Map VS Hamt32 CompTablesOnly"
-benchcmp map.b componly-hamt32.b
 echo
+echo "Go's Map" vs "Hamt32 CompTablesOnly"
+benchcmp map.b hamt32-comp.b
 
-echo "Go's Map VS Hamt64 CompTablesOnly"
-benchcmp map.b componly-hamt64.b
 echo
+echo "Go's Map" vs "Hamt64 CompTablesOnly"
+benchcmp map.b hamt64-comp.b
 
-echo "Go's Map VS Hamt32 HybridTables"
-benchcmp map.b hybrid-hamt32.b
 echo
+echo "Go's Map" vs "Hamt32 HybridTables"
+benchcmp map.b hamt32-hybrid.b
 
-echo "Go's Map VS Hamt64 HybridTables"
-benchcmp map.b hybrid-hamt64.b
 echo
+echo "Go's Map" vs "Hamt64 HybridTables"
+benchcmp map.b hamt64-hybrid.b
