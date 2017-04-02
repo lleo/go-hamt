@@ -20,26 +20,27 @@ cd $gohamt 2>/dev/null
 [ -d hamt32 ] || msgExit 1  "I don't see a hamt32/; am i in the base directory of $gohamt ?"
 [ -d hamt64 ] || msgExit 1  "I don't see a hamt32/; am i in the base directory of $gohamt ?"
 
-echo "Running map benches"
+echo "Builtin Map implementation"
 go test -F -run=xxx -bench=Map | tee map.b
 perl -pi -e 's/Map//' map.b
 
 echo "Running Hamt32 benches"
-go test -F -run=xxx -bench=Hamt32 | tee fullonly-hamt32.b
-go test -C -run=xxx -bench=Hamt32 | tee componly-hamt32.b
-go test -H -run=xxx -bench=Hamt32 | tee hybrid-hamt32.b
+echo "Hamt32 Hybrid/Compressed/Full"
+go test -H -run=xxx -bench=Hamt32 | tee hamt32-hybrid.b
+go test -C -run=xxx -bench=Hamt32 | tee hamt32-comp.b
+go test -F -run=xxx -bench=Hamt32 | tee hamt32-full.b
 
-perl -pi -e 's/Hamt32//' fullonly-hamt32.b
-perl -pi -e 's/Hamt32//' componly-hamt32.b
-perl -pi -e 's/Hamt32//' hybrid-hamt32.b
+perl -pi -e 's/Hamt32//' hamt32-hybrid.b
+perl -pi -e 's/Hamt32//' hamt32-comp.b
+perl -pi -e 's/Hamt32//' hamt32-full.b
 
-echo "Running Hamt64 benches"
-go test -F -run=xxx -bench=Hamt64 | tee fullonly-hamt64.b
-go test -C -run=xxx -bench=Hamt64 | tee componly-hamt64.b
-go test -H -run=xxx -bench=Hamt64 | tee hybrid-hamt64.b
+echo "Hamt64 Hybrid/Compressed/Full"
+go test -H -run=xxx -bench=Hamt64 | tee hamt64-hybrid.b
+go test -C -run=xxx -bench=Hamt64 | tee hamt64-comp.b
+go test -F -run=xxx -bench=Hamt64 | tee hamt64-full.b
 
-perl -pi -e 's/Hamt64//' fullonly-hamt64.b
-perl -pi -e 's/Hamt64//' componly-hamt64.b
-perl -pi -e 's/Hamt64//' hybrid-hamt64.b
+perl -pi -e 's/Hamt64//' hamt64-hybrid.b
+perl -pi -e 's/Hamt64//' hamt64-comp.b
+perl -pi -e 's/Hamt64//' hamt64-full.b
 
 ./summary.sh
