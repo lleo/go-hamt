@@ -104,9 +104,9 @@ func (kb Base) HashPathString30(depth uint) string {
 		return "/"
 	}
 
-	var strs = make([]string, depth)
+	var strs = make([]string, depth+1)
 
-	for d := uint(0); d < depth; d++ {
+	for d := uint(0); d <= depth; d++ {
 		var idx = kb.Index30(d)
 		strs[d] = fmt.Sprintf("%02d", idx)
 	}
@@ -129,9 +129,9 @@ func (kb Base) HashPathString60(depth uint) string {
 		return "/"
 	}
 
-	var strs = make([]string, depth)
+	var strs = make([]string, depth+1)
 
-	for d := uint(0); d < depth; d++ {
+	for d := uint(0); d <= depth; d++ {
 		var idx = kb.Index60(d)
 		strs[d] = fmt.Sprintf("%02d", idx)
 	}
