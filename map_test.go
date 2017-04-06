@@ -1,35 +1,37 @@
 package hamt_test
 
 import (
+	"fmt"
 	"log"
-	"math/rand"
 	"testing"
-	"time"
 )
 
-func rebuildDeleteMap(strs []string) {
-	for val, str := range strs {
-		_, exists := DeleteMap[str]
-		if exists {
-			break
-		}
-
-		DeleteMap[str] = val
-	}
-}
-
 func BenchmarkMapGet(b *testing.B) {
+	var name = fmt.Sprintf("BenchmarkMapGet:%d", b.N)
 	log.Printf("BenchmarkMapGet: b.N=%d", b.N)
 
+	var lookupMap = buildMap(name, b.N)
+
+	var keyStrings = make([]string, b.N)
+	for k, v := range lookupMap {
+		keyStrings[v] = k
+	}
+
+	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
-		var j = int(rand.Int31()) % numHugeKvs
-		var s = keyStrings[j]
-		var val, ok = LookupMap[s]
+		//var j = int(rand.Int31()) % b.N
+		//var s = keyStrings[j]
+		var s = keyStrings[i]
+
+		var val, ok = lookupMap[s]
 		if !ok {
 			b.Fatalf("LookupMap[%s] not ok", s)
 		}
-		if val != j {
-			b.Fatalf("val,%v != %v", val, j)
+		//if val != j {
+		//	b.Fatalf("val,%v != %v", val, j)
+		if val != i {
+			b.Fatalf("val,%v != %v", val, i)
 		}
 	}
 }
@@ -37,32 +39,41 @@ func BenchmarkMapGet(b *testing.B) {
 func BenchmarkMapPut(b *testing.B) {
 	log.Printf("BenchmarkMapPut: b.N=%d", b.N)
 
-	var m = make(map[string]int, b.N)
+	var strings = make([]string, b.N)
 	var s = "aaa"
 	for i := 0; i < b.N; i++ {
-		m[s] = i
+		strings[i] = s
 		s = Inc(s)
+	}
+
+	b.ResetTimer()
+
+	var m = make(map[string]int, b.N)
+	for i := 0; i < b.N; i++ {
+		m[strings[i]] = i
 	}
 }
 
 func BenchmarkMapDel(b *testing.B) {
+	var name = fmt.Sprintf("BenchmarkMapDel:%d", b.N)
 	log.Printf("BenchmarkMapDel: b.N=%d", b.N)
 
-	StartTime["BenchmarkMapDel:rebuildDeleteMap"] = time.Now()
+	var deleteMap = buildMap(name, b.N)
 
-	rebuildDeleteMap(keyStrings)
-
-	RunTime["build BenchmarkMapDel:rebuildDeleteMap"] = time.Since(StartTime["BenchmarkMapDel:rebuildDeleteMap"])
+	var keyStrings = make([]string, b.N)
+	var i int
+	for k := range deleteMap {
+		keyStrings[i] = k
+		i++
+	}
 
 	b.ResetTimer()
 
-	s := "aaa"
 	for i := 0; i < b.N; i++ {
-		delete(DeleteMap, s)
-		s = Inc(s)
+		delete(deleteMap, keyStrings[i])
 	}
 
-	if len(DeleteMap) == 0 {
-		b.Fatal("len(DeleteMap) == 0")
+	if len(deleteMap) != 0 {
+		b.Fatal("len(deleteMap) != 0")
 	}
 }
