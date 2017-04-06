@@ -33,14 +33,6 @@ func TestHamt64Del(t *testing.T) {
 		t.Fatalf("failed to build Hamt64: %s", err)
 	}
 
-	//var h = hamt64.New(TableOption)
-	//for _, kv := range KVS {
-	//	inserted := h.Put(kv.Key, kv.Val)
-	//	if !inserted {
-	//		t.Fatalf("failed to h.Put(%s, %v)", kv.Key, kv.Val)
-	//	}
-	//}
-
 	// then tear it down.
 	for _, kv := range KVS {
 		val, deleted := h.Del(kv.Key)
@@ -71,7 +63,7 @@ func BenchmarkHamt64Get(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		var j = int(rand.Int31()) % numKvs
+		var j = int(rand.Int31()) % b.N
 		var key = kvs[j].Key
 		var val = kvs[j].Val
 
