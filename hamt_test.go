@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"sort"
 	"testing"
 	"time"
 
@@ -22,23 +23,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-// This number was found by experimenting with TestBenchmarkDel() and the
-// testing harness kept calling the test with greater and greater b.N values.
-// It toped out at 3,000,000 .
-var numHugeKvs = 5 * 1024 * 1024 // five mega-entries
-var hugeKvs []key.KeyVal
+// Found depth 5 collision between 3m+2k & 3m+4k at depth=5
+// Works for hamt32 testing coverage not for hamt64 coverage
+var numKvs int = (3 * 1024 * 1024) + (4 * 1024) // between 3m+2k & 3m+4k
 
-var LookupMap map[string]int
-var DeleteMap map[string]int
-var keyStrings []string
+//var SVS []StrVal
+var KVS []key.KeyVal
 
 var TableOption int
 
 var LookupHamt32 *hamt32.Hamt
-var DeleteHamt32 *hamt32.Hamt
 
 var LookupHamt64 *hamt64.Hamt
-var DeleteHamt64 *hamt64.Hamt
 
 var Inc = stringutil.Lower.Inc
 
@@ -83,18 +79,15 @@ func TestMain(m *testing.M) {
 
 	log.Println("TestMain: and so it begins...")
 
-	StartTime["TestMain: build Looup/Delete Map"] = time.Now()
-
-	hugeKvs = buildKeyVals(numHugeKvs)
-
-	RunTime["TestMain: build Looup/Delete Map"] = time.Since(StartTime["TestMain: build Looup/Delete Map"])
+	KVS = buildKeyVals("global", numKvs)
 
 	// execute
 	var xit int
 	if all {
 		TableOption = hamt32.FullTablesOnly
 		log.Printf("TestMain: TableOption == %s\n", hamt32.TableOptionName[TableOption])
-		initData(TableOption, hugeKvs)
+		fmt.Printf("Running TableOption = %s\n", hamt32.TableOptionName[TableOption])
+
 		xit = m.Run()
 		if xit != 0 {
 			os.Exit(1)
@@ -102,7 +95,8 @@ func TestMain(m *testing.M) {
 
 		TableOption = hamt32.CompTablesOnly
 		log.Printf("TestMain: TableOption == %s\n", hamt32.TableOptionName[TableOption])
-		initData(TableOption, hugeKvs)
+		fmt.Printf("Running TableOption = %s\n", hamt32.TableOptionName[TableOption])
+
 		xit = m.Run()
 		if xit != 0 {
 			os.Exit(1)
@@ -110,7 +104,8 @@ func TestMain(m *testing.M) {
 
 		TableOption = hamt32.HybridTables
 		log.Printf("TestMain: TableOption == %s\n", hamt32.TableOptionName[TableOption])
-		initData(TableOption, hugeKvs)
+		fmt.Printf("Running TableOption = %s\n", hamt32.TableOptionName[TableOption])
+
 		xit = m.Run()
 	} else {
 		if hybrid {
@@ -122,7 +117,8 @@ func TestMain(m *testing.M) {
 		}
 
 		log.Printf("TestMain: TableOption == %s\n", hamt32.TableOptionName[TableOption])
-		initData(TableOption, hugeKvs)
+		fmt.Printf("Running TableOption = %s\n", hamt32.TableOptionName[TableOption])
+
 		xit = m.Run()
 	}
 
@@ -131,66 +127,79 @@ func TestMain(m *testing.M) {
 	os.Exit(xit)
 }
 
-func initData(tableOption int, kvs []key.KeyVal) {
-	var funcName = fmt.Sprintf("hamt32: initialize(%s)", hamt32.TableOptionName[tableOption])
+func buildKeyVals(prefix string, num int) []key.KeyVal {
+	var name = fmt.Sprintf("%s-buildKeyVals-%d", prefix, num)
+	StartTime[name] = time.Now()
 
-	var metricName = fmt.Sprintf("%s: build Lookup/Delete Hamt32", funcName)
+	var kvs = make([]key.KeyVal, num)
+	var s = "aaa"
 
-	StartTime[metricName] = time.Now()
+	for i := 0; i < num; i++ {
+		var k = stringkey.New(s)
 
-	LookupMap = make(map[string]int, numHugeKvs)
-	DeleteMap = make(map[string]int, numHugeKvs)
-	keyStrings = make([]string, numHugeKvs)
-
-	LookupHamt32 = hamt32.New(tableOption)
-	DeleteHamt32 = hamt32.New(tableOption)
-
-	LookupHamt64 = hamt64.New(tableOption)
-	DeleteHamt64 = hamt64.New(tableOption)
-
-	for _, kv := range genRandomizedKvs(hugeKvs) {
-		var str = kv.Key.(*stringkey.StringKey).Str()
-		var val = kv.Val.(int)
-		LookupMap[str] = val
-		DeleteMap[str] = val
-		keyStrings[val] = str
-
-		inserted := LookupHamt32.Put(kv.Key, val)
-		if !inserted {
-			log.Fatalf("failed to LookupHamt32.Put(%s, %v)", kv.Key, kv.Val)
-		}
-
-		inserted = DeleteHamt32.Put(kv.Key, val)
-		if !inserted {
-			log.Fatalf("failed to DeleteHamt32.Put(%s, %v)", kv.Key, kv.Val)
-		}
-
-		inserted = LookupHamt64.Put(kv.Key, val)
-		if !inserted {
-			log.Fatalf("failed to LookupHamt64.Put(%s, %v)", kv.Key, kv.Val)
-		}
-
-		inserted = DeleteHamt64.Put(kv.Key, val)
-		if !inserted {
-			log.Fatalf("failed to DeleteHamt64.Put(%s, %v)", kv.Key, kv.Val)
-		}
+		kvs[i] = key.KeyVal{k, i}
+		s = Inc(s)
 	}
 
-	RunTime[metricName] = time.Since(StartTime[metricName])
+	RunTime[name] = time.Since(StartTime[name])
+	return kvs
 }
 
-func buildKeyVals(num int) []key.KeyVal {
-	var kvs = make([]key.KeyVal, num, num)
+func buildMap(prefix string, num int) map[string]int {
+	var name = fmt.Sprintf("%s-buildMap-%d", prefix, num)
+	StartTime[name] = time.Now()
 
-	s := "aaa"
+	var m = make(map[string]int, num)
+	var s = "aaa"
+
 	for i := 0; i < num; i++ {
-		kvs[i].Key = stringkey.New(s)
-		kvs[i].Val = i
+		m[s] = i
 
 		s = Inc(s)
 	}
 
-	return kvs
+	RunTime[name] = time.Since(StartTime[name])
+	return m
+}
+
+func buildHamt32(prefix string, kvs []key.KeyVal, opt int) (*hamt32.Hamt, error) {
+	var name = fmt.Sprintf("%s-buildHamt32-%d", prefix, len(kvs))
+	StartTime[name] = time.Now()
+
+	var h = hamt32.New(opt)
+
+	for _, kv := range kvs {
+		var k = kv.Key
+		var v = kv.Val
+
+		var inserted = h.Put(k, v)
+		if !inserted {
+			return nil, fmt.Errorf("failed to Put(%s, %v)", k, v)
+		}
+	}
+
+	RunTime[name] = time.Since(StartTime[name])
+	return h, nil
+}
+
+func buildHamt64(prefix string, kvs []key.KeyVal, opt int) (*hamt64.Hamt, error) {
+	var name = fmt.Sprintf("%s-buildHamt64-%d", prefix, len(kvs))
+	StartTime[name] = time.Now()
+
+	var h = hamt64.New(opt)
+
+	for _, kv := range kvs {
+		var k = kv.Key
+		var v = kv.Val
+
+		var inserted = h.Put(k, v)
+		if !inserted {
+			return nil, fmt.Errorf("failed to Put(%s, %v)", k, v)
+		}
+	}
+
+	RunTime[name] = time.Since(StartTime[name])
+	return h, nil
 }
 
 func genRandomizedKvs(kvs []key.KeyVal) []key.KeyVal {
@@ -207,13 +216,23 @@ func genRandomizedKvs(kvs []key.KeyVal) []key.KeyVal {
 }
 
 func RunTimes() string {
+	// Grab list of keys from RunTime map; MAJOR un-feature of Go!
+	var ks = make([]string, len(RunTime))
+	var i int = 0
+	for k := range RunTime {
+		ks[i] = k
+		i++
+	}
+	sort.Strings(ks)
+
 	var s = ""
 
 	s += "Key                                      Val\n"
 	s += "========================================+==========\n"
 
-	for key, val := range RunTime {
-		s += fmt.Sprintf("%-40s %s\n", key, val)
+	for _, k := range ks {
+		v := RunTime[k]
+		s += fmt.Sprintf("%-40s %s\n", k, v)
 	}
 	return s
 }
@@ -250,16 +269,16 @@ func TestTableOptions(t *testing.T) {
 	}
 }
 
+//stupid on many levels
 func TestNewHamt32(t *testing.T) {
-	log.Println("TestNewHamt32:")
 	var h = hamt.NewHamt32()
 	if !h.IsEmpty() {
 		t.Fatal("!?!? a brand new Hamt !IsEmpty()")
 	}
 }
 
+//stupid on many levels
 func TestNewHamt64(t *testing.T) {
-	log.Println("TestNewHamt64:")
 	var h = hamt.NewHamt32()
 	if !h.IsEmpty() {
 		t.Fatal("!?!? a brand new Hamt !IsEmpty()")

@@ -1,52 +1,48 @@
 package hamt_test
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"testing"
-	"time"
-
-	"github.com/lleo/go-hamt/hamt32"
-	"github.com/lleo/go-hamt/key"
-	"github.com/lleo/go-hamt/stringkey"
 )
 
-func rebuildDeleteHamt32(kvs []key.KeyVal) {
-	for _, kv := range kvs {
-		inserted := DeleteHamt32.Put(kv.Key, kv.Val)
-		if !inserted {
-			//log.Printf("BenchmarkHamt32Del: inserted,%v := DeleteHamt32.Put(%s, %d)", inserted, kv.Key, kv.Val)
-
-			// we delete inorder so we can stop rebuilding when the entries start existing
-			break
-		}
-	}
-}
-
 func TestHamt32Put(t *testing.T) {
-	var h = hamt32.New(TableOption)
+	var name = "TestHamt32Put"
 
-	for _, kv := range hugeKvs {
-		inserted := h.Put(kv.Key, kv.Val)
-		if !inserted {
-			t.Fatalf("failed to h.Put(%s, %v)", kv.Key, kv.Val)
-		}
+	var _, err = buildHamt32(name, KVS, TableOption)
+	if err != nil {
+		t.Fatalf("failed to build Hamt32: %s", err)
 	}
+
+	//var h = hamt32.New(TableOption)
+	//for _, kv := range KVS {
+	//	inserted := h.Put(kv.Key, kv.Val)
+	//	if !inserted {
+	//		t.Fatalf("failed to h.Put(%s, %v)", kv.Key, kv.Val)
+	//	}
+	//}
 }
 
 func TestHamt32Del(t *testing.T) {
-	var h = hamt32.New(TableOption)
+	var name = "TestHamt32Del"
 
 	// build one up
-	for _, kv := range hugeKvs {
-		inserted := h.Put(kv.Key, kv.Val)
-		if !inserted {
-			t.Fatalf("failed to h.Put(%s, %v)", kv.Key, kv.Val)
-		}
+	var h, err = buildHamt32(name, KVS, TableOption)
+	if err != nil {
+		t.Fatalf("failed to build Hamt32: %s", err)
 	}
 
+	//var h = hamt32.New(TableOption)
+	//for _, kv := range KVS {
+	//	inserted := h.Put(kv.Key, kv.Val)
+	//	if !inserted {
+	//		t.Fatalf("failed to h.Put(%s, %v)", kv.Key, kv.Val)
+	//	}
+	//}
+
 	// then tear it down.
-	for _, kv := range hugeKvs {
+	for _, kv := range KVS {
 		val, deleted := h.Del(kv.Key)
 		if !deleted {
 			t.Fatalf("failed to h.Del(%q)", kv.Key)
@@ -63,69 +59,83 @@ func TestHamt32Del(t *testing.T) {
 }
 
 func BenchmarkHamt32Get(b *testing.B) {
+	var name = fmt.Sprintf("BenchmarkHamt32Get:%d", b.N)
 	log.Printf("BenchmarkHamt32Get: b.N=%d", b.N)
 
+	var kvs = buildKeyVals(name, b.N)
+	var h, err = buildHamt32(name, kvs, TableOption)
+	if err != nil {
+		b.Fatalf("Failed to buildHamt32: %s", err)
+	}
+
+	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
-		var j = int(rand.Int31()) % numHugeKvs
-		var key = hugeKvs[j].Key
-		var val0 = hugeKvs[j].Val
-		//var j = int(rand.Int31()) % numMidKvs
-		//var key = midKvs[j].Key
-		//var val0 = midKvs[j].Val
-		var val, found = LookupHamt32.Get(key)
+		var j = int(rand.Int31()) % numKvs
+		var key = kvs[j].Key
+		var val = kvs[j].Val
+
+		var v, found = h.Get(key)
 		if !found {
 			b.Fatalf("H.Get(%s) not found", key)
 		}
-		if val != val0 {
-			b.Fatalf("val,%v != hugeKvs[%d].Val,%v", val, j, val0)
-			//b.Fatalf("val,%v != midKvs[%d].Val,%v", val, j, val0)
+		if val != v {
+			b.Fatalf("v,%v != KVS[%d].Val,%v", val, j, v)
 		}
 	}
 }
 
 func BenchmarkHamt32Put(b *testing.B) {
+	var name = fmt.Sprintf("BenchmarkHamt32Put:%d", b.N)
 	log.Printf("BenchmarkHamt32Put: b.N=%d", b.N)
 
-	var h = hamt32.New(TableOption)
-	var s = "aaa"
-	for i := 0; i < b.N; i++ {
-		key := stringkey.New(s)
-		val := i + 1
-		h.Put(key, val)
-		s = Inc(s)
-	}
-}
-
-func BenchmarkHamt32Del(b *testing.B) {
-	log.Printf("BenchmarkHamt32Del: b.N=%d", b.N)
-
-	// We rebuild the DeleteHamt32 datastructure because this Benchmark will probably be
-	// rereun with different b.N values to get a better/more-accurate benchmark.
-
-	StartTime["BenchmarkHamt32Del:rebuildDeleteHamt32"] = time.Now()
-	rebuildDeleteHamt32(hugeKvs)
-	RunTime["BenchmarkHamt32Del:rebuildDeleteHamt"] = time.Since(StartTime["BenchmarkHamt32Del:rebuildDeleteHamt32"])
+	var kvs = buildKeyVals(name, b.N)
 
 	b.ResetTimer()
 
-	StartTime["run BenchmarkHamt32Del"] = time.Now()
+	var _, err = buildHamt32(name, kvs, TableOption)
+	if err != nil {
+		b.Fatalf("failed to buildHamt32: %s", err)
+	}
+
+	//var h = hamt32.New(TableOption)
+	//var s = "aaa"
+	//for i := 0; i < b.N; i++ {
+	//	key := stringkey.New(s)
+	//	val := i + 1
+	//	h.Put(key, val)
+	//	s = Inc(s)
+	//}
+}
+
+func BenchmarkHamt32Del(b *testing.B) {
+	var name = fmt.Sprintf("BenchmarkHamt32Del:%d", b.N)
+	log.Printf("BenchmarkHamt32Del: b.N=%d", b.N)
+
+	var kvs = buildKeyVals(name, b.N)
+
+	var h, err = buildHamt32(name, kvs, TableOption)
+	if err != nil {
+		b.Fatalf("failed to buildHamt32: %s", err)
+	}
+
+	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
-		kv := hugeKvs[i]
+		kv := kvs[i]
 		key := kv.Key
 		val := kv.Val
 
-		v, ok := DeleteHamt32.Del(key)
+		var v, ok = h.Del(key)
 		if !ok {
-			b.Fatalf("failed to v, ok := DeleteHamt32.del(%s)", key)
+			b.Fatalf("failed to v, ok := h.del(%s)", key)
 		}
 		if v != val {
-			b.Fatalf("DeleteHamt32.del(%s) v,%d != i,%d", key, v, val)
+			b.Fatalf("h.del(%s) v,%d != kvs[%d].Val,%d", key, v, i, val)
 		}
 	}
 
-	if DeleteHamt32.IsEmpty() {
-		b.Fatal("DeleteHamt32.IsEmpty() => true")
+	if h.IsEmpty() {
+		b.Fatal("h.IsEmpty() => true")
 	}
-
-	RunTime["run BenchmarkHamt32Del"] = time.Since(StartTime["run BenchmarkHamt32Del"])
 }
