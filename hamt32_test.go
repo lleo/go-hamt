@@ -104,7 +104,7 @@ func BenchmarkHamt32Del(b *testing.B) {
 	var name = fmt.Sprintf("BenchmarkHamt32Del:%d", b.N)
 	log.Printf("BenchmarkHamt32Del: b.N=%d", b.N)
 
-	var kvs = buildKeyVals(name, b.N)
+	var kvs = buildKeyVals(name, b.N+1)
 
 	var h, err = buildHamt32(name, kvs, TableOption)
 	if err != nil {

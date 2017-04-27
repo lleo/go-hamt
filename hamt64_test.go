@@ -104,7 +104,7 @@ func BenchmarkHamt64Del(b *testing.B) {
 	var name = fmt.Sprintf("BenchmarkHamt64Del:%d", b.N)
 	log.Printf("BenchmarkHamt64Del: b.N=%d", b.N)
 
-	var kvs = buildKeyVals(name, b.N)
+	var kvs = buildKeyVals(name, b.N+1)
 
 	var h, err = buildHamt64(name, kvs, TableOption)
 	if err != nil {
