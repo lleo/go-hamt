@@ -7,31 +7,30 @@ import (
 )
 
 func BenchmarkMapGet(b *testing.B) {
-	var name = fmt.Sprintf("BenchmarkMapGet:%d", b.N)
-	log.Printf("BenchmarkMapGet: b.N=%d", b.N)
-
+	var name = fmt.Sprintf("BenchmarkMapGet#%d", b.N)
 	var lookupMap = buildMap(name, b.N)
 
-	var keyStrings = make([]string, b.N)
+	var svs = make([]StrVal, b.N)
+	var j int
 	for k, v := range lookupMap {
-		keyStrings[v] = k
+		svs[j] = StrVal{k, v}
+		j++
 	}
+
+	//svs = genRandomizedSvs(svs)
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
-		//var j = int(rand.Int31()) % b.N
-		//var s = keyStrings[j]
-		var s = keyStrings[i]
+	for _, sv := range svs {
+		var str = sv.Str
+		var val = sv.Val
 
-		var val, ok = lookupMap[s]
+		var v, ok = lookupMap[str]
 		if !ok {
-			b.Fatalf("LookupMap[%s] not ok", s)
+			b.Fatalf("LookupMap[%s] not ok", str)
 		}
-		//if val != j {
-		//	b.Fatalf("val,%v != %v", val, j)
-		if val != i {
-			b.Fatalf("val,%v != %v", val, i)
+		if val != v {
+			b.Fatalf("v,%v != val,%v", v, val)
 		}
 	}
 }
