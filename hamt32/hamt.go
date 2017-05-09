@@ -29,6 +29,7 @@ package hamt32
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/lleo/go-hamt/key"
@@ -157,15 +158,71 @@ func New(opt int) *Hamt {
 	return h
 }
 
-// IsEmpty Hamt method returns a boolean indicating if this Hamt structure has no entries.
+// IsEmpty Hamt method returns a boolean indicating if this Hamt structure has
+// no entries.
 func (h *Hamt) IsEmpty() bool {
 	return h.root == nil
 }
 
-// Get Hamt method looks up a given key in the Hamt data structure.
-func (h *Hamt) Get(k key.Key) (interface{}, bool) {
+func (h *Hamt) Nentries() int {
+	return h.nentries
+}
+
+func (h Hamt) find(k key.Key) (path pathT, leaf leafI, idx uint) {
 	if h.IsEmpty() {
-		return nil, false
+		return nil, nil, 0
+	}
+
+	path = newPathT()
+	var curTable = h.root
+
+	var h30 = k.Hash30()
+	var depth uint
+	var curNode nodeI
+
+DepthIter:
+	for depth = 0; depth <= maxDepth; depth++ {
+		path.push(curTable)
+		idx = index(h30, depth)
+		curNode = curTable.get(idx)
+
+		switch n := curNode.(type) {
+		case nil:
+			leaf = nil
+			break DepthIter
+		case leafI:
+			leaf = n
+			break DepthIter
+		case tableI:
+			if depth == maxDepth {
+				log.Panicf("SHOULD NOT BE REACHED; depth,%d == maxDepth,%d & tableI entry found; %s", depth, maxDepth, n)
+			}
+			curTable = n
+			// exit switch then loop for
+		default:
+			log.Panicf("SHOULD NOT BE REACHED: depth=%d; curNode unknown type=%T;", depth, curNode)
+		}
+	}
+
+	return
+}
+
+// Get Hamt method looks up a given key in the Hamt data structure.
+// BenchHamt32:
+//func (h *Hamt) Get(k key.Key) (val interface{}, found bool) {
+//	var _, leaf, _ = h.find(k)
+//
+//	if leaf == nil {
+//		return //nil, false
+//	}
+//
+//	val, found = leaf.get(k)
+//	return
+//}
+
+func (h *Hamt) Get(k key.Key) (val interface{}, found bool) {
+	if h.IsEmpty() {
+		return //nil, false
 	}
 
 	var h30 = k.Hash30()
@@ -174,23 +231,24 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 
 	for depth := uint(0); depth <= maxDepth; depth++ {
 		var idx = index(h30, depth)
-		var curNode = curTable.get(idx)
+		var curNode = curTable.get(idx) //nodeI
 
 		if curNode == nil {
-			break
+			return //nil, false
 		}
 
 		if leaf, isLeaf := curNode.(leafI); isLeaf {
-			var val, found = leaf.get(k)
-			return val, found
+			val, found = leaf.get(k)
+			return //val, found
 		}
 
-		//else curNode MUST BE A tableI
+		if depth == maxDepth {
+			panic("SHOULD NOT HAPPEN")
+		}
 		curTable = curNode.(tableI)
 	}
-	// curNode == nil || depth > maxDepth
 
-	return nil, false
+	panic("SHOULD NEVER BE REACHED")
 }
 
 // Put Hamt method inserts a given key/val pair into the Hamt data structure.
