@@ -3,25 +3,59 @@ package hamt_test
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"testing"
+
+	"github.com/lleo/go-hamt/hamt32"
 )
 
-func TestHamt32Put(t *testing.T) {
-	var name = "TestHamt32Put"
+func TestHamt32Get(t *testing.T) {
+	var name = "TestHamt32Get"
 
-	var _, err = buildHamt32(name, KVS, TableOption)
+	var h, err = buildHamt32(name, KVS, TableOption)
 	if err != nil {
 		t.Fatalf("failed to build Hamt32: %s", err)
 	}
 
-	//var h = hamt32.New(TableOption)
-	//for _, kv := range KVS {
-	//	inserted := h.Put(kv.Key, kv.Val)
-	//	if !inserted {
-	//		t.Fatalf("failed to h.Put(%s, %v)", kv.Key, kv.Val)
-	//	}
+	for _, kv := range KVS {
+		var key = kv.Key
+		var val = kv.Val
+
+		var v, found = h.Get(key)
+		if !found {
+			t.Fatalf("failed to Get(%s)", key)
+		}
+		if val != v {
+			t.Fatalf("val,%d != v,%d for key=%s", val, v, key)
+		}
+	}
+}
+
+func TestHamt32Put(t *testing.T) {
+	//var name = "TestHamt32Put"
+
+	//var _, err = buildHamt32(name, KVS, TableOption)
+	//if err != nil {
+	//	t.Fatalf("failed to build Hamt32: %s", err)
 	//}
+
+	var h = hamt32.New(TableOption)
+	for _, kv := range KVS {
+		var key = kv.Key
+		var val = kv.Val
+
+		inserted := h.Put(kv.Key, kv.Val)
+		if !inserted {
+			t.Fatalf("failed to h.Put(%s, %v)", kv.Key, kv.Val)
+		}
+
+		var v, found = h.Get(key)
+		if !found {
+			t.Fatalf("failed to Get(%s)", key)
+		}
+		if val != v {
+			t.Fatalf("val,%d != v,%d for key=%s", val, v, key)
+		}
+	}
 }
 
 func TestHamt32Del(t *testing.T) {
@@ -60,19 +94,19 @@ func BenchmarkHamt32Get(b *testing.B) {
 		b.Fatalf("Failed to buildHamt32: %s", err)
 	}
 
+	//kvs = genRandomizedKvs(kvs)
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
-		var j = int(rand.Int31()) % b.N
-		var key = kvs[j].Key
-		var val = kvs[j].Val
+	for _, kv := range kvs {
+		var key = kv.Key
+		var val = kv.Val
 
 		var v, found = h.Get(key)
 		if !found {
 			b.Fatalf("H.Get(%s) not found", key)
 		}
 		if val != v {
-			b.Fatalf("v,%v != kvs[%d].Val,%v", val, j, v)
+			b.Fatalf("v,%v != val,%v for key=%s", v, val, key)
 		}
 	}
 }
@@ -104,7 +138,7 @@ func BenchmarkHamt32Del(b *testing.B) {
 	var name = fmt.Sprintf("BenchmarkHamt32Del:%d", b.N)
 	log.Printf("BenchmarkHamt32Del: b.N=%d", b.N)
 
-	var kvs = buildKeyVals(name, b.N+1)
+	var kvs = buildKeyVals(name, b.N+1) //b.N+1 so it won't be empty in the end
 
 	var h, err = buildHamt32(name, kvs, TableOption)
 	if err != nil {
@@ -129,5 +163,8 @@ func BenchmarkHamt32Del(b *testing.B) {
 
 	if h.IsEmpty() {
 		b.Fatal("h.IsEmpty() => true")
+	}
+	if h.Nentries() != 1 {
+		b.Fatal("h.Nentries() != 1")
 	}
 }
