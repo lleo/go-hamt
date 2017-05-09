@@ -10,9 +10,6 @@ import (
 	"testing"
 	"time"
 
-	//"github.com/lleo/go-hamt/hamt32"
-	//"github.com/lleo/go-hamt/hamt64"
-
 	"github.com/lleo/go-hamt"
 	"github.com/lleo/go-hamt/hamt32"
 	"github.com/lleo/go-hamt/hamt64"
@@ -146,7 +143,7 @@ func buildKeyVals(prefix string, num int) []key.KeyVal {
 }
 
 func buildMap(prefix string, num int) map[string]int {
-	var name = fmt.Sprintf("%s-buildMap-%d", prefix, num)
+	var name = fmt.Sprintf("%s-buildMap", prefix)
 	StartTime[name] = time.Now()
 
 	var m = make(map[string]int, num)
@@ -213,6 +210,25 @@ func genRandomizedKvs(kvs []key.KeyVal) []key.KeyVal {
 	}
 
 	return randKvs
+}
+
+type StrVal struct {
+	Str string
+	Val int
+}
+
+func genRandomizedSvs(svs []StrVal) []StrVal {
+	var randSvs = make([]StrVal, len(svs))
+	copy(randSvs, svs)
+
+	//From: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
+	var limit = len(randSvs) //n-1
+	for i := 0; i < limit; /* aka i_max = n-2 */ i++ {
+		j := rand.Intn(i+1) - 1 // i <= j < n; j_min=n-(n-2+1)-1=0; j_max=n-0-1=n-1
+		randSvs[i], randSvs[j] = randSvs[j], randSvs[i]
+	}
+
+	return randSvs
 }
 
 func RunTimes() string {
