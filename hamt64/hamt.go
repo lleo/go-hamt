@@ -1,9 +1,9 @@
 /*
 Package hamt64 implements a 64 node wide Hashed Array Mapped Trie. The hash key
-is 60 bits wide and broken into ten numbers of 6bits each. Those 6bit numbers
+is 60 bits wide and broken into 9 numbers of 6 bits each. Those 6bit numbers
 allows us to index into a 64 node array. Each node is either a leaf or another
 64 node table. So the 60bit hash allows us to index into a B+ Tree with a
-branching factor of 64 and a Maximum depth of 6.
+branching factor of 64 and a Maximum depth of 9.
 
 The basic insertion operation is to calculate a 60 bit hash value from your key
 (a string in the case you use hamt.StringKey), then split it into ten 6bit
@@ -12,8 +12,9 @@ use the coresponding number as an index into the 64 cell array. If the cell is
 empty we create a  leaf node there. If the cell is occupide by another table
 we continue walking up the tree. If the cell is occupide by a leaf we promote
 that cell to a new table and put the current leaf and new one into that table
-in cells corresponding to that new level. If we are at the maxDepth of tree
-and there is already a leaf there we insert our key,value pair into that leaf.
+in cells corresponding to that new level. If we are at the maximun depth of
+the  tree and there is already a leaf there we insert our key,value pair into
+that leaf.
 
 The retrieval operation is a similar tree walk guided by the ten 6bit numbers
 till we find a leaf with the key,value pair in it.
@@ -28,22 +29,23 @@ package hamt64
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/lleo/go-hamt/key"
 )
 
-// nBits constant is the number of bits(6) a 60bit hash value is split into,
-// to provied the indexes of a HAMT.
+// nBits constant is the number of bits(6) a 60bit hash value is split into
+// to provied the index of a HAMT.
 const nBits uint = 6
 
-// maxDepth constant is the maximum depth(9) of nBits values that constitute
-// the path in a HAMT, from [0..maxDepth] for a total of maxDepth+1(10) levels.
-// nBits*(maxDepth+1) == HASHBITS (ie 6*(9+1) == 60).
-const maxDepth uint = 9
+// maxDepth constant is the maximum depth(6) of nBits values that constitute
+// the path in a HAMT, from [0..maxDepth] for a total of maxDepth+1(9) levels.
+// nBits*(maxDepth+1) == HASHBITS (ie 6*(6+1) == 60).
+const maxDepth uint = 6
 
 // tableCapacity constant is the number of table entries in a each node of
-// a HAMT datastructure; its value is 1<<nBits (ie 2^6 == 64).
+// a HAMT datastructure; its value is 2^6 == 64.
 const tableCapacity uint = uint(1 << nBits)
 
 // downgradeThreshold constant is the number of nodes a fullTable has shrunk to,
@@ -94,52 +96,53 @@ func buildHashPath(hashPath uint64, idx, depth uint) uint64 {
 const (
 	// HybridTables indicates the structure should use compressedTable
 	// initially, then upgrad to fullTable when appropriate.
-	HybridTables = iota
+	HybridTables = iota //0
 	// CompTablesOnly indicates the structure should use compressedTables ONLY.
 	// This was intended just save space, but also seems to be faster; CPU cache
 	// locality maybe?
-	CompTablesOnly
+	CompTablesOnly //1
 	// FullTableOnly indicates the structure should use fullTables ONLY.
 	// This was intended to be for speed, as compressed tables use a software
 	// bitCount function to access individual cells. Turns out, not so much.
-	FullTablesOnly
+	FullTablesOnly //2
 )
 
-// TableOptionName is a pedantic lookup table; given the configuration option
-// it maps to the configuration option's name.
+// TableOptionName is a map of the table option value Hybrid, CompTablesOnly,
+// or FullTableOnly to a string representing that option.
+//      var options = hamt64.FullTablesOnly
+//      hamt64.TableOptionName[hamt64.FullTablesOnly] == "FullTablesOnly"
 var TableOptionName = make(map[int]string, 3)
 
 func init() {
-	TableOptionName[0] = "HybridTables"
-	TableOptionName[1] = "CompTablesOnly"
-	TableOptionName[2] = "FullTablesOnly"
+	TableOptionName[HybridTables] = "HybridTables"
+	TableOptionName[CompTablesOnly] = "CompTablesOnly"
+	TableOptionName[FullTablesOnly] = "FullTablesOnly"
 }
 
-// Hamt is a Hashed Array Map Trie data structure. It has a branching factor of
-// 64 and is at most 10 nodes deep. See:
-// https://en.wikipedia.org/wiki/Hash_array_mapped_trie
+//Hamt is a Hashed Array Map Trie data structure. It has a branching factor of
+//64 and is at most 9 nodes deep. See:
+//https://en.wikipedia.org/wiki/Hash_array_mapped_trie
 type Hamt struct {
 	root            tableI
 	nentries        int
 	grade, fullinit bool
 }
 
-// New creates a new hamt64.Hamt data structure with the table option set to
-// either:
+//New creates a new hamt64.Hamt data structure with the table option set to
+//either:
 //
-// `hamt64.HybridTables`:
-// Initially start out with compressedTable, but when the table is half full
-// upgrade to fullTable. If a fullTable shrinks to tableCapacity/8(4) entries
-// downgrade to compressedTable.
+//`hamt64.HybridTables`:
+//Initially start out with compressedTable, but when the table is half full
+//upgrade to fullTable. If a fullTable shrinks to tableCapacity/8(4) entries
+//downgrade to compressedTable.
 //
-// `hamt64.CompTablesOnly`:
-// Use compressedTable ONLY with no up/downgrading to/from fullTable. This
-// uses the least amount of space.
+//`hamt64.CompTablesOnly`:
+//Use compressedTable ONLY with no up/downgrading to/from fullTable. This
+//uses the least amount of space.
 //
-// `hamt64.FullTablesOnly`:
-// Only use fullTable no up/downgrading from/to compressedTables. This is
-// the fastest performance.
-//
+//`hamt64.FullTablesOnly`:
+//Only use fullTable no up/downgrading from/to compressedTables. This is
+//the fastest performance.
 func New(opt int) *Hamt {
 	var h = new(Hamt)
 	if opt == CompTablesOnly {
@@ -155,15 +158,71 @@ func New(opt int) *Hamt {
 	return h
 }
 
-// IsEmpty returns a boolean indicating if this Hamt structure has no entries.
+// IsEmpty Hamt method returns a boolean indicating if this Hamt structure has
+// no entries.
 func (h *Hamt) IsEmpty() bool {
 	return h.root == nil
 }
 
-// Get Hamt method looks up a given key in the Hamt data structure.
-func (h *Hamt) Get(k key.Key) (interface{}, bool) {
+func (h *Hamt) Nentries() int {
+	return h.nentries
+}
+
+func (h Hamt) find(k key.Key) (path pathT, leaf leafI, idx uint) {
 	if h.IsEmpty() {
-		return nil, false
+		return nil, nil, 0
+	}
+
+	path = newPathT()
+	var curTable = h.root
+
+	var h60 = k.Hash60()
+	var depth uint
+	var curNode nodeI
+
+DepthIter:
+	for depth = 0; depth <= maxDepth; depth++ {
+		path.push(curTable)
+		idx = index(h60, depth)
+		curNode = curTable.get(idx)
+
+		switch n := curNode.(type) {
+		case nil:
+			leaf = nil
+			break DepthIter
+		case leafI:
+			leaf = n
+			break DepthIter
+		case tableI:
+			if depth == maxDepth {
+				log.Panicf("SHOULD NOT BE REACHED; depth,%d == maxDepth,%d & tableI entry found; %s", depth, maxDepth, n)
+			}
+			curTable = n
+			// exit switch then loop for
+		default:
+			log.Panicf("SHOULD NOT BE REACHED: depth=%d; curNode unknown type=%T;", depth, curNode)
+		}
+	}
+
+	return
+}
+
+// Get Hamt method looks up a given key in the Hamt data structure.
+// BenchHamt64:
+//func (h *Hamt) Get(k key.Key) (val interface{}, found bool) {
+//	var _, leaf, _ = h.find(k)
+//
+//	if leaf == nil {
+//		return //nil, false
+//	}
+//
+//	val, found = leaf.get(k)
+//	return
+//}
+
+func (h *Hamt) Get(k key.Key) (val interface{}, found bool) {
+	if h.IsEmpty() {
+		return //nil, false
 	}
 
 	var h60 = k.Hash60()
@@ -175,20 +234,21 @@ func (h *Hamt) Get(k key.Key) (interface{}, bool) {
 		var curNode = curTable.get(idx) //nodeI
 
 		if curNode == nil {
-			break
+			return //nil, false
 		}
 
 		if leaf, isLeaf := curNode.(leafI); isLeaf {
-			var val, found = leaf.get(k)
-			return val, found
+			val, found = leaf.get(k)
+			return //val, found
 		}
 
-		//else curNode MUST BE A tableI
+		if depth == maxDepth {
+			panic("SHOULD NOT HAPPEN")
+		}
 		curTable = curNode.(tableI)
 	}
-	// curNode == nil || depth > maxDepth
 
-	return nil, false
+	panic("SHOULD NEVER BE REACHED")
 }
 
 // Put Hamt method inserts a given key/val pair into the Hamt data structure.
@@ -240,9 +300,9 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 				// choose to create the collisionLeaf hear and now.
 
 				// Accumulate collisionLeaf
-				newLeaf, inserted := curLeaf.put(k, v)
+				colLeaf, inserted := curLeaf.put(k, v)
 				if inserted {
-					curTable.set(idx, newLeaf)
+					curTable.set(idx, colLeaf)
 					h.nentries++
 				}
 				return inserted
@@ -278,7 +338,10 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 		curTable = curNode.(tableI)
 	}
 
-	panic("WTF!")
+	//log.Println(path)
+	//log.Printf("k=%s, v=%v", k, v)
+
+	panic("WTF!!")
 }
 
 // Del Hamt Method removes a given key from the Hamt data structure. It returns
@@ -381,7 +444,7 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 		curTable = curNode.(tableI)
 	} //for depth loop
 
-	//log.Printf("Hamt.Del: WTF! this should never be called; k=%s", k)
+	//log.Printf("WTF! this should never be called; k=%s", k)
 	return nil, false
 }
 
