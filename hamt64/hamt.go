@@ -1,12 +1,12 @@
 /*
 Package hamt64 implements a 64 node wide Hashed Array Mapped Trie. The hash key
-is 60 bits wide and broken into 9 numbers of 6 bits each. Those 6bit numbers
+is 60 bits wide and broken into 10 numbers of 6 bits each. Those 6bit numbers
 allows us to index into a 64 node array. Each node is either a leaf or another
 64 node table. So the 60bit hash allows us to index into a B+ Tree with a
-branching factor of 64 and a Maximum depth of 9.
+branching factor of 64 and a Maximum depth of 10.
 
 The basic insertion operation is to calculate a 60 bit hash value from your key
-(a string in the case you use hamt.StringKey), then split it into ten 6bit
+(a string in the case you use key.StringKey), then split it into ten 6bit
  numbers. These ten numbers represent a path thru the tree. For each level we
 use the coresponding number as an index into the 64 cell array. If the cell is
 empty we create a  leaf node there. If the cell is occupide by another table
@@ -30,19 +30,18 @@ package hamt64
 import (
 	"fmt"
 	"log"
-	"strings"
 
-	"github.com/lleo/go-hamt/key"
+	"github.com/lleo/go-hamt-key"
 )
 
 // nBits constant is the number of bits(6) a 60bit hash value is split into
 // to provied the index of a HAMT.
-const nBits uint = 6
+const nBits uint = key.BitsPerLevel60
 
 // maxDepth constant is the maximum depth(6) of nBits values that constitute
-// the path in a HAMT, from [0..maxDepth] for a total of maxDepth+1(9) levels.
+// the path in a HAMT, from [0..maxDepth] for a total of maxDepth+1(10) levels.
 // nBits*(maxDepth+1) == HASHBITS (ie 6*(6+1) == 60).
-const maxDepth uint = 6
+const maxDepth uint = key.MaxDepth60
 
 // tableCapacity constant is the number of table entries in a each node of
 // a HAMT datastructure; its value is 2^6 == 64.
@@ -56,41 +55,41 @@ const downgradeThreshold uint = tableCapacity / 8
 // before it is converted to a fullTable.
 const upgradeThreshold uint = tableCapacity / 2
 
-func indexMask(depth uint) uint64 {
-	return uint64(uint8(1<<nBits)-1) << (depth * nBits)
-}
-
-func index(h60 uint64, depth uint) uint {
-	var idxMask = indexMask(depth)
-	var idx = uint((h60 & idxMask) >> (depth * nBits))
-	return idx
-}
-
-func hashPathString(hashPath uint64, depth uint) string {
-	if depth == 0 {
-		return "/"
-	}
-	var strs = make([]string, depth)
-
-	for d := uint(0); d < depth; d++ {
-		var idx = index(hashPath, d)
-		strs[d] = fmt.Sprintf("%02d", idx)
-	}
-
-	return "/" + strings.Join(strs, "/")
-}
-
-func hash60String(h60 uint64) string {
-	return hashPathString(h60, maxDepth)
-}
-
-func hashPathMask(depth uint) uint64 {
-	return uint64(1<<(depth*nBits)) - 1
-}
-
-func buildHashPath(hashPath uint64, idx, depth uint) uint64 {
-	return hashPath | uint64(idx<<(depth*nBits))
-}
+//func indexMask(depth uint) uint64 {
+//	return uint64(uint8(1<<nBits)-1) << (depth * nBits)
+//}
+//
+//func index(h60 uint64, depth uint) uint {
+//	var idxMask = indexMask(depth)
+//	var idx = uint((h60 & idxMask) >> (depth * nBits))
+//	return idx
+//}
+//
+//func hashPathString(hashPath uint64, depth uint) string {
+//	if depth == 0 {
+//		return "/"
+//	}
+//	var strs = make([]string, depth)
+//
+//	for d := uint(0); d < depth; d++ {
+//		var idx = index(hashPath, d)
+//		strs[d] = fmt.Sprintf("%02d", idx)
+//	}
+//
+//	return "/" + strings.Join(strs, "/")
+//}
+//
+//func hash60String(h60 uint64) string {
+//	return hashPathString(h60, maxDepth)
+//}
+//
+//func hashPathMask(depth uint) uint64 {
+//	return uint64(1<<(depth*nBits)) - 1
+//}
+//
+//func buildHashPath(hashPath uint64, idx, depth uint) uint64 {
+//	return hashPath | uint64(idx<<(depth*nBits))
+//}
 
 // Configuration contants to be passed to `hamt64.New(int) *Hamt`.
 const (
@@ -120,7 +119,7 @@ func init() {
 }
 
 //Hamt is a Hashed Array Map Trie data structure. It has a branching factor of
-//64 and is at most 9 nodes deep. See:
+//64 and is at most 10 nodes deep. See:
 //https://en.wikipedia.org/wiki/Hash_array_mapped_trie
 type Hamt struct {
 	root            tableI
@@ -183,7 +182,7 @@ func (h Hamt) find(k key.Key) (path pathT, leaf leafI, idx uint) {
 DepthIter:
 	for depth = 0; depth <= maxDepth; depth++ {
 		path.push(curTable)
-		idx = index(h60, depth)
+		idx = h60.Index(depth)
 		curNode = curTable.get(idx)
 
 		switch n := curNode.(type) {
@@ -230,7 +229,7 @@ func (h *Hamt) Get(k key.Key) (val interface{}, found bool) {
 	var curTable = h.root //ISA tableI
 
 	for depth := uint(0); depth <= maxDepth; depth++ {
-		var idx = index(h60, depth)
+		var idx = h60.Index(depth)
 		var curNode = curTable.get(idx) //nodeI
 
 		if curNode == nil {
@@ -256,7 +255,7 @@ func (h *Hamt) Get(k key.Key) (val interface{}, found bool) {
 // not the key already existed and the val was merely overwritten.
 func (h *Hamt) Put(k key.Key, v interface{}) bool {
 	var depth uint
-	var hashPath uint64
+	var hashPath key.HashVal60
 
 	if h.IsEmpty() {
 		h.root = h.newRootTable(depth, hashPath, newFlatLeaf(k, v))
@@ -268,7 +267,7 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 	var curTable = h.root
 
 	for depth = 0; depth <= maxDepth; depth++ {
-		var idx = index(k.Hash60(), depth)
+		var idx = k.Hash60().Index(depth)
 		var curNode = curTable.get(idx)
 
 		if curNode == nil {
@@ -284,7 +283,7 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 						h.root = curTable
 					} else {
 						parentTable := path.peek()
-						parentIdx := index(k.Hash60(), depth-1)
+						parentIdx := k.Hash60().Index(depth - 1)
 						parentTable.set(parentIdx, curTable)
 					}
 				}
@@ -325,7 +324,7 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 				return inserted
 			}
 
-			hashPath = buildHashPath(hashPath, idx, depth)
+			hashPath = hashPath.BuildHashPath(idx, depth)
 			var collisionTable = h.newTable(depth+1, hashPath, curLeaf, newFlatLeaf(k, v))
 			curTable.set(idx, collisionTable)
 			h.nentries++
@@ -333,7 +332,7 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 			return true
 		}
 
-		hashPath = buildHashPath(hashPath, idx, depth)
+		hashPath = hashPath.BuildHashPath(idx, depth)
 		path.push(curTable)
 		curTable = curNode.(tableI)
 	}
@@ -354,13 +353,13 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 
 	var h60 = k.Hash60()
 	var depth uint
-	var hashPath uint64
+	var hashPath key.HashVal60
 
 	var path = newPathT()
 	var curTable = h.root
 
 	for depth = 0; depth <= maxDepth; depth++ {
-		var idx = index(h60, depth)
+		var idx = h60.Index(depth)
 		var curNode = curTable.get(idx)
 
 		if curNode == nil {
@@ -390,7 +389,7 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 							h.root = curTable
 						} else {
 							parentTable := path.peek()
-							parentIdx := index(h60, depth-1)
+							parentIdx := h60.Index(depth - 1)
 							parentTable.set(parentIdx, curTable)
 						}
 					}
@@ -420,7 +419,7 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 				var parentTable = path.pop()
 				depth-- // OR depth = len(path)
 
-				parentIdx := index(curTable.Hash60(), depth)
+				parentIdx := curTable.Hash60().Index(depth)
 				parentTable.set(parentIdx, leaf)
 
 				curTable = parentTable
@@ -439,7 +438,7 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 		// curNode is not nil
 		// curNode is not a leafI
 		// curNode MUST be a tableI
-		hashPath = buildHashPath(hashPath, idx, depth)
+		hashPath = hashPath.BuildHashPath(idx, depth)
 		path.push(curTable)
 		curTable = curNode.(tableI)
 	} //for depth loop

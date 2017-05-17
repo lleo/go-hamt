@@ -3,34 +3,36 @@ package hamt64
 import (
 	"fmt"
 	"strings"
+
+	"github.com/lleo/go-hamt-key"
 )
 
 type fullTable struct {
-	hashPath uint64
+	hashPath key.HashVal60
 	nents    uint
 	nodes    [tableCapacity]nodeI
 }
 
-func newRootFullTable(depth uint, hashPath uint64, lf leafI) tableI {
-	var idx = index(lf.Hash60(), depth)
+func newRootFullTable(depth uint, hashPath key.HashVal60, lf leafI) tableI {
+	var idx = lf.Hash60().Index(depth)
 
 	var ft = new(fullTable)
-	ft.hashPath = hashPath & hashPathMask(depth)
+	ft.hashPath = hashPath & key.HashPathMask60(depth)
 	//ft.nents = 0
 	ft.set(idx, lf)
 
 	return ft
 }
 
-func newFullTable(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatLeaf) tableI {
+func newFullTable(depth uint, hashPath key.HashVal60, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	var retTable = new(fullTable)
-	retTable.hashPath = hashPath & hashPathMask(depth)
+	retTable.hashPath = hashPath & key.HashPathMask60(depth)
 
 	var curTable = retTable
 	var d uint
 	for d = depth; d <= maxDepth; d++ {
-		var idx1 = index(leaf1.Hash60(), d)
-		var idx2 = index(leaf2.Hash60(), d)
+		var idx1 = leaf1.Hash60().Index(d)
+		var idx2 = leaf2.Hash60().Index(d)
 
 		if idx1 != idx2 {
 			curTable.set(idx1, leaf1)
@@ -42,7 +44,7 @@ func newFullTable(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatLeaf) tab
 
 		var newTable = new(fullTable)
 
-		hashPath = buildHashPath(hashPath, idx1, d)
+		hashPath = hashPath.BuildHashPath(idx1, d)
 		newTable.hashPath = hashPath
 
 		curTable.set(idx1, newTable)
@@ -52,7 +54,7 @@ func newFullTable(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatLeaf) tab
 	// We either BREAK out of loops,
 	// OR we hit d > maxDepth.
 	if d > maxDepth {
-		var idx = index(leaf1.Hash60(), maxDepth)
+		var idx = leaf1.Hash60().Index(maxDepth)
 		var kvs = append(leaf1.keyVals(), leaf2.keyVals()...)
 		var leaf = newCollisionLeaf(kvs)
 		curTable.set(idx, leaf)
@@ -61,7 +63,7 @@ func newFullTable(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatLeaf) tab
 	return retTable
 }
 
-func upgradeToFullTable(hashPath uint64, ents []tableEntry) tableI {
+func upgradeToFullTable(hashPath key.HashVal60, ents []tableEntry) *fullTable {
 	var ft = new(fullTable)
 	ft.hashPath = hashPath
 	ft.nents = uint(len(ents))
@@ -73,19 +75,19 @@ func upgradeToFullTable(hashPath uint64, ents []tableEntry) tableI {
 	return ft
 }
 
-func (t *fullTable) Hash60() uint64 {
+func (t *fullTable) Hash60() key.HashVal60 {
 	return t.hashPath
 }
 
 func (t *fullTable) String() string {
-	return fmt.Sprintf("fullTable{hashPath=%s, nentries()=%d}", hash60String(t.hashPath), t.nentries())
+	return fmt.Sprintf("fullTable{hashPath=%s, nentries()=%d}", t.hashPath, t.nentries())
 }
 
 func (t *fullTable) LongString(indent string, depth uint) string {
 	var strs = make([]string, 3+len(t.nodes))
 
 	strs[0] = indent + "fullTable{"
-	strs[1] = indent + fmt.Sprintf("\nents=%d,", t.nents)
+	strs[1] = indent + fmt.Sprintf("\tnents=%d,", t.nents)
 
 	for i, n := range t.nodes {
 		if t.nodes[i] == nil {

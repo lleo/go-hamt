@@ -2,11 +2,25 @@ package hamt64
 
 import (
 	"fmt"
+
+	"github.com/lleo/go-hamt-key"
 )
 
 type nodeI interface {
-	Hash60() uint64
+	Hash60() key.HashVal60
 	String() string
+}
+
+type leafI interface {
+	nodeI
+	// from nodeI in table.go
+	// Hash60() uint64
+	// String() string
+
+	get(key key.Key) (interface{}, bool)
+	put(key key.Key, val interface{}) (leafI, bool)
+	del(key key.Key) (interface{}, leafI, bool)
+	keyVals() []key.KeyVal
 }
 
 type tableI interface {
@@ -30,14 +44,14 @@ func (ent tableEntry) String() string {
 	return fmt.Sprintf("tableEntry{idx:%d, node:%s}", ent.idx, ent.node.String())
 }
 
-func (h *Hamt) newRootTable(depth uint, hashPath uint64, lf leafI) tableI {
+func (h *Hamt) newRootTable(depth uint, hashPath key.HashVal60, lf leafI) tableI {
 	if h.fullinit {
 		return newRootFullTable(depth, hashPath, lf)
 	}
 	return newRootCompressedTable(depth, hashPath, lf)
 }
 
-func (h *Hamt) newTable(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatLeaf) tableI {
+func (h *Hamt) newTable(depth uint, hashPath key.HashVal60, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	if h.fullinit {
 		return newFullTable(depth, hashPath, leaf1, leaf2)
 	}

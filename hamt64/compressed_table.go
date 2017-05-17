@@ -4,19 +4,22 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
+	"github.com/lleo/go-hamt-key"
 )
 
-// compressedTableInitCap constant sets the default capacity of a new compressedTable.
-const compressedTableInitCap uint = downgradeThreshold * 2
+// compressedTableInitCap constant sets the default capacity of a new
+// compressedTable.
+const compressedTableInitCap int = 8
 
 type compressedTable struct {
-	hashPath uint64
+	hashPath key.HashVal60
 	nodeMap  uint64
 	nodes    []nodeI
 }
 
-func newRootCompressedTable(depth uint, hashPath uint64, lf leafI) tableI {
-	var idx = index(lf.Hash60(), depth)
+func newRootCompressedTable(depth uint, hashPath key.HashVal60, lf leafI) tableI {
+	var idx = lf.Hash60().Index(depth)
 
 	var ct = new(compressedTable)
 	//ct.hashPath = hashPath & hashPathMask(depth) //This should always be 0
@@ -27,17 +30,22 @@ func newRootCompressedTable(depth uint, hashPath uint64, lf leafI) tableI {
 	return ct
 }
 
-func newCompressedTable(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatLeaf) tableI {
+func newCompressedTable(depth uint, hashPath key.HashVal60, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	var retTable = new(compressedTable)
-	retTable.hashPath = hashPath & hashPathMask(depth)
+	retTable.hashPath = hashPath & key.HashPathMask60(depth)
 
 	var curTable = retTable
 	var d uint
 	for d = depth; d <= maxDepth; d++ {
-		var idx1 = index(leaf1.Hash60(), d)
-		var idx2 = index(leaf2.Hash60(), d)
+		var idx1 = leaf1.Hash60().Index(d)
+		var idx2 = leaf2.Hash60().Index(d)
 
 		if idx1 != idx2 {
+			//curTable.nodes = make([]nodeI, 0, compressedTableInitCap)
+			//curTable.set(idx1, leaf1)
+			//curTable.set(idx2, leaf2)
+
+			// This is faster
 			curTable.nodes = make([]nodeI, 2, compressedTableInitCap)
 			curTable.nodeMap |= 1 << idx1
 			curTable.nodeMap |= 1 << idx2
@@ -57,10 +65,10 @@ func newCompressedTable(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatLea
 
 		var newTable = new(compressedTable)
 
-		hashPath = buildHashPath(hashPath, idx1, d)
+		hashPath = hashPath.BuildHashPath(idx1, d)
 		newTable.hashPath = hashPath
 
-		curTable.nodeMap = uint64(1 << idx1) //Set the idx1'th bit
+		curTable.nodeMap = uint64(1 << idx1)
 		curTable.nodes[0] = newTable
 
 		curTable = newTable
@@ -69,7 +77,8 @@ func newCompressedTable(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatLea
 	// OR we hit d > maxDepth.
 	if d > maxDepth {
 		// leaf1.Hash60() == leaf2.Hash60()
-		var idx = index(leaf1.Hash60(), maxDepth)
+		log.Printf("newCompressedTable: d > maxDepth branch taken.")
+		var idx = leaf1.Hash60().Index(maxDepth)
 		var kvs = append(leaf1.keyVals(), leaf2.keyVals()...)
 		var leaf = newCollisionLeaf(kvs)
 		curTable.set(idx, leaf)
@@ -79,15 +88,15 @@ func newCompressedTable(depth uint, hashPath uint64, leaf1 leafI, leaf2 *flatLea
 }
 
 func nodeMapString(nodeMap uint64) string {
-	var strs = make([]string, 7)
+	var strs = make([]string, 4)
 
-	var top4 = nodeMap >> 60
-	strs[0] = fmt.Sprintf("%04b", top4)
+	var top2 = nodeMap >> 60
+	strs[0] = fmt.Sprintf("%02b", top2)
 
 	const tenBitMask uint64 = 1<<10 - 1
-	for i := uint(0); i < 6; i++ {
+	for i := uint(0); i < 3; i++ {
 		var tenBitVal = (nodeMap & (tenBitMask << (i * 10))) >> (i * 10)
-		strs[6-i] = fmt.Sprintf("%010b", tenBitVal)
+		strs[3-i] = fmt.Sprintf("%010b", tenBitVal)
 	}
 
 	return strings.Join(strs, " ")
@@ -99,7 +108,7 @@ func nodeMapString(nodeMap uint64) string {
 //
 // The ents []tableEntry slice is guaranteed to be in order from lowest idx to
 // highest. tableI.entries() also adhears to this contract.
-func downgradeToCompressedTable(hashPath uint64, ents []tableEntry) *compressedTable {
+func downgradeToCompressedTable(hashPath key.HashVal60, ents []tableEntry) *compressedTable {
 	var nt = new(compressedTable)
 	nt.hashPath = hashPath
 	//nt.nodeMap = 0
@@ -115,19 +124,19 @@ func downgradeToCompressedTable(hashPath uint64, ents []tableEntry) *compressedT
 	return nt
 }
 
-func (t *compressedTable) Hash60() uint64 {
+func (t *compressedTable) Hash60() key.HashVal60 {
 	return t.hashPath
 }
 
 func (t *compressedTable) String() string {
 	return fmt.Sprintf("compressedTable{hashPath:%s, nentries()=%d}",
-		hash60String(t.hashPath), t.nentries())
+		t.hashPath, t.nentries())
 }
 
 func (t *compressedTable) LongString(indent string, depth uint) string {
 	var strs = make([]string, 3+len(t.nodes))
 
-	strs[0] = indent + fmt.Sprintf("compressedTable{hashPath=%s, nentries()=%d,", hashPathString(t.hashPath, depth), t.nentries())
+	strs[0] = indent + fmt.Sprintf("compressedTable{hashPath=%s, nentries()=%d,", t.hashPath.HashPathString(depth+1), t.nentries())
 
 	strs[1] = indent + "\tnodeMap=" + nodeMapString(t.nodeMap) + ","
 
@@ -194,10 +203,9 @@ func (t *compressedTable) set(idx uint, nn nodeI) {
 		if (t.nodeMap & nodeBit) > 0 {
 			t.nodeMap &^= nodeBit
 			t.nodes = append(t.nodes[:i], t.nodes[i+1:]...)
-		} else if (t.nodeMap & nodeBit) == 0 {
-			log.Panicf("compressedTable.set(%02d, nil): when no node was set here in the first place", idx)
+		} /* else {
 			// do nothing
-		}
+		} */
 	}
 	return
 }

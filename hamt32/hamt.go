@@ -6,7 +6,7 @@ allows us to index into a 32 node array. Each node is either a leaf or another
 branching factor of 32 and a Maximum depth of 6.
 
 The basic insertion operation is to calculate a 30 bit hash value from your key
-(a string in the case you use hamt.StringKey), then split it into six 5bit
+(a string in the case you use key.StringKey), then split it into six 5bit
  numbers. These six numbers represent a path thru the tree. For each level we
 use the coresponding number as an index into the 32 cell array. If the cell is
 empty we create a  leaf node there. If the cell is occupide by another table
@@ -30,19 +30,18 @@ package hamt32
 import (
 	"fmt"
 	"log"
-	"strings"
 
-	"github.com/lleo/go-hamt/key"
+	"github.com/lleo/go-hamt-key"
 )
 
 // nBits constant is the number of bits(5) a 30bit hash value is split into
 // to provied the index of a HAMT.
-const nBits uint = 5
+const nBits uint = key.BitsPerLevel30
 
 // maxDepth constant is the maximum depth(5) of nBits values that constitute
 // the path in a HAMT, from [0..maxDepth] for a total of maxDepth+1(6) levels.
 // nBits*(maxDepth+1) == HASHBITS (ie 5*(5+1) == 30).
-const maxDepth uint = 5
+const maxDepth uint = key.MaxDepth30
 
 // tableCapacity constant is the number of table entries in a each node of
 // a HAMT datastructure; its value is 2^5 == 32.
@@ -56,41 +55,41 @@ const downgradeThreshold uint = tableCapacity / 8
 // before it is converted to a fullTable.
 const upgradeThreshold uint = tableCapacity / 2
 
-func indexMask(depth uint) uint32 {
-	return uint32(uint8(1<<nBits)-1) << (depth * nBits)
-}
-
-func index(h30 uint32, depth uint) uint {
-	var idxMask = indexMask(depth)
-	var idx = uint((h30 & idxMask) >> (depth * nBits))
-	return idx
-}
-
-func hashPathString(hashPath uint32, depth uint) string {
-	if depth == 0 {
-		return "/"
-	}
-	var strs = make([]string, depth)
-
-	for d := uint(0); d < depth; d++ {
-		var idx = index(hashPath, d)
-		strs[d] = fmt.Sprintf("%02d", idx)
-	}
-
-	return "/" + strings.Join(strs, "/")
-}
-
-func hash30String(h30 uint32) string {
-	return hashPathString(h30, maxDepth)
-}
-
-func hashPathMask(depth uint) uint32 {
-	return uint32(1<<(depth*nBits)) - 1
-}
-
-func buildHashPath(hashPath uint32, idx, depth uint) uint32 {
-	return hashPath | uint32(idx<<(depth*nBits))
-}
+//func indexMask(depth uint) uint32 {
+//	return uint32(uint8(1<<nBits)-1) << (depth * nBits)
+//}
+//
+//func index(h30 uint32, depth uint) uint {
+//	var idxMask = indexMask(depth)
+//	var idx = uint((h30 & idxMask) >> (depth * nBits))
+//	return idx
+//}
+//
+//func hashPathString(hashPath uint32, depth uint) string {
+//	if depth == 0 {
+//		return "/"
+//	}
+//	var strs = make([]string, depth)
+//
+//	for d := uint(0); d < depth; d++ {
+//		var idx = index(hashPath, d)
+//		strs[d] = fmt.Sprintf("%02d", idx)
+//	}
+//
+//	return "/" + strings.Join(strs, "/")
+//}
+//
+//func hash30String(h30 uint32) string {
+//	return hashPathString(h30, maxDepth)
+//}
+//
+//func hashPathMask(depth uint) uint32 {
+//	return uint32(1<<(depth*nBits)) - 1
+//}
+//
+//func buildHashPath(hashPath uint32, idx, depth uint) uint32 {
+//	return hashPath | uint32(idx<<(depth*nBits))
+//}
 
 // Configuration contants to be passed to `hamt32.New(int) *Hamt`.
 const (
@@ -183,7 +182,7 @@ func (h Hamt) find(k key.Key) (path pathT, leaf leafI, idx uint) {
 DepthIter:
 	for depth = 0; depth <= maxDepth; depth++ {
 		path.push(curTable)
-		idx = index(h30, depth)
+		idx = h30.Index(depth)
 		curNode = curTable.get(idx)
 
 		switch n := curNode.(type) {
@@ -230,7 +229,7 @@ func (h *Hamt) Get(k key.Key) (val interface{}, found bool) {
 	var curTable = h.root //ISA tableI
 
 	for depth := uint(0); depth <= maxDepth; depth++ {
-		var idx = index(h30, depth)
+		var idx = h30.Index(depth)
 		var curNode = curTable.get(idx) //nodeI
 
 		if curNode == nil {
@@ -256,7 +255,7 @@ func (h *Hamt) Get(k key.Key) (val interface{}, found bool) {
 // not the key already existed and the val was merely overwritten.
 func (h *Hamt) Put(k key.Key, v interface{}) bool {
 	var depth uint
-	var hashPath uint32
+	var hashPath key.HashVal30
 
 	if h.IsEmpty() {
 		h.root = h.newRootTable(depth, hashPath, newFlatLeaf(k, v))
@@ -268,7 +267,7 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 	var curTable = h.root
 
 	for depth = 0; depth <= maxDepth; depth++ {
-		var idx = index(k.Hash30(), depth)
+		var idx = k.Hash30().Index(depth)
 		var curNode = curTable.get(idx)
 
 		if curNode == nil {
@@ -284,7 +283,7 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 						h.root = curTable
 					} else {
 						parentTable := path.peek()
-						parentIdx := index(k.Hash30(), depth-1)
+						parentIdx := k.Hash30().Index(depth - 1)
 						parentTable.set(parentIdx, curTable)
 					}
 				}
@@ -325,7 +324,7 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 				return inserted
 			}
 
-			hashPath = buildHashPath(hashPath, idx, depth)
+			hashPath = hashPath.BuildHashPath(idx, depth)
 			var collisionTable = h.newTable(depth+1, hashPath, curLeaf, newFlatLeaf(k, v))
 			curTable.set(idx, collisionTable)
 			h.nentries++
@@ -333,7 +332,7 @@ func (h *Hamt) Put(k key.Key, v interface{}) bool {
 			return true
 		}
 
-		hashPath = buildHashPath(hashPath, idx, depth)
+		hashPath = hashPath.BuildHashPath(idx, depth)
 		path.push(curTable)
 		curTable = curNode.(tableI)
 	}
@@ -354,13 +353,13 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 
 	var h30 = k.Hash30()
 	var depth uint
-	var hashPath uint32
+	var hashPath key.HashVal30
 
 	var path = newPathT()
 	var curTable = h.root
 
 	for depth = 0; depth <= maxDepth; depth++ {
-		var idx = index(h30, depth)
+		var idx = h30.Index(depth)
 		var curNode = curTable.get(idx)
 
 		if curNode == nil {
@@ -390,7 +389,7 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 							h.root = curTable
 						} else {
 							parentTable := path.peek()
-							parentIdx := index(h30, depth-1)
+							parentIdx := h30.Index(depth - 1)
 							parentTable.set(parentIdx, curTable)
 						}
 					}
@@ -420,7 +419,7 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 				var parentTable = path.pop()
 				depth-- // OR depth = len(path)
 
-				parentIdx := index(curTable.Hash30(), depth)
+				parentIdx := curTable.Hash30().Index(depth)
 				parentTable.set(parentIdx, leaf)
 
 				curTable = parentTable
@@ -439,7 +438,7 @@ func (h *Hamt) Del(k key.Key) (interface{}, bool) {
 		// curNode is not nil
 		// curNode is not a leafI
 		// curNode MUST be a tableI
-		hashPath = buildHashPath(hashPath, idx, depth)
+		hashPath = hashPath.BuildHashPath(idx, depth)
 		path.push(curTable)
 		curTable = curNode.(tableI)
 	} //for depth loop

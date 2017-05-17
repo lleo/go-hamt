@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/lleo/go-hamt/key"
+	"github.com/lleo/go-hamt-key"
 )
 
 // implements nodeI
@@ -21,7 +21,7 @@ func newCollisionLeaf(kvs []key.KeyVal) *collisionLeaf {
 	return leaf
 }
 
-func (l collisionLeaf) Hash30() uint32 {
+func (l collisionLeaf) Hash30() key.HashVal30 {
 	return l.kvs[0].Key.Hash30()
 }
 
@@ -33,7 +33,7 @@ func (l collisionLeaf) String() string {
 	var jkvstr = strings.Join(kvstrs, ",")
 
 	return fmt.Sprintf("collisionLeaf{hash30:%s, kvs:[]kv{%s}}",
-		hash30String(l.Hash30()), jkvstr)
+		l.Hash30(), jkvstr)
 }
 
 func (l collisionLeaf) get(key key.Key) (interface{}, bool) {
@@ -54,7 +54,7 @@ func (l collisionLeaf) put(k key.Key, v interface{}) (leafI, bool) {
 	}
 	l.kvs = append(l.kvs, key.KeyVal{k, v})
 
-	log.Printf("%s : %d\n", hash30String(l.Hash30()), len(l.kvs))
+	log.Printf("%s : %d\n", l.Hash30(), len(l.kvs))
 
 	return l, true // key_,val was added
 }

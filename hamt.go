@@ -44,9 +44,9 @@ StringKey interface described in "github.com/lleo/go-hamt/stringkey".
 package hamt
 
 import (
+	"github.com/lleo/go-hamt-key"
 	"github.com/lleo/go-hamt/hamt32"
 	"github.com/lleo/go-hamt/hamt64"
-	"github.com/lleo/go-hamt/key"
 )
 
 // Configuration contants to be passed to `hamt64.New(int) *Hamt`.

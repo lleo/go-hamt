@@ -2,9 +2,10 @@ package hamt64
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
-	"github.com/lleo/go-hamt/key"
+	"github.com/lleo/go-hamt-key"
 )
 
 // implements nodeI
@@ -20,7 +21,7 @@ func newCollisionLeaf(kvs []key.KeyVal) *collisionLeaf {
 	return leaf
 }
 
-func (l collisionLeaf) Hash60() uint64 {
+func (l collisionLeaf) Hash60() key.HashVal60 {
 	return l.kvs[0].Key.Hash60()
 }
 
@@ -31,8 +32,8 @@ func (l collisionLeaf) String() string {
 	}
 	var jkvstr = strings.Join(kvstrs, ",")
 
-	return fmt.Sprintf("collisionLeaf{Hash60:%s, kvs:[]kv{%s}}",
-		hash60String(l.Hash60()), jkvstr)
+	return fmt.Sprintf("collisionLeaf{hash60:%s, kvs:[]kv{%s}}",
+		l.Hash60(), jkvstr)
 }
 
 func (l collisionLeaf) get(key key.Key) (interface{}, bool) {
@@ -52,7 +53,10 @@ func (l collisionLeaf) put(k key.Key, v interface{}) (leafI, bool) {
 		}
 	}
 	l.kvs = append(l.kvs, key.KeyVal{k, v})
-	return l, true // key,val was added
+
+	log.Printf("%s : %d\n", l.Hash60(), len(l.kvs))
+
+	return l, true // key_,val was added
 }
 
 func (l collisionLeaf) del(key key.Key) (interface{}, leafI, bool) {
