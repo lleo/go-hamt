@@ -42,9 +42,18 @@ func init() {
 type Hamt interface {
 	IsEmpty() bool
 	Nentries() uint
+	ToFunctional() Hamt
+	ToTransient() Hamt
 	Get(key.Key) (interface{}, bool)
 	Put(key.Key, interface{}) (Hamt, bool)
 	Del(key.Key) (Hamt, interface{}, bool)
-	//String() string
-	//LongString(string) string
+	String() string
+	LongString(string) string
+}
+
+func New(functional bool, opt int) Hamt {
+	if functional {
+		return NewFunctional(opt)
+	}
+	return NewTransient(opt)
 }
