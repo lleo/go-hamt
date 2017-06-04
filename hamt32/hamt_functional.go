@@ -1,6 +1,7 @@
 package hamt32
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/lleo/go-hamt-key"
@@ -40,6 +41,19 @@ func (h *HamtFunctional) IsEmpty() bool {
 
 func (h *HamtFunctional) Nentries() uint {
 	return h.nentries
+}
+
+func (h *HamtFunctional) ToFunctional() Hamt {
+	return h
+}
+
+func (h *HamtFunctional) ToTransient() Hamt {
+	return &HamtTransient{
+		root:     h.root,
+		nentries: h.nentries,
+		grade:    h.grade,
+		compinit: h.compinit,
+	}
 }
 
 // persist() is ONLY called on a fresh copy of the current Hamt.
@@ -261,4 +275,28 @@ func (h *HamtFunctional) Del(k key.Key) (Hamt, interface{}, bool) {
 	nh.persist(curTable, newTable, path)
 
 	return nh, val, deleted
+}
+
+// String returns a string representation of the Hamt string.
+func (h *HamtFunctional) String() string {
+	return fmt.Sprintf(
+		"HamtFunctional{ nentries: %d, root: %s }",
+		h.nentries,
+		h.root.LongString("", 0),
+	)
+}
+
+// LongString returns a complete listing of the entire Hamt data structure.
+func (h *HamtFunctional) LongString(indent string) string {
+	var str string
+	if h.root != nil {
+		str = indent +
+			fmt.Sprintf("HamtFunctional{ nentries: %d, root:\n", h.nentries)
+		str += indent + h.root.LongString(indent, 0)
+		str += indent + "} //HamtFunctional"
+	} else {
+		str = indent +
+			fmt.Sprintf("HamtFunctional{ nentries: %d, root: nil }", h.nentries)
+	}
+	return str
 }
