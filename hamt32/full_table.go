@@ -2,6 +2,7 @@ package hamt32
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/lleo/go-hamt-key"
@@ -13,51 +14,58 @@ type fullTable struct {
 	nodes    [tableCapacity]nodeI
 }
 
-func newRootFullTable(depth uint, hashPath key.HashVal30, lf leafI) tableI {
-	var idx = lf.Hash30().Index(depth)
+func (t fullTable) copy() tableI {
+	var nt = new(fullTable)
+	nt.hashPath = t.hashPath
+	nt.nents = t.nents
+	nt.nodes = t.nodes
+	return nt
+}
+
+func createRootFullTable(lf leafI) tableI {
+	var idx = lf.Hash30().Index(0)
 
 	var ft = new(fullTable)
-	ft.hashPath = hashPath & key.HashPathMask30(depth)
+	//ft.hashPath = 0
 	//ft.nents = 0
 	ft.set(idx, lf)
 
 	return ft
 }
 
-func newFullTable(depth uint, hashPath key.HashVal30, leaf1 leafI, leaf2 *flatLeaf) tableI {
-	var retTable = new(fullTable)
-	retTable.hashPath = hashPath & key.HashPathMask30(depth)
-
-	var curTable = retTable
-	var d uint
-	for d = depth; d <= maxDepth; d++ {
-		var idx1 = leaf1.Hash30().Index(d)
-		var idx2 = leaf2.Hash30().Index(d)
-
-		if idx1 != idx2 {
-			curTable.set(idx1, leaf1)
-			curTable.set(idx2, leaf2)
-
-			break
-		}
-		// idx1 == idx2 ...
-
-		var newTable = new(fullTable)
-
-		hashPath = hashPath.BuildHashPath(idx1, d)
-		newTable.hashPath = hashPath
-
-		curTable.set(idx1, newTable)
-
-		curTable = newTable
+func createFullTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
+	if depth < 1 {
+		log.Panic("createFullTable(): depth < 1")
 	}
-	// We either BREAK out of loops,
-	// OR we hit d > maxDepth.
-	if d > maxDepth {
-		var idx = leaf1.Hash30().Index(maxDepth)
-		var kvs = append(leaf1.keyVals(), leaf2.keyVals()...)
-		var leaf = newCollisionLeaf(kvs)
-		curTable.set(idx, leaf)
+	var hp1 = leaf1.Hash30() & key.HashPathMask30(depth-1)
+	var hp2 = leaf2.Hash30() & key.HashPathMask30(depth-1)
+	if hp1 != hp2 {
+		log.Panic("newCompressedTable(): hp1,%s != hp2,%s",
+			hp1.HashPathString(depth), hp2.HashPathString(depth))
+	}
+	//for d := uint(0); d < depth; d++ {
+	//	if leaf1.Hash30().Index(d) != leaf2.Hash30().Index(d) {
+	//		log.Panicf("createFullTable(): leaf1.Hash30().Index(%d) != leaf2.Hash30().Index(%d)", d, d)
+	//	}
+	//}
+
+	var retTable = new(fullTable)
+	//retTable.hashPath = leaf1.Hash30() & key.HashPathMask30(depth-1)
+	retTable.hashPath = leaf1.Hash30().HashPath(depth)
+
+	var idx1 = leaf1.Hash30().Index(depth)
+	var idx2 = leaf2.Hash30().Index(depth)
+	if idx1 != idx2 {
+		retTable.insert(idx1, leaf1)
+		retTable.insert(idx2, leaf2)
+	} else { //idx1 == idx2
+		var node nodeI
+		if depth == maxDepth {
+			node = newCollisionLeaf(append(leaf1.keyVals(), leaf2.keyVals()...))
+		} else {
+			node = createFullTable(depth+1, leaf1, leaf2)
+		}
+		retTable.insert(idx1, node)
 	}
 
 	return retTable
@@ -80,7 +88,8 @@ func (t *fullTable) Hash30() key.HashVal30 {
 }
 
 func (t *fullTable) String() string {
-	return fmt.Sprintf("fullTable{hashPath=%s, nentries()=%d}", t.hashPath, t.nentries())
+	return fmt.Sprintf("fullTable{hashPath=%s, nentries()=%d}",
+		t.hashPath, t.nentries())
 }
 
 func (t *fullTable) LongString(indent string, depth uint) string {
@@ -94,7 +103,8 @@ func (t *fullTable) LongString(indent string, depth uint) string {
 			strs[2+i] = indent + fmt.Sprintf("\tnodes[%d]: nil", i)
 		} else {
 			if t, isTable := t.nodes[i].(tableI); isTable {
-				strs[2+i] = indent + fmt.Sprintf("\tnodes[%d]:\n%s", i, t.LongString(indent+"\t", depth+1))
+				strs[2+i] = indent + fmt.Sprintf("\tnodes[%d]:\n", i) +
+					t.LongString(indent+"\t", depth+1)
 			} else {
 				strs[2+i] = indent + fmt.Sprintf("\tnodes[%d]: %s", i, n)
 			}
@@ -136,4 +146,27 @@ func (t *fullTable) set(idx uint, nn nodeI) {
 	t.nodes[idx] = nn
 
 	return
+}
+
+func (t *fullTable) insert(idx uint, n nodeI) {
+	if t.nodes[idx] != nil {
+		panic("t.insert(idx, n) where idx slot is NOT empty; this should be a replace")
+	}
+	t.nodes[idx] = n
+	t.nents++
+}
+
+func (t *fullTable) replace(idx uint, n nodeI) {
+	if t.nodes[idx] == nil {
+		panic("t.replace(idx, n) where idx slot is empty; this should be an insert")
+	}
+	t.nodes[idx] = n
+}
+
+func (t *fullTable) remove(idx uint) {
+	if t.nodes[idx] == nil {
+		panic("t.remove(idx) where idx slot is already empty")
+	}
+	t.nodes[idx] = nil
+	t.nents--
 }
