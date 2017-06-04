@@ -42,6 +42,19 @@ func (h *HamtTransient) Nentries() uint {
 	return h.nentries
 }
 
+func (h *HamtTransient) ToFunctional() Hamt {
+	return &HamtFunctional{
+		root:     h.root,
+		nentries: h.nentries,
+		grade:    h.grade,
+		compinit: h.compinit,
+	}
+}
+
+func (h *HamtTransient) ToTransient() Hamt {
+	return h
+}
+
 func (h *HamtTransient) find(k key.Key) (tableStack, leafI, uint) {
 	if h.IsEmpty() {
 		return nil, nil, 0
@@ -271,18 +284,24 @@ func (h *HamtTransient) Del(k key.Key) (Hamt, interface{}, bool) {
 
 // String returns a string representation of the Hamt string.
 func (h *HamtTransient) String() string {
-	return fmt.Sprintf("HamtTransient{ nentries: %d, root: %s }", h.nentries, h.root.LongString("", 0))
+	return fmt.Sprintf(
+		"HamtTransient{ nentries: %d, root: %s }",
+		h.nentries,
+		h.root.LongString("", 0),
+	)
 }
 
 // LongString returns a complete listing of the entire Hamt data structure.
 func (h *HamtTransient) LongString(indent string) string {
 	var str string
 	if h.root != nil {
-		str = indent + fmt.Sprintf("HamtTransient{ nentries: %d, root:\n", h.nentries)
+		str = indent +
+			fmt.Sprintf("HamtTransient{ nentries: %d, root:\n", h.nentries)
 		str += indent + h.root.LongString(indent, 0)
 		str += indent + "} //HamtTransient"
 	} else {
-		str = indent + fmt.Sprintf("HamtTransient{ nentries: %d, root: nil }", h.nentries)
+		str = indent +
+			fmt.Sprintf("HamtTransient{ nentries: %d, root: nil }", h.nentries)
 	}
 	return str
 }
