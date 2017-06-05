@@ -141,10 +141,13 @@ func (t *compressedTable) LongString(indent string, depth uint) string {
 	strs[1] = indent + "\tnodeMap=" + nodeMapString(t.nodeMap) + ","
 
 	for i, n := range t.nodes {
+		var idx = n.Hash30().Index(depth)
 		if t, isTable := n.(tableI); isTable {
-			strs[2+i] = indent + fmt.Sprintf("\tt.nodes[%d]:\n%s", i, t.LongString(indent+"\t", depth+1))
+			strs[2+i] = indent +
+				fmt.Sprintf("\tt.nodes[%d]:\n%s",
+					idx, t.LongString(indent+"\t", depth+1))
 		} else {
-			strs[2+i] = indent + fmt.Sprintf("\tt.nodes[%d]: %s", i, n)
+			strs[2+i] = indent + fmt.Sprintf("\tt.nodes[%d]: %s", idx, n)
 		}
 	}
 
