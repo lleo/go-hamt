@@ -234,15 +234,11 @@ func (h *HamtTransient) Del(k key.Key) (Hamt, interface{}, bool) {
 	var curTable = path.pop()
 	var depth = uint(path.len())
 
-	var val interface{}
-	var deleted bool
-
 	if leaf == nil {
 		return h, nil, false
 	}
 
-	var newLeaf leafI
-	newLeaf, val, deleted = leaf.del(k)
+	var newLeaf, val, deleted = leaf.del(k)
 
 	if !deleted {
 		return h, nil, false
@@ -258,11 +254,13 @@ func (h *HamtTransient) Del(k key.Key) (Hamt, interface{}, bool) {
 		// Side-Effects of removing an KeyVal from the table
 		switch {
 		// if no entries left in table need to colapse down to parent
-		case curTable != h.root && curTable.nentries() == 0:
-			var parentTable = path.peek()
-			var parentIdx = k.Hash30().Index(depth - 1)
-			parentTable.remove(parentIdx)
-			curTable = nil
+		case curTable != h.root && curTable.nentries() == 1:
+			var lastNode = curTable.entries()[0].node
+			if _, isLeaf := lastNode.(leafI); isLeaf {
+				var parentTable = path.peek()
+				var parentIdx = k.Hash30().Index(depth - 1)
+				parentTable.replace(parentIdx, lastNode)
+			}
 
 			// else check if downgrade allowed and required
 		case h.grade && curTable.nentries() == downgradeThreshold:
