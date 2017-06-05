@@ -59,7 +59,12 @@ func (h *HamtFunctional) ToTransient() Hamt {
 // persist() is ONLY called on a fresh copy of the current Hamt.
 // Hence, modifying it is allowed.
 func (nh *HamtFunctional) persist(oldTable, newTable tableI, path tableStack) {
-	if path.isEmpty() {
+	if nh.IsEmpty() {
+		nh.root = newTable
+		return
+	}
+
+	if oldTable == nh.root {
 		nh.root = newTable
 		return
 	}
@@ -237,15 +242,11 @@ func (h *HamtFunctional) Del(k key.Key) (Hamt, interface{}, bool) {
 
 	var curTable = path.pop()
 
-	var val interface{}
-	var deleted bool
-
 	if leaf == nil {
 		return h, nil, false
 	}
 
-	var newLeaf leafI
-	newLeaf, val, deleted = leaf.del(k)
+	var newLeaf, val, deleted = leaf.del(k)
 
 	if !deleted {
 		return h, nil, false
