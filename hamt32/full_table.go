@@ -10,6 +10,7 @@ import (
 
 type fullTable struct {
 	hashPath key.HashVal30
+	depth    uint
 	nents    uint
 	nodes    [tableCapacity]nodeI
 }
@@ -17,6 +18,7 @@ type fullTable struct {
 func (t fullTable) copy() tableI {
 	var nt = new(fullTable)
 	nt.hashPath = t.hashPath
+	nt.depth = t.depth
 	nt.nents = t.nents
 	nt.nodes = t.nodes
 	return nt
@@ -27,6 +29,7 @@ func createRootFullTable(lf leafI) tableI {
 
 	var ft = new(fullTable)
 	//ft.hashPath = 0
+	//ft.depth = 0
 	//ft.nents = 0
 	ft.set(idx, lf)
 
@@ -52,6 +55,7 @@ func createFullTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	var retTable = new(fullTable)
 	//retTable.hashPath = leaf1.Hash30() & key.HashPathMask30(depth-1)
 	retTable.hashPath = leaf1.Hash30().HashPath(depth)
+	retTable.depth = depth
 
 	var idx1 = leaf1.Hash30().Index(depth)
 	var idx2 = leaf2.Hash30().Index(depth)
@@ -88,26 +92,27 @@ func (t *fullTable) Hash30() key.HashVal30 {
 }
 
 func (t *fullTable) String() string {
-	return fmt.Sprintf("fullTable{hashPath=%s, nentries()=%d}",
-		t.hashPath, t.nentries())
+	return fmt.Sprintf("fullTable{hashPath=%s, depth=%d, nentries()=%d}",
+		t.hashPath, t.depth, t.nentries())
 }
 
 func (t *fullTable) LongString(indent string, depth uint) string {
-	var strs = make([]string, 3+len(t.nodes))
+	var strs = make([]string, 3+t.nentries())
 
 	strs[0] = indent + "fullTable{"
-	strs[1] = indent + fmt.Sprintf("\tnents=%d,", t.nents)
+	strs[1] = indent + fmt.Sprintf("\thashPath=%s, depth=%d, nents=%d,",
+		t.hashPath.HashPathString(depth+1), t.depth, t.nents)
 
+	var j = 0
 	for i, n := range t.nodes {
-		if t.nodes[i] == nil {
-			strs[2+i] = indent + fmt.Sprintf("\tnodes[%d]: nil", i)
-		} else {
+		if t.nodes[i] != nil {
 			if t, isTable := t.nodes[i].(tableI); isTable {
-				strs[2+i] = indent + fmt.Sprintf("\tnodes[%d]:\n", i) +
+				strs[2+j] = indent + fmt.Sprintf("\tnodes[%d]:\n", i) +
 					t.LongString(indent+"\t", depth+1)
 			} else {
-				strs[2+i] = indent + fmt.Sprintf("\tnodes[%d]: %s", i, n)
+				strs[2+j] = indent + fmt.Sprintf("\tnodes[%d]: %s", i, n)
 			}
+			j++
 		}
 	}
 
