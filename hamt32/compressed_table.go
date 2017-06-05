@@ -14,6 +14,7 @@ const compressedTableInitCap int = 8
 
 type compressedTable struct {
 	hashPath key.HashVal30
+	depth    uint
 	nodeMap  uint32
 	nodes    []nodeI
 }
@@ -21,6 +22,7 @@ type compressedTable struct {
 func (t *compressedTable) copy() tableI {
 	var nt = new(compressedTable)
 	nt.hashPath = t.hashPath
+	nt.depth = t.depth
 	nt.nodeMap = t.nodeMap
 	nt.nodes = append(nt.nodes, t.nodes...)
 	return nt
@@ -31,6 +33,7 @@ func createRootCompressedTable(lf leafI) tableI {
 
 	var ct = new(compressedTable)
 	//ct.hashPath = 0
+	//ct.depth = 0
 	ct.nodeMap = uint32(1 << idx)
 	ct.nodes = make([]nodeI, 1, compressedTableInitCap)
 	ct.nodes[0] = lf
@@ -57,6 +60,7 @@ func createCompressedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	var retTable = new(compressedTable)
 	//retTable.hashPath = leaf1.Hash30() & key.HashPathMask30(depth-1)
 	retTable.hashPath = leaf1.Hash30().HashPath(depth)
+	retTable.depth = depth
 	//retTable.nodeMap = 0
 	retTable.nodes = make([]nodeI, 0, compressedTableInitCap)
 
@@ -93,17 +97,20 @@ func nodeMapString(nodeMap uint32) string {
 	return strings.Join(strs, " ")
 }
 
-// downgradeToCompressedTable() converts fullTable structs that have less than or equal
-// to downgradeThreshold tableEntry's. One important thing we know is that none of
-// the entries will collide with another.
+// downgradeToCompressedTable() converts fullTable structs that have less than
+// or equal to downgradeThreshold tableEntry's. One important thing we know is
+// that none of the entries will collide with another.
 //
 // The ents []tableEntry slice is guaranteed to be in order from lowest idx to
 // highest. tableI.entries() also adhears to this contract.
-func downgradeToCompressedTable(hashPath key.HashVal30, ents []tableEntry) *compressedTable {
+func downgradeToCompressedTable(
+	hashPath key.HashVal30,
+	ents []tableEntry,
+) *compressedTable {
 	var nt = new(compressedTable)
 	nt.hashPath = hashPath
 	//nt.nodeMap = 0
-	nt.nodes = make([]nodeI, len(ents), compressedTableInitCap)
+	nt.nodes = make([]nodeI, len(ents), len(ents)+1)
 
 	for i := 0; i < len(ents); i++ {
 		var ent = ents[i]
@@ -120,14 +127,16 @@ func (t *compressedTable) Hash30() key.HashVal30 {
 }
 
 func (t *compressedTable) String() string {
-	return fmt.Sprintf("compressedTable{hashPath:%s, nentries()=%d}",
-		t.hashPath, t.nentries())
+	return fmt.Sprintf("compressedTable{hashPath:%s, depth=%d, nentries()=%d}",
+		t.hashPath, t.depth, t.nentries())
 }
 
 func (t *compressedTable) LongString(indent string, depth uint) string {
 	var strs = make([]string, 3+len(t.nodes))
 
-	strs[0] = indent + fmt.Sprintf("compressedTable{hashPath=%s, nentries()=%d,", t.hashPath.HashPathString(depth+1), t.nentries())
+	strs[0] = indent +
+		fmt.Sprintf("compressedTable{hashPath=%s, depth=%d, nentries()=%d,",
+			t.hashPath.HashPathString(depth), t.depth, t.nentries())
 
 	strs[1] = indent + "\tnodeMap=" + nodeMapString(t.nodeMap) + ","
 
