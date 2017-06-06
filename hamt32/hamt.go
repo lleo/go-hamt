@@ -14,29 +14,36 @@ const upgradeThreshold uint = 21 // round(tableCapacity * 2 / 3)
 
 // Configuration contants to be passed to `hamt32.New(int) *Hamt`.
 const (
-	// HybridTables indicates the structure should use compressedTable
-	// initially, then upgrad to fullTable when appropriate.
-	HybridTables = iota //0
+	// FullTableOnly indicates the structure should use fullTables ONLY.
+	// This was intended to be for speed, as compressed tables use a software
+	// bitCount function to access individual cells.
+	FullTablesOnly = iota
 	// CompTablesOnly indicates the structure should use compressedTables ONLY.
 	// This was intended just save space, but also seems to be faster; CPU cache
 	// locality maybe?
-	CompTablesOnly //1
-	// FullTableOnly indicates the structure should use fullTables ONLY.
-	// This was intended to be for speed, as compressed tables use a software
-	// bitCount function to access individual cells. Turns out, not so much.
-	FullTablesOnly //2
+	CompTablesOnly
+	// HybridTables indicates the structure should use compressedTable
+	// initially, then upgrade to fullTable when appropriate.
+	HybridTables
 )
 
-// TableOptionName is a map of the table option value Hybrid, CompTablesOnly,
-// or FullTableOnly to a string representing that option.
-//      var options = hamt32.FullTablesOnly
-//      hamt32.TableOptionName[hamt32.FullTablesOnly] == "FullTablesOnly"
-var TableOptionName = make(map[int]string, 3)
+// TableOptionName is a lookup table to map the integer value of FullTablesOnly,
+// CompTablesOnly, and HybridTables to a string representing that option.
+//     var option = hamt32.FullTablesOnly
+//     hamt32.TableOptionName[option] == "FullTablesOnly"
+var TableOptionName [3]string
+
+// Could have used...
+//var TableOptionName = [3]string{
+//	"FullTablesOnly",
+//	"CompTablesOnly",
+//	"HybridTables",
+//}
 
 func init() {
-	TableOptionName[HybridTables] = "HybridTables"
-	TableOptionName[CompTablesOnly] = "CompTablesOnly"
 	TableOptionName[FullTablesOnly] = "FullTablesOnly"
+	TableOptionName[CompTablesOnly] = "CompTablesOnly"
+	TableOptionName[HybridTables] = "HybridTables"
 }
 
 type Hamt interface {
