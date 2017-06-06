@@ -42,11 +42,11 @@ func (l flatLeaf) put(k key.Key, v interface{}) (leafI, bool) {
 	return newLeaf, true // key,val was added
 }
 
-func (l flatLeaf) del(key key.Key) (interface{}, leafI, bool) {
+func (l flatLeaf) del(key key.Key) (leafI, interface{}, bool) {
 	if l.key.Equals(key) {
-		return l.val, nil, true
+		return nil, l.val, true
 	}
-	return nil, l, false
+	return l, nil, false
 }
 
 func (l flatLeaf) keyVals() []key.KeyVal {

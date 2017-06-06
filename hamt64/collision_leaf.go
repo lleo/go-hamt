@@ -14,6 +14,12 @@ type collisionLeaf struct {
 	kvs []key.KeyVal
 }
 
+func (l *collisionLeaf) copy() *collisionLeaf {
+	var nl = new(collisionLeaf)
+	nl.kvs = append(nl.kvs, l.kvs...)
+	return nl
+}
+
 func newCollisionLeaf(kvs []key.KeyVal) *collisionLeaf {
 	var leaf = new(collisionLeaf)
 	leaf.kvs = append(leaf.kvs, kvs...)
@@ -32,7 +38,7 @@ func (l collisionLeaf) String() string {
 	}
 	var jkvstr = strings.Join(kvstrs, ",")
 
-	return fmt.Sprintf("collisionLeaf{hash60:%s, kvs:[]kv{%s}}",
+	return fmt.Sprintf("collisionLeaf{hash60:%s, kvs:[]key.KeyVal{%s}}",
 		l.Hash60(), jkvstr)
 }
 
@@ -59,22 +65,23 @@ func (l collisionLeaf) put(k key.Key, v interface{}) (leafI, bool) {
 	return l, true // key_,val was added
 }
 
-func (l collisionLeaf) del(key key.Key) (interface{}, leafI, bool) {
+func (l collisionLeaf) del(key key.Key) (leafI, interface{}, bool) {
+	var nl = l.copy()
 	for i, kv := range l.kvs {
 		if kv.Key.Equals(key) {
-			l.kvs = append(l.kvs[:i], l.kvs[i+1:]...)
-			if len(l.kvs) == 1 {
-				var fl = newFlatLeaf(l.kvs[0].Key, l.kvs[0].Val)
-				return kv.Val, fl, true
+			nl.kvs = append(nl.kvs[:i], nl.kvs[i+1:]...)
+			if len(nl.kvs) == 1 {
+				var fl = newFlatLeaf(nl.kvs[0].Key, nl.kvs[0].Val)
+				return fl, kv.Val, true
 			}
-			return kv.Val, l, true
+			return nl, kv.Val, true
 		}
 	}
-	return nil, l, false
+	return l, nil, false
 }
 
 func (l collisionLeaf) keyVals() []key.KeyVal {
-	var r = make([]key.KeyVal, len(l.kvs))
+	var r = make([]key.KeyVal, 0, len(l.kvs))
 	r = append(r, l.kvs...)
 	return r
 	//return l.kvs
