@@ -205,11 +205,12 @@ func (h *HamtFunctional) Put(k key.Key, v interface{}) (Hamt, bool) {
 	var newTable tableI
 	if leaf == nil {
 		if nh.grade && (curTable.nentries()+1) == upgradeThreshold {
-			newTable = upgradeToFullTable(curTable.Hash30(), curTable.entries())
+			newTable = upgradeToFullTable(
+				curTable.Hash30(), depth, curTable.entries())
 		} else {
 			newTable = curTable.copy()
-			newTable.insert(idx, newFlatLeaf(k, v))
 		}
+		newTable.insert(idx, newFlatLeaf(k, v))
 		added = true
 	} else {
 		newTable = curTable.copy()
@@ -252,6 +253,7 @@ func (h *HamtFunctional) Del(k key.Key) (Hamt, interface{}, bool) {
 		return h, nil, false
 	}
 
+	var depth = uint(path.len())
 	var newTable tableI = curTable.copy()
 	if newLeaf != nil { //leaf was a CollisionLeaf
 		newTable.replace(idx, newLeaf)
@@ -264,7 +266,7 @@ func (h *HamtFunctional) Del(k key.Key) (Hamt, interface{}, bool) {
 			newTable = nil
 		case h.grade && newTable.nentries() == downgradeThreshold:
 			newTable = downgradeToCompressedTable(
-				newTable.Hash30(), newTable.entries())
+				newTable.Hash30(), depth, newTable.entries())
 		}
 	}
 

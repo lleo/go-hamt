@@ -75,9 +75,14 @@ func createFullTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	return retTable
 }
 
-func upgradeToFullTable(hashPath key.HashVal30, ents []tableEntry) *fullTable {
+func upgradeToFullTable(
+	hashPath key.HashVal30,
+	depth uint,
+	ents []tableEntry,
+) *fullTable {
 	var ft = new(fullTable)
 	ft.hashPath = hashPath
+	ft.depth = depth
 	ft.nents = uint(len(ents))
 
 	for _, ent := range ents {

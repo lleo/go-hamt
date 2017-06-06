@@ -105,6 +105,7 @@ func nodeMapString(nodeMap uint32) string {
 // highest. tableI.entries() also adhears to this contract.
 func downgradeToCompressedTable(
 	hashPath key.HashVal30,
+	depth uint,
 	ents []tableEntry,
 ) *compressedTable {
 	var nt = new(compressedTable)
