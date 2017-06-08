@@ -3,8 +3,48 @@ package hamt_test
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"testing"
+	"time"
 )
+
+//var SVS []StrVal
+
+type StrVal struct {
+	Str string
+	Val int
+}
+
+func genRandomizedSvs(svs []StrVal) []StrVal {
+	var randSvs = make([]StrVal, len(svs))
+	copy(randSvs, svs)
+
+	//From: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
+	var limit = len(randSvs) //n-1
+	for i := 0; i < limit; /* aka i_max = n-2 */ i++ {
+		j := rand.Intn(i+1) - 1 // i <= j < n; j_min=n-(n-2+1)-1=0; j_max=n-0-1=n-1
+		randSvs[i], randSvs[j] = randSvs[j], randSvs[i]
+	}
+
+	return randSvs
+}
+
+func buildMap(prefix string, num int) map[string]int {
+	var name = fmt.Sprintf("%s-buildMap", prefix)
+	StartTime[name] = time.Now()
+
+	var m = make(map[string]int, num)
+	var s = "aaa"
+
+	for i := 0; i < num; i++ {
+		m[s] = i
+
+		s = Inc(s)
+	}
+
+	RunTime[name] = time.Since(StartTime[name])
+	return m
+}
 
 func BenchmarkMapGet(b *testing.B) {
 	var name = fmt.Sprintf("BenchmarkMapGet#%d", b.N)

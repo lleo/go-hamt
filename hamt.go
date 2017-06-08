@@ -44,55 +44,51 @@ StringKey interface described in "github.com/lleo/go-hamt/stringkey".
 package hamt
 
 import (
-	"github.com/lleo/go-hamt-key"
 	"github.com/lleo/go-hamt/hamt32"
 	"github.com/lleo/go-hamt/hamt64"
 )
 
-// Configuration contants to be passed to `hamt64.New(int) *Hamt`.
 // WARNING!!! Duplicated code with both hamt32 and hamt64. Must have
 // test to guarantee they stay in lock step.
 const (
-	// HybridTables indicates the structure should use compressedTable
-	// initially, then upgrad to fullTable when appropriate.
-	HybridTables = iota
+	// FullTableOnly indicates the structure should use fullTables ONLY.
+	// This was intended to be for speed, as compressed tables use a software
+	// bitCount function to access individual cells.
+	FullTablesOnly = iota
 	// CompTablesOnly indicates the structure should use compressedTables ONLY.
 	// This was intended just save space, but also seems to be faster; CPU cache
 	// locality maybe?
 	CompTablesOnly
-	// FullTableOnly indicates the structure should use fullTables ONLY.
-	// This was intended to be for speed, as compressed tables use a software
-	// bitCount function to access individual cells. Turns out, not so much.
-	FullTablesOnly
+	// HybridTables indicates the structure should use compressedTable
+	// initially, then upgrad to fullTable when appropriate.
+	HybridTables
 )
 
-// TableOptionName is a pedantic lookup table; given the configuration option
-// it maps to the configuration option's name.
-var TableOptionName = make(map[int]string, 3)
+// TableOptionName is a lookup table to map the integer value of FullTablesOnly,
+// CompTablesOnly, and HybridTables to a string representing that option.
+//     var option = hamt32.FullTablesOnly
+//     hamt32.TableOptionName[option] == "FullTablesOnly"
+var TableOptionName [3]string
+
+// Could have used...
+//var TableOptionName = [3]string{
+//	"FullTablesOnly",
+//	"CompTablesOnly",
+//	"HybridTables",
+//}
 
 func init() {
-	TableOptionName[0] = "HybridTables"
-	TableOptionName[1] = "CompTablesOnly"
-	TableOptionName[2] = "FullTablesOnly"
+	TableOptionName[FullTablesOnly] = "FullTablesOnly"
+	TableOptionName[CompTablesOnly] = "CompTablesOnly"
+	TableOptionName[HybridTables] = "HybridTables"
 }
 
-// Hamt interface defines all behavior for implementations of the
-// Hash Array Mapped Trie datastructures in hammt32/ and hamt64/.
-type Hamt interface {
-	Get(key.Key) (interface{}, bool)
-	Put(key.Key, interface{}) bool
-	Del(key.Key) (interface{}, bool)
-	IsEmpty() bool
-	String() string
+// New32 ...
+func New32(functional bool, opt int) hamt32.Hamt {
+	return hamt32.New(functional, opt)
 }
 
-// NewHamt32 ...
-func NewHamt32() Hamt {
-	//return hamt32.NewHamt()
-	return hamt32.New(hamt32.HybridTables)
-}
-
-// NewHamt64 ...
-func NewHamt64() Hamt {
-	return hamt64.New(hamt64.HybridTables)
+// New64 ...
+func New64(functional bool, opt int) hamt64.Hamt {
+	return hamt64.New(functional, opt)
 }
