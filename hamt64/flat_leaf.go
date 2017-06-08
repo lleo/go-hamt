@@ -3,7 +3,7 @@ package hamt64
 import (
 	"fmt"
 
-	"github.com/lleo/go-hamt-key"
+	"github.com/lleo/go-hamt/key"
 )
 
 type flatLeaf struct {

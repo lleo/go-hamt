@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/lleo/go-hamt-key"
+	"github.com/lleo/go-hamt/key"
 )
 
 type HamtTransient struct {

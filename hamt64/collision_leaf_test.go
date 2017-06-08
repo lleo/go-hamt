@@ -4,8 +4,8 @@ import (
 	"log"
 	"testing"
 
-	"github.com/lleo/go-hamt-key"
-	"github.com/lleo/go-hamt-key/stringkey"
+	"github.com/lleo/go-hamt/key"
+	"github.com/lleo/go-hamt/stringkey"
 )
 
 func TestCollisonLeafDelImmutable(t *testing.T) {

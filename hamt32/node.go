@@ -3,7 +3,7 @@ package hamt32
 import (
 	"fmt"
 
-	"github.com/lleo/go-hamt-key"
+	"github.com/lleo/go-hamt/key"
 )
 
 type nodeI interface {

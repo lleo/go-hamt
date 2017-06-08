@@ -1,6 +1,8 @@
 package hamt64
 
-import "github.com/lleo/go-hamt-key"
+import (
+	"github.com/lleo/go-hamt/key"
+)
 
 const nBits uint = key.BitsPerLevel60
 

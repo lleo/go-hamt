@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lleo/go-hamt-key"
 	"github.com/lleo/go-hamt/hamt64"
+	"github.com/lleo/go-hamt/key"
 )
 
 func buildHamt64(

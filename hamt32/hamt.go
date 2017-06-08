@@ -1,6 +1,8 @@
 package hamt32
 
-import "github.com/lleo/go-hamt-key"
+import (
+	"github.com/lleo/go-hamt/key"
+)
 
 const nBits uint = key.BitsPerLevel30
 

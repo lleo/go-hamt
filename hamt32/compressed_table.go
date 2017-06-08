@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/lleo/go-hamt-key"
+	"github.com/lleo/go-hamt/key"
 )
 
 // compressedTableInitCap constant sets the default capacity of a new

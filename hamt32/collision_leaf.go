@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/lleo/go-hamt-key"
+	"github.com/lleo/go-hamt/key"
 )
 
 // implements nodeI
