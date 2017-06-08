@@ -87,9 +87,10 @@ LINE: while (my $l = <>) {
 		my $op = 'get';
 		my @fields = split(' ', $l);
 		push @{$s->{$bit}{$mode}{$ttype}{$op}{'data'}}, $fields[2];
-		say(join(" ", $bit, $mode, $ttype, $op, $fields[2]));
-		local $Data::Dumper::Indent = 0;
-		say Dumper( $s->{$bit}{$mode}{$ttype}{$op}{'data'} );
+		my $n = scalar(@$s->{$bit}{$mode}{$ttype}{$op}{'data'});
+		say("#$n:", join(" ", $bit, $mode, $ttype, $op, $fields[2]));
+		#local $Data::Dumper::Indent = 0;
+		#say Dumper( $s->{$bit}{$mode}{$ttype}{$op}{'data'} );
 		next LINE;
 	};
 	$l =~ m/^BenchmarkHamt32Put-8/ && do {
@@ -97,9 +98,9 @@ LINE: while (my $l = <>) {
 		my $op = 'put';
 		my @fields = split(' ', $l);
 		push @{$s->{$bit}{$mode}{$ttype}{$op}{'data'}}, $fields[2];
-		say(join(" ", $bit, $mode, $ttype, $op, $fields[2]));
-		local $Data::Dumper::Indent = 0;
-		say Dumper( $s->{$bit}{$mode}{$ttype}{$op}{'data'} );
+		#say(join(" ", $bit, $mode, $ttype, $op, $fields[2]));
+		#local $Data::Dumper::Indent = 0;
+		#say Dumper( $s->{$bit}{$mode}{$ttype}{$op}{'data'} );
 		next LINE;
 	};
 	$l =~ m/^BenchmarkHamt32Del-8/ && do {
@@ -107,9 +108,9 @@ LINE: while (my $l = <>) {
 		my $op = 'del';
 		my @fields = split(' ', $l);
 		push @{$s->{$bit}{$mode}{$ttype}{$op}{'data'}}, $fields[2];
-		say(join(" ", $bit, $mode, $ttype, $op, $fields[2]));
-		local $Data::Dumper::Indent = 0;
-		say Dumper( $s->{$bit}{$mode}{$ttype}{$op}{'data'} );
+		#say(join(" ", $bit, $mode, $ttype, $op, $fields[2]));
+		#local $Data::Dumper::Indent = 0;
+		#say Dumper( $s->{$bit}{$mode}{$ttype}{$op}{'data'} );
 		next LINE;
 	};
 	$l =~ m/^BenchmarkHamt64Get-8/ && do {
@@ -117,9 +118,9 @@ LINE: while (my $l = <>) {
 		my $op = 'get';
 		my @fields = split(' ', $l);
 		push @{$s->{$bit}{$mode}{$ttype}{$op}{'data'}}, $fields[2];
-		say(join(" ", $bit, $mode, $ttype, $op, $fields[2]));
-		local $Data::Dumper::Indent = 0;
-		say Dumper( $s->{$bit}{$mode}{$ttype}{$op}{'data'} );
+		#say(join(" ", $bit, $mode, $ttype, $op, $fields[2]));
+		#local $Data::Dumper::Indent = 0;
+		#say Dumper( $s->{$bit}{$mode}{$ttype}{$op}{'data'} );
 		next LINE;
 	};
 	$l =~ m/^BenchmarkHamt64Put-8/ && do {
@@ -127,9 +128,9 @@ LINE: while (my $l = <>) {
 		my $op = 'put';
 		my @fields = split(' ', $l);
 		push @{$s->{$bit}{$mode}{$ttype}{$op}{'data'}}, $fields[2];
-		say(join(" ", $bit, $mode, $ttype, $op, $fields[2]));
-		local $Data::Dumper::Indent = 0;
-		say Dumper( $s->{$bit}{$mode}{$ttype}{$op}{'data'} );
+		#say(join(" ", $bit, $mode, $ttype, $op, $fields[2]));
+		#local $Data::Dumper::Indent = 0;
+		#say Dumper( $s->{$bit}{$mode}{$ttype}{$op}{'data'} );
 		next LINE;
 	};
 	$l =~ m/^BenchmarkHamt64Del-8/ && do {
@@ -137,9 +138,9 @@ LINE: while (my $l = <>) {
 		my $op = 'del';
 		my @fields = split(' ', $l);
 		push @{$s->{$bit}{$mode}{$ttype}{$op}{'data'}}, $fields[2];
-		say(join(" ", $bit, $mode, $ttype, $op, $fields[2]));
-		local $Data::Dumper::Indent = 0;
-		say Dumper( $s->{$bit}{$mode}{$ttype}{$op}{'data'} );
+		#say(join(" ", $bit, $mode, $ttype, $op, $fields[2]));
+		#local $Data::Dumper::Indent = 0;
+		#say Dumper( $s->{$bit}{$mode}{$ttype}{$op}{'data'} );
 		next LINE;
 	};
 }
