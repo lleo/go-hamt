@@ -55,6 +55,15 @@ func (h *HamtTransient) ToTransient() Hamt {
 	return h
 }
 
+func (h *HamtTransient) DeepCopy() Hamt {
+	var nh = new(HamtTransient)
+	nh.root = h.root.deepCopy()
+	nh.nentries = h.nentries
+	nh.grade = h.grade
+	nh.compinit = h.compinit
+	return nh
+}
+
 func (h *HamtTransient) find(k key.Key) (tableStack, leafI, uint) {
 	if h.IsEmpty() {
 		return nil, nil, 0

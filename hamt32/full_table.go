@@ -15,12 +15,29 @@ type fullTable struct {
 	nodes    [tableCapacity]nodeI
 }
 
-func (t fullTable) copy() tableI {
+func (t *fullTable) copy() tableI {
 	var nt = new(fullTable)
 	nt.hashPath = t.hashPath
 	nt.depth = t.depth
 	nt.nents = t.nents
 	nt.nodes = t.nodes
+	return nt
+}
+
+func (t *fullTable) deepCopy() tableI {
+	var nt = new(fullTable)
+	nt.hashPath = t.hashPath
+	nt.depth = t.depth
+	nt.nents = t.nents
+	for i := 0; i < len(t.nodes); i++ {
+		if table, isTable := t.nodes[i].(tableI); isTable {
+			nt.nodes[i] = table.deepCopy()
+		} else {
+			//leafs are functional, so no need to copy
+			//nils can be copied just fine; duh!
+			nt.nodes[i] = t.nodes[i]
+		}
+	}
 	return nt
 }
 

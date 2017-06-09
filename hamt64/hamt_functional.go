@@ -56,6 +56,15 @@ func (h *HamtFunctional) ToTransient() Hamt {
 	}
 }
 
+func (h *HamtFunctional) DeepCopy() Hamt {
+	var nh = new(HamtFunctional)
+	nh.root = h.root.deepCopy()
+	nh.nentries = h.nentries
+	nh.grade = h.grade
+	nh.compinit = h.compinit
+	return nh
+}
+
 // persist() is ONLY called on a fresh copy of the current Hamt.
 // Hence, modifying it is allowed.
 func (nh *HamtFunctional) persist(oldTable, newTable tableI, path tableStack) {

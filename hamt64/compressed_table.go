@@ -28,6 +28,24 @@ func (t *compressedTable) copy() tableI {
 	return nt
 }
 
+func (t *compressedTable) deepCopy() tableI {
+	var nt = new(compressedTable)
+	nt.hashPath = t.hashPath
+	nt.depth = t.depth
+	nt.nodeMap = t.nodeMap
+	nt.nodes = make([]nodeI, len(t.nodes), cap(t.nodes))
+	for i := 0; i < len(t.nodes); i++ {
+		if table, isTable := t.nodes[i].(tableI); isTable {
+			nt.nodes[i] = table.deepCopy()
+		} else {
+			//leafs are functional, so no need to copy
+			//nils can be copied just fine; duh!
+			nt.nodes[i] = t.nodes[i]
+		}
+	}
+	return nt
+}
+
 func createRootCompressedTable(lf leafI) tableI {
 	var idx = lf.Hash60().Index(0)
 

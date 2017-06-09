@@ -65,6 +65,7 @@ type Hamt interface {
 	Nentries() uint
 	ToFunctional() Hamt
 	ToTransient() Hamt
+	DeepCopy() Hamt
 	Get(key.Key) (interface{}, bool)
 	Put(key.Key, interface{}) (Hamt, bool)
 	Del(key.Key) (Hamt, interface{}, bool)
