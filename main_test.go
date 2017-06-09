@@ -56,6 +56,12 @@ func TestMain(m *testing.M) {
 		"Run Tests against HamtFunctional struct; excludes functional option")
 	flag.BoolVar(&both, "both", false,
 		"Run Tests against both transient and functional Hamt types.")
+	flag.BoolVar(&functional, "f", false,
+		"Run Tests against HamtFunctional struct; excludes transient option")
+	flag.BoolVar(&transient, "t", false,
+		"Run Tests against HamtFunctional struct; excludes functional option")
+	flag.BoolVar(&both, "b", false,
+		"Run Tests against both transient and functional Hamt types.")
 
 	flag.Parse()
 
