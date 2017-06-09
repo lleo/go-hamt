@@ -204,7 +204,7 @@ func (h *HamtFunctional) Put(k key.Key, v interface{}) (Hamt, bool) {
 
 	var newTable tableI
 	if leaf == nil {
-		if nh.grade && (curTable.nentries()+1) == upgradeThreshold {
+		if nh.grade && (curTable.nentries()+1) == UpgradeThreshold {
 			newTable = upgradeToFullTable(
 				curTable.Hash30(), depth, curTable.entries())
 		} else {
@@ -264,7 +264,7 @@ func (h *HamtFunctional) Del(k key.Key) (Hamt, interface{}, bool) {
 		switch {
 		case newTable.nentries() == 0:
 			newTable = nil
-		case h.grade && newTable.nentries() == downgradeThreshold:
+		case h.grade && newTable.nentries() == DowngradeThreshold:
 			newTable = downgradeToCompressedTable(
 				newTable.Hash30(), depth, newTable.entries())
 		}

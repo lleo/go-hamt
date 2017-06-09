@@ -173,7 +173,7 @@ func (h *HamtTransient) Put(k key.Key, v interface{}) (Hamt, bool) {
 
 	if leaf == nil {
 		//check if upgrading allowed & if it is required
-		if h.grade && (curTable.nentries()+1) == upgradeThreshold {
+		if h.grade && (curTable.nentries()+1) == UpgradeThreshold {
 			var newTable tableI
 			newTable = upgradeToFullTable(
 				curTable.Hash60(), depth, curTable.entries())
@@ -264,8 +264,8 @@ func (h *HamtTransient) Del(k key.Key) (Hamt, interface{}, bool) {
 			}
 
 			// else check if downgrade allowed and required
-		case h.grade && curTable.nentries() == downgradeThreshold:
-			//when nentries is decr'd it will be <downgradeThreshold
+		case h.grade && curTable.nentries() == DowngradeThreshold:
+			//when nentries is decr'd it will be <DowngradeThreshold
 			var newTable = downgradeToCompressedTable(
 				curTable.Hash60(), depth, curTable.entries())
 			if curTable == h.root { //aka path.len() == 0 or path.peek() == nil
