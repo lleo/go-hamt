@@ -1,3 +1,17 @@
+Note: I have upgraded this package to add in the a functional mode as well.
+This is a merger with github.com/lleo/go-hamt-functional which it obsoletes.
+The motivation for this was because I was seeing slower performance for 
+go-hamt-functional Get() operations even though I was certain that they were
+using the same algorithm. This merger guarantees that the transient and
+functinal Hamt implementations are useing the exact same datastructures. This
+is true even to the degree that I can take the same root tree and wrap it
+in HamtTransient or HamtFunctional types that use the same Trie but different
+methods for Get, Put, and Del.
+
+It also obsoletes github.com/lleo/go-hamt-key because it need not be a separate
+repository.
+
+
 # go-hamt
 Go implementation of a Hash Array Map Trie in one of two modes - Transient or
 Functional. Tansient means we modify the datastructures in-place and not like
