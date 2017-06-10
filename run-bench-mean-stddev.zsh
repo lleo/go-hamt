@@ -8,13 +8,14 @@ Usage: $0 [-d <data_fn>] [-b <bench string>] [-t <test args>]
 Example: $0 -d data.pcf -b "Hamt32(Get|Put|Del)" -t "-F -functional"
 
 <data_fn> is the name where the hamt-mean-stddev.pl program will put its
-perl datastructure. ex ./hamt-mean-stddev.pl -d <data_fn>
+perl datastructure.
+ex. ./hamt-mean-stddev.pl -d data.pcf
 
 <bench_str> is the argument that will be passed to go test's -bench argument.
-ex. go test -run=xxx -bench="$bench_str" -timeout=25m
+ex. go test -run=xxx -bench="Hamt32(Get|Put|Del)" -timeout=25m
 
 <test_args> is any number of valid arguments to go test.
-ex. go test $test_args -run=xxx -bench="$bench_str"
+ex. go test -F -functional -run=xxx -bench="Hamt32(Get|Put|Del)"
 EOU
 }
 
@@ -45,5 +46,5 @@ while getopts "d:b:t:h" opt; do
 done
 
 time repeat 10 do
-       echo go test $test_args -run=xxx -bench="$bench_str" -timeout=25m
+       go test $test_args -run=xxx -bench="$bench_str" -timeout=25m
 done | ./hamt-mean-stddev.pl $data_arg

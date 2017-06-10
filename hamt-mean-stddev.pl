@@ -30,11 +30,11 @@ GetOptions("h|help" => \$help,
 
 $help && UsageAndExit(0);
 
-say "perl: data_fn=>$data_fn<";
-say "perl: input_fn=>$input_fn<";
+#say "perl: data_fn=>$data_fn<";
+#say "perl: input_fn=>$input_fn<";
 
 my $s;
-if ($input_fn == '-') {
+if ($input_fn eq '-') {
 	$s = {'32'=>{'transient'=>
 	             {'full'=>{'get'=>{'data'=>[],'mean'=>0,'stddev'=>0},
 	                       'put'=>{'data'=>[],'mean'=>0,'stddev'=>0},
@@ -82,6 +82,8 @@ if ($input_fn == '-') {
 	             }
 	            }
 	     };
+
+	#say "reading from stdin";
 
 	my $mode;
 	my $ttype;
@@ -178,17 +180,18 @@ if ($input_fn == '-') {
 			next LINE;
 		};
 	}
+
+	if (defined $data_fn) {
+		open(my $fh, ">", $data_fn)
+		  or die "Can't open > output.txt: $!";
+		$fh->print(Dumper($s));
+		$fh->close();
+	}
 } else {
-	$s = do $input_fn
+	#say "\$s = do $input_fn";
+	$s = do $input_fn;
 }
 
-
-if (defined $data_fn) {
-	open(my $fh, ">", $data_fn)
-	  or die "Can't open > output.txt: $!";
-	$fh->print(Dumper($s));
-	$fh->close();
-}
 
 # Calculate mean & dev for each data vector
 say "### REPORT ###";
@@ -205,7 +208,7 @@ for my $bit ('32', '64') {
 				my $v = vector(@{$entry->{'data'}});
 				my $m = $entry->{'mean'} = mean($v);
 				my $d = $entry->{'stddev'} = stddev($v);
-				my $pct = $d / $m;
+				my $pct = ($d / $m) * 100;
 				my $pct_s = sprintf("%%%.1f", $pct);
 				say "$bit/$mode/$ttype/$op => $m +/- $pct_s ($d) ns";
 			}

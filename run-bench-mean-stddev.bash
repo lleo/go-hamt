@@ -18,7 +18,6 @@ ex. go test $test_args -run=xxx -bench="$bench_str"
 EOU
 }
 
-
 data_arg=
 bench_str="Hamt(32|64)(Get|Put|Del)"
 test_args=
@@ -44,8 +43,6 @@ while getopts ":d:b:t:h" opt; do
 	    ;;
     esac
 done
-
-echo "test_args=$test_args"
 
 time for ((i=0; 10 - $i; i++)) do
     go test $test_args -run=xxx -bench="$bench_str" -timeout=25m
