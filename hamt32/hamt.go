@@ -1,3 +1,9 @@
+/*
+Package hamt32 is the package that implements two Hamt structures for both
+functional and transient implementations. The first structure is HamtFunctional,
+and the second is HamtTransient. Each of these datastructures implemnents the
+hamt32.Hamt interface.
+*/
 package hamt32
 
 import (
@@ -60,6 +66,8 @@ func init() {
 	TableOptionName[HybridTables] = "HybridTables"
 }
 
+// Hamt defines the interface that both the HamtFunctional and HamtTransient
+// datastructures must (and do) implement.
 type Hamt interface {
 	IsEmpty() bool
 	Nentries() uint
@@ -73,6 +81,11 @@ type Hamt interface {
 	LongString(string) string
 }
 
+// New() constructs a datastucture that implements the Hamt interface. When the
+// functional argument is true it implements a HamtFunctional datastructure.
+// When the functional argument is false it implements a HamtTransient
+// datastructure. In either case the opt argument is handed to the to the
+// contructore for either NewFunctional(opt) or NewTransient(opt).
 func New(functional bool, opt int) Hamt {
 	if functional {
 		return NewFunctional(opt)

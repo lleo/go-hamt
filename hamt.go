@@ -1,10 +1,10 @@
 /*
 Package hamt is the unifying package between the 32bit and 64bit implementations
 of Hash Array Mapped Tries (HAMT). HAMT datastructure make an efficient hashed
-map data structure. You can `import hamt "github.com/lleo/go-hamt"`
-then instantiate either a hamt32 or hamt64 datastructure with the
-`hamt.NewHamt32()` or `hamt.NewHamt64()` functions. Both datastructures have
-the same exported API defined by the Hamt interface.
+map data structure. You can `import "github.com/lleo/go-hamt"` then instantiate
+either a hamt32 or hamt64 datastructure with the `hamt.New32()` or
+`hamt.New64()` functions. Both datastructures have the same exported API defined
+by the hamt32.Hamt and hamt64.Hamt interfaces.
 
 Given how wide a HAMT node is (either 32 or 64 nodes wide) HAMT datastructures
 not very deep; either 6, for 32bit, or 10, for 64bit implementations, nodes
@@ -27,15 +27,16 @@ to "fold" the high 2 or 4 bits of the 32 and 64 bit hash values into 30 and
 We want 30 and 60 bit values because they split nicely into six 5bit and ten
 6bit values respectively. Each of these 5 and 6 bit values become the indexies
 of our Trie nodes with a maximum depth of 6 or 10 respectively. Further 5 bits
-indexes into a 32 entry table nodes for 32 bit HAMTs and 6 bit index into 64
+indexe into a 32 entry table nodes for 32 bit HAMTs and 6 bit index into 64
 entry table nodes for 64 bit HAMTs; isn't that symmetrical :).
 
 For a this HAMT implementation, when key/value pair must be created, deleted,
 or changed the key is hashed into a 30 or 60 bit value (described above) and
 that hash30 or hash60 value represents a path of 5 or 6 bit values to place a
 leaf containing the key, value pair. For a Get() or Del() operation we lookup
-the deepest node along that pate that is not-nil. For a Put() operation we
-lookup the deepest location that is nil and not beyond the lenth of the path.
+the deepest node along that path that is not-nil. For a Put() operation we
+lookup the deepest location that is a leaf or nil and not beyond the lenth of
+the path.
 
 You may implement your own Key type by implementeding the Key interface
 defined in "github.com/lleo/go-hamt/key" or you may used the example
@@ -83,12 +84,20 @@ func init() {
 	TableOptionName[HybridTables] = "HybridTables"
 }
 
-// New32 ...
+// New32() takes two arguments and producest a value that conforms to the
+// hamt32.Hamt interface. The arguments are a bool and an int. The bool argument
+// determines if a functional structure(true) or transient stucture(false) is
+// produced. The int option is either 0, 1, or 2 conforming to the
+// FullTablesOnly, CompTablesOnly, or HybridTables constants.
 func New32(functional bool, opt int) hamt32.Hamt {
 	return hamt32.New(functional, opt)
 }
 
-// New64 ...
+// New32() takes two arguments and producest a value that conforms to the
+// hamt64.Hamt interface. The arguments are a bool and an int. The bool argument
+// determines if a functional structure(true) or transient stucture(false) is
+// produced. The int option is either 0, 1, or 2 conforming to the
+// FullTablesOnly, CompTablesOnly, or HybridTables constants.
 func New64(functional bool, opt int) hamt64.Hamt {
 	return hamt64.New(functional, opt)
 }

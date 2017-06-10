@@ -109,15 +109,21 @@ func upgradeToFullTable(
 	return ft
 }
 
+// Hash60 returns an incomplete Hash of this table. Any levels past it's current
+// depth should be zero.
 func (t *fullTable) Hash60() key.HashVal60 {
 	return t.hashPath
 }
 
+// String return a string representation of this table including the hashPath,
+// depth, and number of entries.
 func (t *fullTable) String() string {
 	return fmt.Sprintf("fullTable{hashPath=%s, depth=%d, nentries()=%d}",
 		t.hashPath, t.depth, t.nentries())
 }
 
+// LongString returns a string representation of this table and all the tables
+// contained herein recursively.
 func (t *fullTable) LongString(indent string, depth uint) string {
 	var strs = make([]string, 3+t.nentries())
 

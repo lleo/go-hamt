@@ -7,6 +7,15 @@ import (
 	"github.com/lleo/go-hamt/key"
 )
 
+// HamtTransient is the datastructure which the Transient Hamt methods are
+// called upon. In fact it is identical to the HamtFunctional datastructure and
+// all the table and leaf datastructures it uses are the same ones used by the
+// HamtTransient implementation. It is its own type so that the methods it calls
+// are the transient version of the hamt32.Hamt interface.
+//
+// The Transient version of the Hamt datastructure, does all modifications
+// in-place. So sharing this datastruture between threads is NOT safe unless
+// you were to implement a locking stategy CORRECTLY.
 type HamtTransient struct {
 	root     tableI
 	nentries uint
@@ -14,6 +23,8 @@ type HamtTransient struct {
 	compinit bool
 }
 
+// NewTransient constructs a new HamtTransient datastructure based on the opt
+// argument.
 func NewTransient(opt int) *HamtTransient {
 	var h = new(HamtTransient)
 
@@ -34,14 +45,33 @@ func NewTransient(opt int) *HamtTransient {
 	return h
 }
 
+// IsEmpty simply returns if the HamtTransient datastucture has no entries.
 func (h *HamtTransient) IsEmpty() bool {
 	return h.root == nil
 }
 
+// Nentries return the number of (key,value) pairs are stored in the
+// HamtTransient datastructure.
 func (h *HamtTransient) Nentries() uint {
 	return h.nentries
 }
 
+// ToFunctional creates a new HamtFunctional datastructure and simply copies the
+// values stored in the HamtTransient datastructure over to the HamtFunctional
+// datastructure, then it returns a pointer to the HamtFunctional datastructure
+// as a hamt32.Hamt interface.
+//
+// WARNING: given that ToFunctional() just copies pointers to a new
+// HamtTransient datastruture, ANY modification to the original HamtTransient
+// datastructure will change the new HamtFunctional datastructure (as they
+// share the exact same tables & leafs).
+//
+// Modifications to the new HamtFunctional datastructure WILL NOT affect the
+// original HamtTransient datastructure because it does all its modifiation in
+// a copy-on-write manner.
+//
+// The only way to convert a HamtTransient to a HamtFunctional and keep the
+// functionality of both is to first perfom a DeepCopy().
 func (h *HamtTransient) ToFunctional() Hamt {
 	return &HamtFunctional{
 		root:     h.root,
@@ -51,10 +81,15 @@ func (h *HamtTransient) ToFunctional() Hamt {
 	}
 }
 
+// ToTransient does nothing to a HamtTransient datastructure. This method only
+// returns the HamtTransient datastructure pointer as a hamt32.Hamt interface.
 func (h *HamtTransient) ToTransient() Hamt {
 	return h
 }
 
+// DeepCopy() copies the HamtTransient datastructure and every table it contains
+// recursively. This is expensive, but usefull, if you want to use ToTransient()
+// and ToFunctional().
 func (h *HamtTransient) DeepCopy() Hamt {
 	var nh = new(HamtTransient)
 	nh.root = h.root.deepCopy()
@@ -116,6 +151,9 @@ DepthIter:
 //	return leaf.get(k)
 //}
 
+// Get retrieves the value related to the key in the HamtTransient
+// datastructure. It also return a bool to indicate the value was found. This
+// allows you to store nil values in the HamtTransient datastructure.
 func (h *HamtTransient) Get(k key.Key) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
@@ -164,9 +202,10 @@ func (h *HamtTransient) createTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) ta
 	return createFullTable(depth, leaf1, leaf2)
 }
 
-// Put Hamt method inserts a given key/val pair into the Hamt data structure.
-// It returns a boolean indicating if the key/val was inserted or whether or
-// not the key already existed and the val was merely overwritten.
+// Put stores a new (key,value) pair in the HamtTransient datastructure. It
+// returns a bool indicating if a new pair were added or if the value replaced
+// the value in a previously stored (key,value) pair. Either way it returns and
+// new HamtTransient datastructure containing the modification.
 func (h *HamtTransient) Put(k key.Key, v interface{}) (Hamt, bool) {
 	if h.IsEmpty() {
 		h.root = h.createRootTable(newFlatLeaf(k, v))
@@ -231,9 +270,12 @@ func (h *HamtTransient) Put(k key.Key, v interface{}) (Hamt, bool) {
 	return h, added
 }
 
-// Del Hamt Method removes a given key from the Hamt data structure. It returns
-// a pair of values: the value stored and a boolean indicating if the key was
-// even found and deleted.
+// Del searches the HamtTransient for the key argument and returns three
+// values: a Hamt datastuture, a value, and a bool. If the key was found then
+// the bool returned is true and the value is the value related to that key and
+// the returned Hamt is a new HamtTransient datastructure without. If the
+// (key, value) pair. If key was not found, then the bool is false, the value is
+// nil, and the Hamt value is the original HamtTransient datastructure.
 func (h *HamtTransient) Del(k key.Key) (Hamt, interface{}, bool) {
 	if h.IsEmpty() {
 		return h, nil, false

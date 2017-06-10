@@ -24,6 +24,7 @@ type tableI interface {
 	nodeI
 
 	copy() tableI
+	deepCopy() tableI
 
 	LongString(indent string, depth uint) string
 
