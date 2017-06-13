@@ -56,13 +56,12 @@ func (h *HamtTransient) Nentries() uint {
 	return h.nentries
 }
 
-// ToFunctional creates a new HamtFunctional datastructure and simply copies the
-// values stored in the HamtTransient datastructure over to the HamtFunctional
-// datastructure, then it returns a pointer to the HamtFunctional datastructure
-// as a hamt32.Hamt interface.
+// ToFunctional mearly casts a *HamtTransient to a *HamtFunctional. This works
+// because the datastructures are identical. It returns a pointer to the
+// HamtFunctional cast datastructure.
 //
-// WARNING: given that ToFunctional() just copies pointers to a new
-// HamtTransient datastruture, ANY modification to the original HamtTransient
+// WARNING: given that ToFunctional() returns the same datastructure recast to
+// *HamtTransient datastruture, ANY modification to the original *HamtTransient
 // datastructure will change the new HamtFunctional datastructure (as they
 // share the exact same tables & leafs).
 //
@@ -73,12 +72,7 @@ func (h *HamtTransient) Nentries() uint {
 // The only way to convert a HamtTransient to a HamtFunctional and keep the
 // functionality of both is to first perfom a DeepCopy().
 func (h *HamtTransient) ToFunctional() Hamt {
-	return &HamtFunctional{
-		root:     h.root,
-		nentries: h.nentries,
-		grade:    h.grade,
-		compinit: h.compinit,
-	}
+	return (*HamtFunctional)(h)
 }
 
 // ToTransient does nothing to a HamtTransient datastructure. This method only
