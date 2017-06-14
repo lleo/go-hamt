@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"log"
 	"strings"
-
-	"github.com/lleo/go-hamt/key"
 )
 
 type fullTable struct {
-	hashPath key.HashVal30
+	hashPath HashVal
 	depth    uint
 	nents    uint
 	nodes    [tableCapacity]nodeI
@@ -42,7 +40,7 @@ func (t *fullTable) deepCopy() tableI {
 }
 
 func createRootFullTable(lf leafI) tableI {
-	var idx = lf.Hash30().Index(0)
+	var idx = lf.Hash().Index(0)
 
 	var ft = new(fullTable)
 	//ft.hashPath = 0
@@ -57,31 +55,30 @@ func createFullTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	if depth < 1 {
 		log.Panic("createFullTable(): depth < 1")
 	}
-	var hp1 = leaf1.Hash30() & key.HashPathMask30(depth-1)
-	var hp2 = leaf2.Hash30() & key.HashPathMask30(depth-1)
+	var hp1 = leaf1.Hash().HashPath(depth)
+	var hp2 = leaf2.Hash().HashPath(depth)
 	if hp1 != hp2 {
-		log.Panic("newCompressedTable(): hp1,%s != hp2,%s",
+		log.Panicf("newCompressedTable(): hp1,%s != hp2,%s",
 			hp1.HashPathString(depth), hp2.HashPathString(depth))
 	}
 	//for d := uint(0); d < depth; d++ {
-	//	if leaf1.Hash30().Index(d) != leaf2.Hash30().Index(d) {
-	//		log.Panicf("createFullTable(): leaf1.Hash30().Index(%d) != leaf2.Hash30().Index(%d)", d, d)
+	//	if leaf1.Hash().Index(d) != leaf2.Hash().Index(d) {
+	//		log.Panicf("createFullTable(): leaf1.Hash().Index(%d) != leaf2.Hash().Index(%d)", d, d)
 	//	}
 	//}
 
 	var retTable = new(fullTable)
-	//retTable.hashPath = leaf1.Hash30() & key.HashPathMask30(depth-1)
-	retTable.hashPath = leaf1.Hash30().HashPath(depth)
+	retTable.hashPath = leaf1.Hash().HashPath(depth)
 	retTable.depth = depth
 
-	var idx1 = leaf1.Hash30().Index(depth)
-	var idx2 = leaf2.Hash30().Index(depth)
+	var idx1 = leaf1.Hash().Index(depth)
+	var idx2 = leaf2.Hash().Index(depth)
 	if idx1 != idx2 {
 		retTable.insert(idx1, leaf1)
 		retTable.insert(idx2, leaf2)
 	} else { //idx1 == idx2
 		var node nodeI
-		if depth == maxDepth {
+		if depth == MaxDepth {
 			node = newCollisionLeaf(append(leaf1.keyVals(), leaf2.keyVals()...))
 		} else {
 			node = createFullTable(depth+1, leaf1, leaf2)
@@ -93,7 +90,7 @@ func createFullTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 }
 
 func upgradeToFullTable(
-	hashPath key.HashVal30,
+	hashPath HashVal,
 	depth uint,
 	ents []tableEntry,
 ) *fullTable {
@@ -109,9 +106,9 @@ func upgradeToFullTable(
 	return ft
 }
 
-// Hash30 returns an incomplete Hash of this table. Any levels past it's current
+// Hash returns an incomplete Hash of this table. Any levels past it's current
 // depth should be zero.
-func (t *fullTable) Hash30() key.HashVal30 {
+func (t *fullTable) Hash() HashVal {
 	return t.hashPath
 }
 

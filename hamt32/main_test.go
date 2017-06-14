@@ -10,8 +10,7 @@ import (
 	"time"
 
 	"github.com/lleo/go-hamt/hamt32"
-	"github.com/lleo/go-hamt/key"
-	"github.com/lleo/go-hamt/stringkey"
+	"github.com/lleo/go-hamt/hamt32/stringkey"
 	"github.com/lleo/stringutil"
 	"github.com/pkg/errors"
 )
@@ -20,7 +19,7 @@ import (
 var InitHamtNumKvsForPut = 1000000
 var InitHamtNumKvs = 3000000 + InitHamtNumKvsForPut
 var numKvs = (4 * 1024 * 1024) + (4 * 1024)
-var KVS []key.KeyVal
+var KVS []hamt32.KeyVal
 
 var Functional bool
 var TableOption int
@@ -44,11 +43,11 @@ func TestMain(m *testing.M) {
 		"Run all Tests w/ Options set to FullTablesOnly, CompTablesOnly, and HybridTables")
 
 	var functional, transient, both bool
-	flag.BoolVar(&functional, "functional", false,
+	flag.BoolVar(&functional, "f", false,
 		"Run Tests against HamtFunctional struct; excludes transient option")
-	flag.BoolVar(&transient, "transient", false,
+	flag.BoolVar(&transient, "t", false,
 		"Run Tests against HamtFunctional struct; excludes functional option")
-	flag.BoolVar(&both, "both", false,
+	flag.BoolVar(&both, "b", false,
 		"Run Tests against both transient and functional Hamt types.")
 
 	flag.Parse()
@@ -227,17 +226,17 @@ func executeAll(m *testing.M) int {
 	return xit
 }
 
-func buildKeyVals(prefix string, num int) []key.KeyVal {
+func buildKeyVals(prefix string, num int) []hamt32.KeyVal {
 	var name = fmt.Sprintf("%s-buildKeyVals-%d", prefix, num)
 	StartTime[name] = time.Now()
 
-	var kvs = make([]key.KeyVal, num)
+	var kvs = make([]hamt32.KeyVal, num)
 	var s = "aaa"
 
 	for i := 0; i < num; i++ {
 		var k = stringkey.New(s)
 
-		kvs[i] = key.KeyVal{k, i}
+		kvs[i] = hamt32.KeyVal{k, i}
 		s = Inc(s)
 	}
 
@@ -247,7 +246,7 @@ func buildKeyVals(prefix string, num int) []key.KeyVal {
 
 func buildHamt32(
 	prefix string,
-	kvs []key.KeyVal,
+	kvs []hamt32.KeyVal,
 	functional bool,
 	opt int,
 ) (hamt32.Hamt, error) {

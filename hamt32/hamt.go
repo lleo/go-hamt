@@ -6,15 +6,7 @@ hamt32.Hamt interface.
 */
 package hamt32
 
-import (
-	"github.com/lleo/go-hamt/key"
-)
-
-const nBits uint = key.BitsPerLevel30
-
-const maxDepth uint = key.MaxDepth30
-
-const tableCapacity uint = uint(1 << nBits)
+const tableCapacity uint = IndexLimit
 
 // DowngradeThreshold is the constant that sets the threshold for the size of a
 // table, that when a table decreases to the threshold size, the table is
@@ -74,9 +66,9 @@ type Hamt interface {
 	ToFunctional() Hamt
 	ToTransient() Hamt
 	DeepCopy() Hamt
-	Get(key.Key) (interface{}, bool)
-	Put(key.Key, interface{}) (Hamt, bool)
-	Del(key.Key) (Hamt, interface{}, bool)
+	Get(Key) (interface{}, bool)
+	Put(Key, interface{}) (Hamt, bool)
+	Del(Key) (Hamt, interface{}, bool)
 	String() string
 	LongString(string) string
 }
