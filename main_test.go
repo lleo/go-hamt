@@ -50,12 +50,6 @@ func TestMain(m *testing.M) {
 		"Run all Tests w/ Options set to FullTablesOnly, CompTablesOnly, and HybridTables")
 
 	var functional, transient, both bool
-	flag.BoolVar(&functional, "functional", false,
-		"Run Tests against HamtFunctional struct; excludes transient option")
-	flag.BoolVar(&transient, "transient", false,
-		"Run Tests against HamtFunctional struct; excludes functional option")
-	flag.BoolVar(&both, "both", false,
-		"Run Tests against both transient and functional Hamt types.")
 	flag.BoolVar(&functional, "f", false,
 		"Run Tests against HamtFunctional struct; excludes transient option")
 	flag.BoolVar(&transient, "t", false,
