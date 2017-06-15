@@ -3,15 +3,18 @@ package hamt64
 import (
 	"fmt"
 	"log"
-
-	"github.com/lleo/go-hamt/key"
 )
 
 // HamtFunctional is the datastructure which the Funcitonal Hamt methods are
 // called upon. In fact it is identical to the HamtTransient datastructure and
 // all the table and leaf datastructures it uses are the same ones used by the
 // HamtTransient implementation. It is its own type so that the methods it calls
-// are the functional version of the hamt32.Hamt interface.
+// are the functional version of the hamt64.Hamt interface.
+//
+// Basically the functional versions implement a copy-on-write inmplementation
+// of Put() and Del(), to the original HamtFuncitonal isn't modified and Put()
+// and Del() return a slightly modified copy of the HamtFunctional
+// datastructure. So sharing this datastructure between threads is safe.
 type HamtFunctional struct {
 	root     tableI
 	nentries uint
@@ -59,21 +62,21 @@ func (h *HamtFunctional) ToFunctional() Hamt {
 	return h
 }
 
-// ToTransient creates a HamtTransient datastructure an simple copies the values
-// stored in the HamtFunctional over to the HamtTransient datastructure, then it
-// returns a pointer to the HamtTransient datastructure as a hamt32.Hamt
-// interface.
+// ToTransient creates a HamtTransient datastructure and simply copies the
+// values stored in the HamtFunctional datastructure over to the HamtTransient
+// datastructure, then it returns a pointer to the HamtTransient datastructure
+// as a hamt64.Hamt interface.
 //
-// WARNING: given that it just copied pointers to the HamtFunctional
-// datastructure's values, ANY modification of the new HamtTransient
+// WARNING: given that ToTransient() just copies pointers to a new
+// HamtFunctional datastructure, ANY modification of the new HamtTransient
 // datastruture will change the previous HamtFunctional and any preceding
 // HamtFunctional datastruture that share some of the same tables.
 //
 // If you use the previous HamtFunctional datastructures IN ANY WAY this
 // convertion is mustly useless.
 //
-// The only way to avoid this is to implement a DeepCopy() type method; which
-// I have not done.
+// The only way to avoid having the new HamtTransient from modifying the
+// original HamtFunctional is to first perform a DeepCopy()
 func (h *HamtFunctional) ToTransient() Hamt {
 	return &HamtTransient{
 		root:     h.root,
@@ -83,6 +86,9 @@ func (h *HamtFunctional) ToTransient() Hamt {
 	}
 }
 
+// DeepCopy() copies the HamtFunctional datastructure and every table it
+// contains recursively. This is expensive, but usefull, if you want to use
+// ToTransient() and ToFunctional().
 func (h *HamtFunctional) DeepCopy() Hamt {
 	var nh = new(HamtFunctional)
 	nh.root = h.root.deepCopy()
@@ -108,7 +114,7 @@ func (nh *HamtFunctional) persist(oldTable, newTable tableI, path tableStack) {
 	var depth = uint(path.len())
 	var parentDepth = depth - 1
 
-	var parentIdx = oldTable.Hash60().Index(parentDepth)
+	var parentIdx = oldTable.Hash().Index(parentDepth)
 
 	var oldParent = path.pop()
 	var newParent tableI = oldParent.copy()
@@ -124,12 +130,12 @@ func (nh *HamtFunctional) persist(oldTable, newTable tableI, path tableStack) {
 	return
 }
 
-func (h *HamtFunctional) find(k key.Key) (tableStack, leafI, uint) {
+func (h *HamtFunctional) find(k Key) (tableStack, leafI, uint) {
 	if h.IsEmpty() {
 		return nil, nil, 0
 	}
 
-	var h60 = k.Hash60()
+	var hv = k.Hash()
 	var curTable = h.root
 
 	var path = newTableStack()
@@ -138,9 +144,9 @@ func (h *HamtFunctional) find(k key.Key) (tableStack, leafI, uint) {
 
 	var depth uint
 DepthIter:
-	for depth = 0; depth <= maxDepth; depth++ {
+	for depth = 0; depth <= MaxDepth; depth++ {
 		path.push(curTable)
-		idx = h60.Index(depth)
+		idx = hv.Index(depth)
 
 		var curNode = curTable.get(idx)
 		switch n := curNode.(type) {
@@ -151,8 +157,8 @@ DepthIter:
 			leaf = n
 			break DepthIter
 		case tableI:
-			if depth == maxDepth {
-				log.Panicf("SHOULD NOT BE REACHED; depth,%d == maxDepth,%d & tableI entry found; %s", depth, maxDepth, n)
+			if depth == MaxDepth {
+				log.Panicf("SHOULD NOT BE REACHED; depth,%d == MaxDepth,%d & tableI entry found; %s", depth, MaxDepth, n)
 			}
 			curTable = n
 			// exit switch then loop for
@@ -165,7 +171,7 @@ DepthIter:
 }
 
 // This is slower due to extraneous code and allocations in find().
-//func (h *HamtTransient) Get(k key.Key) (interface{}, bool) {
+//func (h *HamtTransient) Get(k Key) (interface{}, bool) {
 //	var _, leaf, _ = h.find(k)
 //
 //	if leaf == nil {
@@ -178,7 +184,7 @@ DepthIter:
 // Get retrieves the value related to the key in the HamtFunctional
 // datastructure. It also return a bool to indicate the value was found. This
 // allows you to store nil values in the HamtFunctional datastructure.
-func (h *HamtFunctional) Get(k key.Key) (interface{}, bool) {
+func (h *HamtFunctional) Get(k Key) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
 	}
@@ -186,12 +192,12 @@ func (h *HamtFunctional) Get(k key.Key) (interface{}, bool) {
 	var val interface{}
 	var found bool
 
-	var h60 = k.Hash60()
+	var hv = k.Hash()
 
 	var curTable = h.root //ISA tableI
 
-	for depth := uint(0); depth <= maxDepth; depth++ {
-		var idx = h60.Index(depth)
+	for depth := uint(0); depth <= MaxDepth; depth++ {
+		var idx = hv.Index(depth)
 		var curNode = curTable.get(idx) //nodeI
 
 		if curNode == nil {
@@ -203,7 +209,7 @@ func (h *HamtFunctional) Get(k key.Key) (interface{}, bool) {
 			return val, found
 		}
 
-		if depth == maxDepth {
+		if depth == MaxDepth {
 			panic("SHOULD NOT HAPPEN")
 		}
 		curTable = curNode.(tableI)
@@ -230,7 +236,7 @@ func (h *HamtFunctional) createTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) t
 // returns a bool indicating if a new pair were added or if the value replaced
 // the value in a previously stored (key,value) pair. Either way it returns and
 // new HamtFunctional datastructure containing the modification.
-func (h *HamtFunctional) Put(k key.Key, v interface{}) (Hamt, bool) {
+func (h *HamtFunctional) Put(k Key, v interface{}) (Hamt, bool) {
 	var nh = new(HamtFunctional)
 	*nh = *h
 
@@ -250,7 +256,7 @@ func (h *HamtFunctional) Put(k key.Key, v interface{}) (Hamt, bool) {
 	if leaf == nil {
 		if nh.grade && (curTable.nentries()+1) == UpgradeThreshold {
 			newTable = upgradeToFullTable(
-				curTable.Hash60(), depth, curTable.entries())
+				curTable.Hash(), depth, curTable.entries())
 		} else {
 			newTable = curTable.copy()
 		}
@@ -258,7 +264,7 @@ func (h *HamtFunctional) Put(k key.Key, v interface{}) (Hamt, bool) {
 		added = true
 	} else {
 		newTable = curTable.copy()
-		if leaf.Hash60() == k.Hash60() {
+		if leaf.Hash() == k.Hash() {
 			var newLeaf leafI
 			newLeaf, added = leaf.put(k, v)
 			newTable.replace(idx, newLeaf)
@@ -284,7 +290,7 @@ func (h *HamtFunctional) Put(k key.Key, v interface{}) (Hamt, bool) {
 // the returned Hamt is a new HamtFunctional datastructure without. If the
 // (key, value) pair. If key was not found, then the bool is false, the value is
 // nil, and the Hamt value is the original HamtFunctional datastructure.
-func (h *HamtFunctional) Del(k key.Key) (Hamt, interface{}, bool) {
+func (h *HamtFunctional) Del(k Key) (Hamt, interface{}, bool) {
 	if h.IsEmpty() {
 		return h, nil, false
 	}
@@ -316,7 +322,7 @@ func (h *HamtFunctional) Del(k key.Key) (Hamt, interface{}, bool) {
 			newTable = nil
 		case h.grade && newTable.nentries() == DowngradeThreshold:
 			newTable = downgradeToCompressedTable(
-				newTable.Hash60(), depth, newTable.entries())
+				newTable.Hash(), depth, newTable.entries())
 		}
 	}
 

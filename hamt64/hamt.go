@@ -6,15 +6,7 @@ hamt64.Hamt interface.
 */
 package hamt64
 
-import (
-	"github.com/lleo/go-hamt/key"
-)
-
-const nBits uint = key.BitsPerLevel60
-
-const maxDepth uint = key.MaxDepth60
-
-const tableCapacity uint = uint(1 << nBits)
+const tableCapacity uint = IndexLimit
 
 // DowngradeThreshold is the constant that sets the threshold for the size of a
 // table, that when a table decreases to the threshold size, the table is
@@ -22,7 +14,7 @@ const tableCapacity uint = uint(1 << nBits)
 //
 // This conversion only happens if the Hamt structure has be constructed with
 // the HybridTables option.
-const DowngradeThreshold uint = 21 // floor(tableCapacity / 3)
+const DowngradeThreshold uint = 10 // floor(tableCapacity / 3)
 
 // UpgradeThreshold is the constant that sets the threshold for the size of a
 // table, that when a table increases to the threshold size, the table is
@@ -30,7 +22,7 @@ const DowngradeThreshold uint = 21 // floor(tableCapacity / 3)
 //
 // This conversion only happens if the Hamt structure has be constructed with
 // the HybridTables option.
-const UpgradeThreshold uint = 43 // round(tableCapacity * 2 / 3)
+const UpgradeThreshold uint = 21 // round(tableCapacity * 2 / 3)
 
 // Configuration contants to be passed to `hamt64.New(int) *Hamt`.
 const (
@@ -43,14 +35,14 @@ const (
 	// locality maybe?
 	CompTablesOnly
 	// HybridTables indicates the structure should use compressedTable
-	// initially, then upgrad to fullTable when appropriate.
+	// initially, then upgrade to fullTable when appropriate.
 	HybridTables
 )
 
 // TableOptionName is a lookup table to map the integer value of FullTablesOnly,
 // CompTablesOnly, and HybridTables to a string representing that option.
-//     var option = hamt32.FullTablesOnly
-//     hamt32.TableOptionName[option] == "FullTablesOnly"
+//     var option = hamt64.FullTablesOnly
+//     hamt64.TableOptionName[option] == "FullTablesOnly"
 var TableOptionName [3]string
 
 // Could have used...
@@ -61,9 +53,9 @@ var TableOptionName [3]string
 //}
 
 func init() {
-	TableOptionName[HybridTables] = "HybridTables"
-	TableOptionName[CompTablesOnly] = "CompTablesOnly"
 	TableOptionName[FullTablesOnly] = "FullTablesOnly"
+	TableOptionName[CompTablesOnly] = "CompTablesOnly"
+	TableOptionName[HybridTables] = "HybridTables"
 }
 
 // Hamt defines the interface that both the HamtFunctional and HamtTransient
@@ -74,9 +66,9 @@ type Hamt interface {
 	ToFunctional() Hamt
 	ToTransient() Hamt
 	DeepCopy() Hamt
-	Get(key.Key) (interface{}, bool)
-	Put(key.Key, interface{}) (Hamt, bool)
-	Del(key.Key) (Hamt, interface{}, bool)
+	Get(Key) (interface{}, bool)
+	Put(Key, interface{}) (Hamt, bool)
+	Del(Key) (Hamt, interface{}, bool)
 	String() string
 	LongString(string) string
 }

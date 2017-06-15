@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"log"
 	"strings"
-
-	"github.com/lleo/go-hamt/key"
 )
 
 // implements nodeI
 // implements leafI
 type collisionLeaf struct {
-	kvs []key.KeyVal
+	kvs []KeyVal
 }
 
 func (l *collisionLeaf) copy() *collisionLeaf {
@@ -20,15 +18,15 @@ func (l *collisionLeaf) copy() *collisionLeaf {
 	return nl
 }
 
-func newCollisionLeaf(kvs []key.KeyVal) *collisionLeaf {
+func newCollisionLeaf(kvs []KeyVal) *collisionLeaf {
 	var leaf = new(collisionLeaf)
 	leaf.kvs = append(leaf.kvs, kvs...)
 
 	return leaf
 }
 
-func (l collisionLeaf) Hash60() key.HashVal60 {
-	return l.kvs[0].Key.Hash60()
+func (l collisionLeaf) Hash() HashVal {
+	return l.kvs[0].Key.Hash()
 }
 
 func (l collisionLeaf) String() string {
@@ -38,11 +36,11 @@ func (l collisionLeaf) String() string {
 	}
 	var jkvstr = strings.Join(kvstrs, ",")
 
-	return fmt.Sprintf("collisionLeaf{hash60:%s, kvs:[]key.KeyVal{%s}}",
-		l.Hash60(), jkvstr)
+	return fmt.Sprintf("collisionLeaf{hash:%s, kvs:[]KeyVal{%s}}",
+		l.Hash(), jkvstr)
 }
 
-func (l collisionLeaf) get(key key.Key) (interface{}, bool) {
+func (l collisionLeaf) get(key Key) (interface{}, bool) {
 	for _, kv := range l.kvs {
 		if kv.Key.Equals(key) {
 			return kv.Val, true
@@ -51,21 +49,21 @@ func (l collisionLeaf) get(key key.Key) (interface{}, bool) {
 	return nil, false
 }
 
-func (l collisionLeaf) put(k key.Key, v interface{}) (leafI, bool) {
+func (l collisionLeaf) put(k Key, v interface{}) (leafI, bool) {
 	for _, kv := range l.kvs {
 		if kv.Key.Equals(k) {
 			kv.Val = v
 			return l, false //key,val was not added, merely replaced
 		}
 	}
-	l.kvs = append(l.kvs, key.KeyVal{k, v})
+	l.kvs = append(l.kvs, KeyVal{k, v})
 
-	log.Printf("%s : %d\n", l.Hash60(), len(l.kvs))
+	log.Printf("%s : %d\n", l.Hash(), len(l.kvs))
 
 	return l, true // key_,val was added
 }
 
-func (l collisionLeaf) del(key key.Key) (leafI, interface{}, bool) {
+func (l collisionLeaf) del(key Key) (leafI, interface{}, bool) {
 	var nl = l.copy()
 	for i, kv := range l.kvs {
 		if kv.Key.Equals(key) {
@@ -80,8 +78,8 @@ func (l collisionLeaf) del(key key.Key) (leafI, interface{}, bool) {
 	return l, nil, false
 }
 
-func (l collisionLeaf) keyVals() []key.KeyVal {
-	var r = make([]key.KeyVal, 0, len(l.kvs))
+func (l collisionLeaf) keyVals() []KeyVal {
+	var r = make([]KeyVal, 0, len(l.kvs))
 	r = append(r, l.kvs...)
 	return r
 	//return l.kvs

@@ -3,15 +3,13 @@ package hamt64
 import (
 	"fmt"
 	"log"
-
-	"github.com/lleo/go-hamt/key"
 )
 
 // HamtTransient is the datastructure which the Transient Hamt methods are
 // called upon. In fact it is identical to the HamtFunctional datastructure and
 // all the table and leaf datastructures it uses are the same ones used by the
 // HamtTransient implementation. It is its own type so that the methods it calls
-// are the transient version of the hamt32.Hamt interface.
+// are the transient version of the hamt64.Hamt interface.
 //
 // The Transient version of the Hamt datastructure, does all modifications
 // in-place. So sharing this datastruture between threads is NOT safe unless
@@ -59,7 +57,7 @@ func (h *HamtTransient) Nentries() uint {
 // ToFunctional creates a new HamtFunctional datastructure and simply copies the
 // values stored in the HamtTransient datastructure over to the HamtFunctional
 // datastructure, then it returns a pointer to the HamtFunctional datastructure
-// as a hamt32.Hamt interface.
+// as a hamt64.Hamt interface.
 //
 // WARNING: given that ToFunctional() just copies pointers to a new
 // HamtTransient datastruture, ANY modification to the original HamtTransient
@@ -82,7 +80,7 @@ func (h *HamtTransient) ToFunctional() Hamt {
 }
 
 // ToTransient does nothing to a HamtTransient datastructure. This method only
-// returns the HamtTransient datastructure pointer as a hamt32.Hamt interface.
+// returns the HamtTransient datastructure pointer as a hamt64.Hamt interface.
 func (h *HamtTransient) ToTransient() Hamt {
 	return h
 }
@@ -99,12 +97,12 @@ func (h *HamtTransient) DeepCopy() Hamt {
 	return nh
 }
 
-func (h *HamtTransient) find(k key.Key) (tableStack, leafI, uint) {
+func (h *HamtTransient) find(k Key) (tableStack, leafI, uint) {
 	if h.IsEmpty() {
 		return nil, nil, 0
 	}
 
-	var h60 = k.Hash60()
+	var hv = k.Hash()
 	var curTable = h.root
 
 	var path = newTableStack()
@@ -113,9 +111,9 @@ func (h *HamtTransient) find(k key.Key) (tableStack, leafI, uint) {
 
 	var depth uint
 DepthIter:
-	for depth = 0; depth <= maxDepth; depth++ {
+	for depth = 0; depth <= MaxDepth; depth++ {
 		path.push(curTable)
-		idx = h60.Index(depth)
+		idx = hv.Index(depth)
 
 		var curNode = curTable.get(idx)
 		switch n := curNode.(type) {
@@ -126,8 +124,8 @@ DepthIter:
 			leaf = n
 			break DepthIter
 		case tableI:
-			if depth == maxDepth {
-				log.Panicf("SHOULD NOT BE REACHED; depth,%d == maxDepth,%d & tableI entry found; %s", depth, maxDepth, n)
+			if depth == MaxDepth {
+				log.Panicf("SHOULD NOT BE REACHED; depth,%d == MaxDepth,%d & tableI entry found; %s", depth, MaxDepth, n)
 			}
 			curTable = n
 			// exit switch then loop for
@@ -141,7 +139,7 @@ DepthIter:
 
 // Get Hamt method looks up a given key in the Hamt data structure.
 // BenchHamt64:
-//func (h *HamtTransient) Get(k key.Key) (interface{}, bool) {
+//func (h *HamtTransient) Get(k Key) (interface{}, bool) {
 //	var _, leaf, _ = h.find(k)
 //
 //	if leaf == nil {
@@ -154,7 +152,7 @@ DepthIter:
 // Get retrieves the value related to the key in the HamtTransient
 // datastructure. It also return a bool to indicate the value was found. This
 // allows you to store nil values in the HamtTransient datastructure.
-func (h *HamtTransient) Get(k key.Key) (interface{}, bool) {
+func (h *HamtTransient) Get(k Key) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
 	}
@@ -162,12 +160,12 @@ func (h *HamtTransient) Get(k key.Key) (interface{}, bool) {
 	var val interface{}
 	var found bool
 
-	var h60 = k.Hash60()
+	var hv = k.Hash()
 
 	var curTable = h.root //ISA tableI
 
-	for depth := uint(0); depth <= maxDepth; depth++ {
-		var idx = h60.Index(depth)
+	for depth := uint(0); depth <= MaxDepth; depth++ {
+		var idx = hv.Index(depth)
 		var curNode = curTable.get(idx) //nodeI
 
 		if curNode == nil {
@@ -179,7 +177,7 @@ func (h *HamtTransient) Get(k key.Key) (interface{}, bool) {
 			return val, found
 		}
 
-		if depth == maxDepth {
+		if depth == MaxDepth {
 			panic("SHOULD NOT HAPPEN")
 		}
 		curTable = curNode.(tableI)
@@ -206,7 +204,7 @@ func (h *HamtTransient) createTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) ta
 // returns a bool indicating if a new pair were added or if the value replaced
 // the value in a previously stored (key,value) pair. Either way it returns and
 // new HamtTransient datastructure containing the modification.
-func (h *HamtTransient) Put(k key.Key, v interface{}) (Hamt, bool) {
+func (h *HamtTransient) Put(k Key, v interface{}) (Hamt, bool) {
 	if h.IsEmpty() {
 		h.root = h.createRootTable(newFlatLeaf(k, v))
 		h.nentries++
@@ -224,12 +222,12 @@ func (h *HamtTransient) Put(k key.Key, v interface{}) (Hamt, bool) {
 		if h.grade && (curTable.nentries()+1) == UpgradeThreshold {
 			var newTable tableI
 			newTable = upgradeToFullTable(
-				curTable.Hash60(), depth, curTable.entries())
+				curTable.Hash(), depth, curTable.entries())
 			if curTable == h.root {
 				h.root = newTable
 			} else {
 				var parentTable = path.peek()
-				var parentIdx = k.Hash60().Index(depth - 1)
+				var parentIdx = k.Hash().Index(depth - 1)
 				parentTable.replace(parentIdx, newTable)
 			}
 			curTable = newTable
@@ -238,8 +236,8 @@ func (h *HamtTransient) Put(k key.Key, v interface{}) (Hamt, bool) {
 		added = true
 	} else {
 		// This is the condition that allows collision leafs to exist at a level
-		// less than maxDepth. I don't know if I want to allow this...
-		if leaf.Hash60() == k.Hash60() {
+		// less than MaxDepth. I don't know if I want to allow this...
+		if leaf.Hash() == k.Hash() {
 			var newLeaf leafI
 			// There are four possibilities here:
 			// if leaf isa collision leaf
@@ -247,13 +245,13 @@ func (h *HamtTransient) Put(k key.Key, v interface{}) (Hamt, bool) {
 			//     we replace that ones value and added = false
 			//   k is unique in the collision leaf and the kv pair is added;
 			//     this is very rare; the underlying key basis is different but
-			//     the Hash60 is identical.
+			//     the Hash is identical.
 			// if leaf isa flat leaf
 			//   k is identical to the flat leaf's key; hence the value is
 			//     replaced and added == false
 			//   k is not identical to the flat leaf's key; and a collision leaf
 			//     is created and added == true; again this is very rare; the
-			//     underlying key basis is different but the Hash60 is identical
+			//     underlying key basis is different but the Hash is identical
 			newLeaf, added = leaf.put(k, v)
 			curTable.replace(idx, newLeaf)
 		} else {
@@ -276,7 +274,7 @@ func (h *HamtTransient) Put(k key.Key, v interface{}) (Hamt, bool) {
 // the returned Hamt is a new HamtTransient datastructure without. If the
 // (key, value) pair. If key was not found, then the bool is false, the value is
 // nil, and the Hamt value is the original HamtTransient datastructure.
-func (h *HamtTransient) Del(k key.Key) (Hamt, interface{}, bool) {
+func (h *HamtTransient) Del(k Key) (Hamt, interface{}, bool) {
 	if h.IsEmpty() {
 		return h, nil, false
 	}
@@ -310,7 +308,7 @@ func (h *HamtTransient) Del(k key.Key) (Hamt, interface{}, bool) {
 			var lastNode = curTable.entries()[0].node
 			if _, isLeaf := lastNode.(leafI); isLeaf {
 				var parentTable = path.peek()
-				var parentIdx = k.Hash60().Index(depth - 1)
+				var parentIdx = k.Hash().Index(depth - 1)
 				parentTable.replace(parentIdx, lastNode)
 			}
 
@@ -318,12 +316,12 @@ func (h *HamtTransient) Del(k key.Key) (Hamt, interface{}, bool) {
 		case h.grade && curTable.nentries() == DowngradeThreshold:
 			//when nentries is decr'd it will be <DowngradeThreshold
 			var newTable = downgradeToCompressedTable(
-				curTable.Hash60(), depth, curTable.entries())
+				curTable.Hash(), depth, curTable.entries())
 			if curTable == h.root { //aka path.len() == 0 or path.peek() == nil
 				h.root = newTable
 			} else {
 				var parentTable = path.peek()
-				var parentIdx = k.Hash60().Index(depth - 1)
+				var parentIdx = k.Hash().Index(depth - 1)
 				parentTable.replace(parentIdx, newTable)
 			}
 		}

@@ -19,7 +19,7 @@ func TestBuild(t *testing.T) {
 
 	var h = hamt64.New(Functional, TableOption)
 
-	for _, kv := range KVS[:60] {
+	for _, kv := range KVS[:30] {
 		var k = kv.Key
 		var v = kv.Val
 
@@ -154,6 +154,9 @@ func TestHamt64Del(t *testing.T) {
 	RunTime[name] = time.Since(StartTime[name])
 }
 
+var BenchHamt64Get hamt64.Hamt
+var BenchHamt64Get_Functional bool
+
 func BenchmarkHamt64Get(b *testing.B) {
 	var name = "BenchmarkHamt64Get"
 	if Functional {
@@ -163,14 +166,17 @@ func BenchmarkHamt64Get(b *testing.B) {
 	}
 	log.Print(name)
 
-	var h hamt64.Hamt
-	var err error
-	h, err = buildHamt64(name, KVS, Functional, TableOption)
-	if err != nil {
-		log.Printf("%s: failed buildHamt64(%q, KVS#%d, %t, %s) => %s", name,
-			name, len(KVS), false, hamt64.TableOptionName[TableOption], err)
-		b.Fatalf("%s: failed buildHamt64(%q, KVS#%d, %t, %s) => %s", name,
-			name, len(KVS), false, hamt64.TableOptionName[TableOption], err)
+	if BenchHamt64Get == nil || BenchHamt64Get_Functional != Functional {
+		BenchHamt64Get_Functional = Functional
+
+		var err error
+		BenchHamt64Get, err = buildHamt64(name, KVS, Functional, TableOption)
+		if err != nil {
+			log.Printf("%s: failed buildHamt64(%q, KVS#%d, %t, %s) => %s", name,
+				name, len(KVS), false, hamt64.TableOptionName[TableOption], err)
+			b.Fatalf("%s: failed buildHamt64(%q, KVS#%d, %t, %s) => %s", name,
+				name, len(KVS), false, hamt64.TableOptionName[TableOption], err)
+		}
 	}
 
 	log.Printf("%s: Functional=%t; b.N=%d", name, Functional, b.N)
@@ -181,7 +187,7 @@ func BenchmarkHamt64Get(b *testing.B) {
 		var k = KVS[j].Key
 		var v = KVS[j].Val
 
-		var val, found = h.Get(k)
+		var val, found = BenchHamt64Get.Get(k)
 		if !found {
 			log.Printf("%s: Failed to h.Get(%s)", name, k)
 			//log.Print(h.LongString(""))
