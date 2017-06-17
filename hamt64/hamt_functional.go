@@ -31,10 +31,10 @@ func NewFunctional(opt int) *HamtFunctional {
 	case HybridTables:
 		h.grade = true
 		h.compinit = true
-	case CompTablesOnly:
+	case SparseTablesOnly:
 		h.grade = false
 		h.compinit = true
-	case FullTablesOnly:
+	case FixedTablesOnly:
 		fallthrough
 	default:
 		h.grade = false
@@ -220,16 +220,16 @@ func (h *HamtFunctional) Get(k Key) (interface{}, bool) {
 
 func (h *HamtFunctional) createRootTable(leaf leafI) tableI {
 	if h.compinit {
-		return createRootCompressedTable(leaf)
+		return createRootSparseTable(leaf)
 	}
-	return createRootFullTable(leaf)
+	return createRootFixedTable(leaf)
 }
 
 func (h *HamtFunctional) createTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	if h.compinit {
-		return createCompressedTable(depth, leaf1, leaf2)
+		return createSparseTable(depth, leaf1, leaf2)
 	}
-	return createFullTable(depth, leaf1, leaf2)
+	return createFixedTable(depth, leaf1, leaf2)
 }
 
 // Put stores a new (key,value) pair in the HamtFunctional datastructure. It
@@ -255,7 +255,7 @@ func (h *HamtFunctional) Put(k Key, v interface{}) (Hamt, bool) {
 	var newTable tableI
 	if leaf == nil {
 		if nh.grade && (curTable.nentries()+1) == UpgradeThreshold {
-			newTable = upgradeToFullTable(
+			newTable = upgradeToFixedTable(
 				curTable.Hash(), depth, curTable.entries())
 		} else {
 			newTable = curTable.copy()
@@ -321,7 +321,7 @@ func (h *HamtFunctional) Del(k Key) (Hamt, interface{}, bool) {
 		case newTable.nentries() == 0:
 			newTable = nil
 		case h.grade && newTable.nentries() == DowngradeThreshold:
-			newTable = downgradeToCompressedTable(
+			newTable = downgradeToSparseTable(
 				newTable.Hash(), depth, newTable.entries())
 		}
 	}

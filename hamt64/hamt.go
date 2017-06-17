@@ -10,51 +10,51 @@ const tableCapacity uint = IndexLimit
 
 // DowngradeThreshold is the constant that sets the threshold for the size of a
 // table, that when a table decreases to the threshold size, the table is
-// converted from a FullTable to a CompressedTable.
+// converted from a FixedTable to a SparseTable.
 //
 // This conversion only happens if the Hamt structure has be constructed with
 // the HybridTables option.
-const DowngradeThreshold uint = 10 // floor(tableCapacity / 3)
+const DowngradeThreshold uint = IndexLimit / 3 // 21
 
 // UpgradeThreshold is the constant that sets the threshold for the size of a
 // table, that when a table increases to the threshold size, the table is
-// converted from a CompressedTable to a FullTable.
+// converted from a SparseTable to a FixedTable.
 //
 // This conversion only happens if the Hamt structure has be constructed with
 // the HybridTables option.
-const UpgradeThreshold uint = 21 // round(tableCapacity * 2 / 3)
+const UpgradeThreshold uint = IndexLimit * 2 / 3 // 42
 
 // Configuration contants to be passed to `hamt64.New(int) *Hamt`.
 const (
-	// FullTableOnly indicates the structure should use fullTables ONLY.
+	// FixedTableOnly indicates the structure should use fixedTables ONLY.
 	// This was intended to be for speed, as compressed tables use a software
 	// bitCount function to access individual cells.
-	FullTablesOnly = iota
-	// CompTablesOnly indicates the structure should use compressedTables ONLY.
+	FixedTablesOnly = iota
+	// SparseTablesOnly indicates the structure should use sparseTables ONLY.
 	// This was intended just save space, but also seems to be faster; CPU cache
 	// locality maybe?
-	CompTablesOnly
-	// HybridTables indicates the structure should use compressedTable
-	// initially, then upgrade to fullTable when appropriate.
+	SparseTablesOnly
+	// HybridTables indicates the structure should use sparseTable
+	// initially, then upgrade to fixedTable when appropriate.
 	HybridTables
 )
 
-// TableOptionName is a lookup table to map the integer value of FullTablesOnly,
-// CompTablesOnly, and HybridTables to a string representing that option.
-//     var option = hamt64.FullTablesOnly
-//     hamt64.TableOptionName[option] == "FullTablesOnly"
+// TableOptionName is a lookup table to map the integer value of FixedTablesOnly,
+// SparseTablesOnly, and HybridTables to a string representing that option.
+//     var option = hamt64.FixedTablesOnly
+//     hamt64.TableOptionName[option] == "FixedTablesOnly"
 var TableOptionName [3]string
 
 // Could have used...
 //var TableOptionName = [3]string{
-//	"FullTablesOnly",
-//	"CompTablesOnly",
+//	"FixedTablesOnly",
+//	"SparseTablesOnly",
 //	"HybridTables",
 //}
 
 func init() {
-	TableOptionName[FullTablesOnly] = "FullTablesOnly"
-	TableOptionName[CompTablesOnly] = "CompTablesOnly"
+	TableOptionName[FixedTablesOnly] = "FixedTablesOnly"
+	TableOptionName[SparseTablesOnly] = "SparseTablesOnly"
 	TableOptionName[HybridTables] = "HybridTables"
 }
 

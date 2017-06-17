@@ -6,15 +6,15 @@ import (
 	"strings"
 )
 
-type fullTable struct {
+type fixedTable struct {
 	hashPath HashVal
 	depth    uint
 	nents    uint
 	nodes    [tableCapacity]nodeI
 }
 
-func (t *fullTable) copy() tableI {
-	var nt = new(fullTable)
+func (t *fixedTable) copy() tableI {
+	var nt = new(fixedTable)
 	nt.hashPath = t.hashPath
 	nt.depth = t.depth
 	nt.nents = t.nents
@@ -22,8 +22,8 @@ func (t *fullTable) copy() tableI {
 	return nt
 }
 
-func (t *fullTable) deepCopy() tableI {
-	var nt = new(fullTable)
+func (t *fixedTable) deepCopy() tableI {
+	var nt = new(fixedTable)
 	nt.hashPath = t.hashPath
 	nt.depth = t.depth
 	nt.nents = t.nents
@@ -39,10 +39,10 @@ func (t *fullTable) deepCopy() tableI {
 	return nt
 }
 
-func createRootFullTable(lf leafI) tableI {
+func createRootFixedTable(lf leafI) tableI {
 	var idx = lf.Hash().Index(0)
 
-	var ft = new(fullTable)
+	var ft = new(fixedTable)
 	//ft.hashPath = 0
 	//ft.depth = 0
 	//ft.nents = 0
@@ -51,23 +51,23 @@ func createRootFullTable(lf leafI) tableI {
 	return ft
 }
 
-func createFullTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
+func createFixedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	if depth < 1 {
-		log.Panic("createFullTable(): depth < 1")
+		log.Panic("createFixedTable(): depth < 1")
 	}
 	var hp1 = leaf1.Hash().HashPath(depth)
 	var hp2 = leaf2.Hash().HashPath(depth)
 	if hp1 != hp2 {
-		log.Panicf("newCompressedTable(): hp1,%s != hp2,%s",
+		log.Panicf("createFixedTable(): hp1,%s != hp2,%s",
 			hp1.HashPathString(depth), hp2.HashPathString(depth))
 	}
 	//for d := uint(0); d < depth; d++ {
 	//	if leaf1.Hash().Index(d) != leaf2.Hash().Index(d) {
-	//		log.Panicf("createFullTable(): leaf1.Hash().Index(%d) != leaf2.Hash().Index(%d)", d, d)
+	//		log.Panicf("createFixedTable(): leaf1.Hash().Index(%d) != leaf2.Hash().Index(%d)", d, d)
 	//	}
 	//}
 
-	var retTable = new(fullTable)
+	var retTable = new(fixedTable)
 	retTable.hashPath = leaf1.Hash().HashPath(depth)
 	retTable.depth = depth
 
@@ -81,7 +81,7 @@ func createFullTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 		if depth == MaxDepth {
 			node = newCollisionLeaf(append(leaf1.keyVals(), leaf2.keyVals()...))
 		} else {
-			node = createFullTable(depth+1, leaf1, leaf2)
+			node = createFixedTable(depth+1, leaf1, leaf2)
 		}
 		retTable.insert(idx1, node)
 	}
@@ -89,12 +89,12 @@ func createFullTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	return retTable
 }
 
-func upgradeToFullTable(
+func upgradeToFixedTable(
 	hashPath HashVal,
 	depth uint,
 	ents []tableEntry,
-) *fullTable {
-	var ft = new(fullTable)
+) *fixedTable {
+	var ft = new(fixedTable)
 	ft.hashPath = hashPath
 	ft.depth = depth
 	ft.nents = uint(len(ents))
@@ -108,23 +108,23 @@ func upgradeToFullTable(
 
 // Hash returns an incomplete Hash of this table. Any levels past it's current
 // depth should be zero.
-func (t *fullTable) Hash() HashVal {
+func (t *fixedTable) Hash() HashVal {
 	return t.hashPath
 }
 
 // String return a string representation of this table including the hashPath,
 // depth, and number of entries.
-func (t *fullTable) String() string {
-	return fmt.Sprintf("fullTable{hashPath=%s, depth=%d, nentries()=%d}",
+func (t *fixedTable) String() string {
+	return fmt.Sprintf("fixedTable{hashPath=%s, depth=%d, nentries()=%d}",
 		t.hashPath, t.depth, t.nentries())
 }
 
 // LongString returns a string representation of this table and all the tables
 // contained herein recursively.
-func (t *fullTable) LongString(indent string, depth uint) string {
+func (t *fixedTable) LongString(indent string, depth uint) string {
 	var strs = make([]string, 3+t.nentries())
 
-	strs[0] = indent + "fullTable{"
+	strs[0] = indent + "fixedTable{"
 	strs[1] = indent + fmt.Sprintf("\thashPath=%s, depth=%d, nents=%d,",
 		t.hashPath.HashPathString(depth+1), t.depth, t.nents)
 
@@ -146,11 +146,11 @@ func (t *fullTable) LongString(indent string, depth uint) string {
 	return strings.Join(strs, "\n")
 }
 
-func (t *fullTable) nentries() uint {
+func (t *fixedTable) nentries() uint {
 	return t.nents
 }
 
-func (t *fullTable) entries() []tableEntry {
+func (t *fixedTable) entries() []tableEntry {
 	var n = t.nentries()
 	var ents = make([]tableEntry, n)
 	var i, j uint
@@ -163,11 +163,11 @@ func (t *fullTable) entries() []tableEntry {
 	return ents
 }
 
-func (t *fullTable) get(idx uint) nodeI {
+func (t *fixedTable) get(idx uint) nodeI {
 	return t.nodes[idx]
 }
 
-func (t *fullTable) set(idx uint, nn nodeI) {
+func (t *fixedTable) set(idx uint, nn nodeI) {
 	if nn != nil && t.nodes[idx] == nil {
 		t.nents++
 	} else if nn == nil && t.nodes[idx] != nil {
@@ -178,7 +178,7 @@ func (t *fullTable) set(idx uint, nn nodeI) {
 	return
 }
 
-func (t *fullTable) insert(idx uint, n nodeI) {
+func (t *fixedTable) insert(idx uint, n nodeI) {
 	if t.nodes[idx] != nil {
 		panic("t.insert(idx, n) where idx slot is NOT empty; this should be a replace")
 	}
@@ -186,14 +186,14 @@ func (t *fullTable) insert(idx uint, n nodeI) {
 	t.nents++
 }
 
-func (t *fullTable) replace(idx uint, n nodeI) {
+func (t *fixedTable) replace(idx uint, n nodeI) {
 	if t.nodes[idx] == nil {
 		panic("t.replace(idx, n) where idx slot is empty; this should be an insert")
 	}
 	t.nodes[idx] = n
 }
 
-func (t *fullTable) remove(idx uint) {
+func (t *fixedTable) remove(idx uint) {
 	if t.nodes[idx] == nil {
 		panic("t.remove(idx) where idx slot is already empty")
 	}

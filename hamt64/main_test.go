@@ -40,7 +40,7 @@ func TestMain(m *testing.M) {
 	flag.BoolVar(&hybrid, "H", false,
 		"Use compressed tables initially and exclude F and C Options.")
 	flag.BoolVar(&all, "A", false,
-		"Run all Tests w/ Options set to FullTablesOnly, CompTablesOnly, and HybridTables")
+		"Run all Tests w/ Options set to FixedTablesOnly, SparseTablesOnly, and HybridTables")
 
 	var functional, transient, both bool
 	flag.BoolVar(&functional, "f", false,
@@ -132,9 +132,9 @@ func TestMain(m *testing.M) {
 		if hybrid {
 			TableOption = hamt64.HybridTables
 		} else if fullonly {
-			TableOption = hamt64.FullTablesOnly
+			TableOption = hamt64.FixedTablesOnly
 		} else /* if componly */ {
-			TableOption = hamt64.CompTablesOnly
+			TableOption = hamt64.SparseTablesOnly
 		}
 
 		if both {
@@ -186,7 +186,7 @@ func TestMain(m *testing.M) {
 }
 
 func executeAll(m *testing.M) int {
-	TableOption = hamt64.FullTablesOnly
+	TableOption = hamt64.FixedTablesOnly
 
 	log.Printf("TestMain: TableOption=%s;\n",
 		hamt64.TableOptionName[TableOption])
@@ -200,7 +200,7 @@ func executeAll(m *testing.M) int {
 	}
 
 	Hamt64 = nil
-	TableOption = hamt64.CompTablesOnly
+	TableOption = hamt64.SparseTablesOnly
 
 	log.Printf("TestMain: TableOption=%s;\n",
 		hamt64.TableOptionName[TableOption])
