@@ -30,10 +30,10 @@ func NewTransient(opt int) *HamtTransient {
 	case HybridTables:
 		h.grade = true
 		h.compinit = true
-	case CompTablesOnly:
+	case SparseTablesOnly:
 		h.grade = false
 		h.compinit = true
-	case FullTablesOnly:
+	case FixedTablesOnly:
 		fallthrough
 	default:
 		h.grade = false
@@ -188,16 +188,16 @@ func (h *HamtTransient) Get(k Key) (interface{}, bool) {
 
 func (h *HamtTransient) createRootTable(leaf leafI) tableI {
 	if h.compinit {
-		return createRootCompressedTable(leaf)
+		return createRootSparseTable(leaf)
 	}
-	return createRootFullTable(leaf)
+	return createRootFixedTable(leaf)
 }
 
 func (h *HamtTransient) createTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	if h.compinit {
-		return createCompressedTable(depth, leaf1, leaf2)
+		return createSparseTable(depth, leaf1, leaf2)
 	}
-	return createFullTable(depth, leaf1, leaf2)
+	return createFixedTable(depth, leaf1, leaf2)
 }
 
 // Put stores a new (key,value) pair in the HamtTransient datastructure. It
@@ -221,7 +221,7 @@ func (h *HamtTransient) Put(k Key, v interface{}) (Hamt, bool) {
 		//check if upgrading allowed & if it is required
 		if h.grade && (curTable.nentries()+1) == UpgradeThreshold {
 			var newTable tableI
-			newTable = upgradeToFullTable(
+			newTable = upgradeToFixedTable(
 				curTable.Hash(), depth, curTable.entries())
 			if curTable == h.root {
 				h.root = newTable
@@ -315,7 +315,7 @@ func (h *HamtTransient) Del(k Key) (Hamt, interface{}, bool) {
 			// else check if downgrade allowed and required
 		case h.grade && curTable.nentries() == DowngradeThreshold:
 			//when nentries is decr'd it will be <DowngradeThreshold
-			var newTable = downgradeToCompressedTable(
+			var newTable = downgradeToSparseTable(
 				curTable.Hash(), depth, curTable.entries())
 			if curTable == h.root { //aka path.len() == 0 or path.peek() == nil
 				h.root = newTable

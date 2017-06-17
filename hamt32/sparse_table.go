@@ -6,19 +6,19 @@ import (
 	"strings"
 )
 
-// compressedTableInitCap constant sets the default capacity of a new
-// compressedTable.
-const compressedTableInitCap int = 8
+// sparseTableInitCap constant sets the default capacity of a new
+// sparseTable.
+const sparseTableInitCap int = 8
 
-type compressedTable struct {
+type sparseTable struct {
 	hashPath HashVal
 	depth    uint
 	nodeMap  uint32
 	nodes    []nodeI
 }
 
-func (t *compressedTable) copy() tableI {
-	var nt = new(compressedTable)
+func (t *sparseTable) copy() tableI {
+	var nt = new(sparseTable)
 	nt.hashPath = t.hashPath
 	nt.depth = t.depth
 	nt.nodeMap = t.nodeMap
@@ -26,8 +26,8 @@ func (t *compressedTable) copy() tableI {
 	return nt
 }
 
-func (t *compressedTable) deepCopy() tableI {
-	var nt = new(compressedTable)
+func (t *sparseTable) deepCopy() tableI {
+	var nt = new(sparseTable)
 	nt.hashPath = t.hashPath
 	nt.depth = t.depth
 	nt.nodeMap = t.nodeMap
@@ -44,40 +44,40 @@ func (t *compressedTable) deepCopy() tableI {
 	return nt
 }
 
-func createRootCompressedTable(lf leafI) tableI {
+func createRootSparseTable(lf leafI) tableI {
 	var idx = lf.Hash().Index(0)
 
-	var ct = new(compressedTable)
+	var ct = new(sparseTable)
 	//ct.hashPath = 0
 	//ct.depth = 0
 	ct.nodeMap = uint32(1 << idx)
-	ct.nodes = make([]nodeI, 1, compressedTableInitCap)
+	ct.nodes = make([]nodeI, 1, sparseTableInitCap)
 	ct.nodes[0] = lf
 
 	return ct
 }
 
-func createCompressedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
+func createSparseTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	if depth < 1 {
-		log.Panic("createCompressedTable(): depth < 1")
+		log.Panic("createSparseTable(): depth < 1")
 	}
 	var hp1 = leaf1.Hash().HashPath(depth)
 	var hp2 = leaf2.Hash().HashPath(depth)
 	if hp1 != hp2 {
-		log.Panic("createCompressedTable(): hp1,%s != hp2,%s",
+		log.Panic("createSparseTable(): hp1,%s != hp2,%s",
 			hp1.HashPathString(depth), hp2.HashPathString(depth))
 	}
 	//for d := uint(0); d < depth; d++ {
 	//	if leaf1.Hash().Index(d) != leaf2.Hash().Index(d) {
-	//		log.Panicf("createCompressedTable(): leaf1.Hash().Index(%d) != leaf2.Hash().Index(%d)", d, d)
+	//		log.Panicf("createSparseTable(): leaf1.Hash().Index(%d) != leaf2.Hash().Index(%d)", d, d)
 	//	}
 	//}
 
-	var retTable = new(compressedTable)
+	var retTable = new(sparseTable)
 	retTable.hashPath = leaf1.Hash().HashPath(depth)
 	retTable.depth = depth
 	//retTable.nodeMap = 0
-	retTable.nodes = make([]nodeI, 0, compressedTableInitCap)
+	retTable.nodes = make([]nodeI, 0, sparseTableInitCap)
 
 	var idx1 = leaf1.Hash().Index(depth)
 	var idx2 = leaf2.Hash().Index(depth)
@@ -89,7 +89,7 @@ func createCompressedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 		if depth == MaxDepth {
 			node = newCollisionLeaf(append(leaf1.keyVals(), leaf2.keyVals()...))
 		} else {
-			node = createCompressedTable(depth+1, leaf1, leaf2)
+			node = createSparseTable(depth+1, leaf1, leaf2)
 		}
 		retTable.insert(idx1, node)
 	}
@@ -112,18 +112,18 @@ func nodeMapString(nodeMap uint32) string {
 	return strings.Join(strs, " ")
 }
 
-// downgradeToCompressedTable() converts fullTable structs that have less than
+// downgradeToSparseTable() converts fixedTable structs that have less than
 // or equal to downgradeThreshold tableEntry's. One important thing we know is
 // that none of the entries will collide with another.
 //
 // The ents []tableEntry slice is guaranteed to be in order from lowest idx to
 // highest. tableI.entries() also adhears to this contract.
-func downgradeToCompressedTable(
+func downgradeToSparseTable(
 	hashPath HashVal,
 	depth uint,
 	ents []tableEntry,
-) *compressedTable {
-	var nt = new(compressedTable)
+) *sparseTable {
+	var nt = new(sparseTable)
 	nt.hashPath = hashPath
 	//nt.nodeMap = 0
 	nt.nodes = make([]nodeI, len(ents), len(ents)+1)
@@ -140,24 +140,24 @@ func downgradeToCompressedTable(
 
 // Hash returns an incomplete Hash of this table. Any levels past it's current
 // depth should be zero.
-func (t *compressedTable) Hash() HashVal {
+func (t *sparseTable) Hash() HashVal {
 	return t.hashPath
 }
 
 // String return a string representation of this table including the hashPath,
 // depth, and number of entries.
-func (t *compressedTable) String() string {
-	return fmt.Sprintf("compressedTable{hashPath:%s, depth=%d, nentries()=%d}",
+func (t *sparseTable) String() string {
+	return fmt.Sprintf("sparseTable{hashPath:%s, depth=%d, nentries()=%d}",
 		t.hashPath, t.depth, t.nentries())
 }
 
 // LongString returns a string representation of this table and all the tables
 // contained herein recursively.
-func (t *compressedTable) LongString(indent string, depth uint) string {
+func (t *sparseTable) LongString(indent string, depth uint) string {
 	var strs = make([]string, 3+len(t.nodes))
 
 	strs[0] = indent +
-		fmt.Sprintf("compressedTable{hashPath=%s, depth=%d, nentries()=%d,",
+		fmt.Sprintf("sparseTable{hashPath=%s, depth=%d, nentries()=%d,",
 			t.hashPath.HashPathString(depth), t.depth, t.nentries())
 
 	strs[1] = indent + "\tnodeMap=" + nodeMapString(t.nodeMap) + ","
@@ -178,12 +178,12 @@ func (t *compressedTable) LongString(indent string, depth uint) string {
 	return strings.Join(strs, "\n")
 }
 
-func (t *compressedTable) nentries() uint {
+func (t *sparseTable) nentries() uint {
 	return uint(len(t.nodes))
 	//return bitCount32(t.nodeMap)
 }
 
-func (t *compressedTable) entries() []tableEntry {
+func (t *sparseTable) entries() []tableEntry {
 	var n = t.nentries()
 	var ents = make([]tableEntry, n)
 
@@ -199,7 +199,7 @@ func (t *compressedTable) entries() []tableEntry {
 	return ents
 }
 
-func (t *compressedTable) get(idx uint) nodeI {
+func (t *sparseTable) get(idx uint) nodeI {
 	var nodeBit = uint32(1 << idx)
 
 	if (t.nodeMap & nodeBit) == 0 {
@@ -212,7 +212,7 @@ func (t *compressedTable) get(idx uint) nodeI {
 	return t.nodes[i]
 }
 
-func (t *compressedTable) set(idx uint, nn nodeI) {
+func (t *sparseTable) set(idx uint, nn nodeI) {
 	var nodeBit = uint32(1 << idx)
 	var bitMask = nodeBit - 1
 	var i = bitCount32(t.nodeMap & bitMask)
@@ -235,7 +235,7 @@ func (t *compressedTable) set(idx uint, nn nodeI) {
 	return
 }
 
-func (t *compressedTable) insert(idx uint, n nodeI) {
+func (t *sparseTable) insert(idx uint, n nodeI) {
 	var nodeBit = uint32(1 << idx)
 
 	if (t.nodeMap & nodeBit) > 0 {
@@ -252,7 +252,7 @@ func (t *compressedTable) insert(idx uint, n nodeI) {
 	t.nodeMap |= nodeBit
 }
 
-func (t *compressedTable) replace(idx uint, n nodeI) {
+func (t *sparseTable) replace(idx uint, n nodeI) {
 	var nodeBit = uint32(1 << idx)
 
 	if (t.nodeMap & nodeBit) == 0 {
@@ -264,7 +264,7 @@ func (t *compressedTable) replace(idx uint, n nodeI) {
 	t.nodes[i] = n
 }
 
-func (t *compressedTable) remove(idx uint) {
+func (t *sparseTable) remove(idx uint) {
 	var nodeBit = uint32(1 << idx)
 
 	if (t.nodeMap & nodeBit) == 0 {

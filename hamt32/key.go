@@ -5,11 +5,11 @@ import (
 	"hash/fnv"
 )
 
-// HashSize is the size of the basic hash function output.
+// HashSize is the size of the basic hash function output. Basically 32 or 64.
 const HashSize uint = 32
 
 // BitsPerLevel is the fundemental setting along with HashSize for the Key
-// constants.
+// constants. 2..HashSize/2 step 1
 const BitsPerLevel uint = 5
 
 // DepthLimit is the maximum number of levels of the Hamt. It is calculated as
