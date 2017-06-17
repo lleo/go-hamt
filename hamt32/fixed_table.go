@@ -10,7 +10,7 @@ type fixedTable struct {
 	hashPath HashVal
 	depth    uint
 	nents    uint
-	nodes    [tableCapacity]nodeI
+	nodes    [IndexLimit]nodeI
 }
 
 func (t *fixedTable) copy() tableI {
@@ -154,7 +154,7 @@ func (t *fixedTable) entries() []tableEntry {
 	var n = t.nentries()
 	var ents = make([]tableEntry, n)
 	var i, j uint
-	for i, j = 0, 0; j < n && i < tableCapacity; i++ {
+	for i, j = 0, 0; j < n && i < IndexLimit; i++ {
 		if t.nodes[i] != nil {
 			ents[j] = tableEntry{i, t.nodes[i]}
 			j++

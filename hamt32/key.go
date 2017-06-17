@@ -5,28 +5,6 @@ import (
 	"hash/fnv"
 )
 
-// HashSize is the size of the basic hash function output. Basically 32 or 64.
-const HashSize uint = 32
-
-// BitsPerLevel is the fundemental setting along with HashSize for the Key
-// constants. 2..HashSize/2 step 1
-const BitsPerLevel uint = 5
-
-// DepthLimit is the maximum number of levels of the Hamt. It is calculated as
-// DepthLimit = floor(HashSize / BitsPerLevel) or a strict integer division.
-const DepthLimit = HashSize / BitsPerLevel
-const remainder = HashSize - (DepthLimit * BitsPerLevel)
-
-// IndexLimit is the maximum number of entries in the Hamt interior nodes.
-// IndexLimit = 1 << BitsPerLevel
-const IndexLimit = 1 << BitsPerLevel
-
-// MaxDepth is the maximum value of a depth variable. MaxDepth = DepthLimit - 1
-const MaxDepth = DepthLimit - 1
-
-// MaxIndex is the maximum value of a index variable. MaxIndex = IndexLimie - 1
-const MaxIndex = IndexLimit - 1
-
 // Key interface descibes the methods any struct needs to implement to be used
 // as a Key in github.com/lleo/go-hamt/hamt32
 type Key interface {

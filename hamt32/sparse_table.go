@@ -187,7 +187,7 @@ func (t *sparseTable) entries() []tableEntry {
 	var n = t.nentries()
 	var ents = make([]tableEntry, n)
 
-	for i, j := uint(0), uint(0); i < tableCapacity; i++ {
+	for i, j := uint(0), uint(0); i < IndexLimit; i++ {
 		var nodeBit = uint32(1 << i)
 
 		if (t.nodeMap & nodeBit) > 0 {

@@ -6,7 +6,27 @@ hamt32.Hamt interface.
 */
 package hamt32
 
-const tableCapacity uint = IndexLimit
+// HashSize is the size of the basic hash function output. Basically 32 or 64.
+const HashSize uint = 32
+
+// BitsPerLevel is the fundemental setting along with HashSize for the Key
+// constants. 2..HashSize/2 step 1
+const BitsPerLevel uint = 5
+
+// DepthLimit is the maximum number of levels of the Hamt. It is calculated as
+// DepthLimit = floor(HashSize / BitsPerLevel) or a strict integer division.
+const DepthLimit = HashSize / BitsPerLevel
+const remainder = HashSize - (DepthLimit * BitsPerLevel)
+
+// IndexLimit is the maximum number of entries in the Hamt interior nodes.
+// IndexLimit = 1 << BitsPerLevel
+const IndexLimit = 1 << BitsPerLevel
+
+// MaxDepth is the maximum value of a depth variable. MaxDepth = DepthLimit - 1
+const MaxDepth = DepthLimit - 1
+
+// MaxIndex is the maximum value of a index variable. MaxIndex = IndexLimie - 1
+const MaxIndex = IndexLimit - 1
 
 // DowngradeThreshold is the constant that sets the threshold for the size of a
 // table, that when a table decreases to the threshold size, the table is
@@ -14,7 +34,7 @@ const tableCapacity uint = IndexLimit
 //
 // This conversion only happens if the Hamt structure has be constructed with
 // the HybridTables option.
-const DowngradeThreshold uint = 10 // floor(tableCapacity / 3)
+const DowngradeThreshold uint = IndexLimit / 3 // 10
 
 // UpgradeThreshold is the constant that sets the threshold for the size of a
 // table, that when a table increases to the threshold size, the table is
@@ -22,7 +42,7 @@ const DowngradeThreshold uint = 10 // floor(tableCapacity / 3)
 //
 // This conversion only happens if the Hamt structure has be constructed with
 // the HybridTables option.
-const UpgradeThreshold uint = 21 // round(tableCapacity * 2 / 3)
+const UpgradeThreshold uint = IndexLimit * 2 / 3 // 21
 
 // Configuration contants to be passed to `hamt32.New(int) *Hamt`.
 const (
