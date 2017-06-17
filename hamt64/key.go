@@ -9,7 +9,7 @@ import (
 const HashSize uint = 64
 
 // BitsPerLevel is the fundemental setting along with HashSize for the Key
-// constants.
+// constants. 2..HashSize/2 step 1
 const BitsPerLevel uint = 6
 
 // DepthLimit is the maximum number of levels of the Hamt. It is calculated as
