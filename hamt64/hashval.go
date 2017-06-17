@@ -45,7 +45,7 @@ func (hv HashVal) HashPath(depth uint) HashVal {
 // BuildHashPath method adds a idx at depth level of the hashPath. Given a
 // hash Path = "/11/07/13" and you call hashPath.BuildHashPath(23, 3) the method
 // will return hashPath "/11/07/13/23". hashPath is shown here in the string
-// representation, but the real value is HashVal (aka uint32).
+// representation, but the real value is HashVal (aka uint64).
 func (hv HashVal) BuildHashPath(idx, depth uint) HashVal {
 	if idx > MaxIndex {
 		log.Panicf("BuildHashPath: idx,%d >= IndexLimit,%d", idx, IndexLimit)
