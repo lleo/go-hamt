@@ -46,26 +46,24 @@ func createRootFixedTable(lf leafI) tableI {
 	//ft.hashPath = 0
 	//ft.depth = 0
 	//ft.nents = 0
-	ft.set(idx, lf)
+	ft.insert(idx, lf)
 
 	return ft
 }
 
 func createFixedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
+	// SHOULD BE ASSERT
 	if depth < 1 {
 		log.Panic("createFixedTable(): depth < 1")
 	}
+
+	// SHOULD BE ASSERT
 	var hp1 = leaf1.Hash().HashPath(depth)
 	var hp2 = leaf2.Hash().HashPath(depth)
 	if hp1 != hp2 {
 		log.Panicf("createFixedTable(): hp1,%s != hp2,%s",
 			hp1.HashPathString(depth), hp2.HashPathString(depth))
 	}
-	//for d := uint(0); d < depth; d++ {
-	//	if leaf1.Hash().Index(d) != leaf2.Hash().Index(d) {
-	//		log.Panicf("createFixedTable(): leaf1.Hash().Index(%d) != leaf2.Hash().Index(%d)", d, d)
-	//	}
-	//}
 
 	var retTable = new(fixedTable)
 	retTable.hashPath = leaf1.Hash().HashPath(depth)
@@ -167,36 +165,42 @@ func (t *fixedTable) get(idx uint) nodeI {
 	return t.nodes[idx]
 }
 
-func (t *fixedTable) set(idx uint, nn nodeI) {
-	if nn != nil && t.nodes[idx] == nil {
-		t.nents++
-	} else if nn == nil && t.nodes[idx] != nil {
-		t.nents--
-	}
-	t.nodes[idx] = nn
-
-	return
-}
+//func (t *fixedTable) set(idx uint, nn nodeI) {
+//	if nn != nil && t.nodes[idx] == nil {
+//		t.nents++
+//	} else if nn == nil && t.nodes[idx] != nil {
+//		t.nents--
+//	}
+//	t.nodes[idx] = nn
+//
+//	return
+//}
 
 func (t *fixedTable) insert(idx uint, n nodeI) {
+	// SHOULD BE ASSERT
 	if t.nodes[idx] != nil {
 		panic("t.insert(idx, n) where idx slot is NOT empty; this should be a replace")
 	}
+
 	t.nodes[idx] = n
 	t.nents++
 }
 
 func (t *fixedTable) replace(idx uint, n nodeI) {
+	// SHOULD BE ASSERT
 	if t.nodes[idx] == nil {
 		panic("t.replace(idx, n) where idx slot is empty; this should be an insert")
 	}
+
 	t.nodes[idx] = n
 }
 
 func (t *fixedTable) remove(idx uint) {
+	// SHOULD BE ASSERT
 	if t.nodes[idx] == nil {
 		panic("t.remove(idx) where idx slot is already empty")
 	}
+
 	t.nodes[idx] = nil
 	t.nents--
 }
