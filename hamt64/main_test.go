@@ -32,13 +32,13 @@ var StartTime = make(map[string]time.Time)
 var RunTime = make(map[string]time.Duration)
 
 func TestMain(m *testing.M) {
-	var fullonly, componly, hybrid, all bool
-	flag.BoolVar(&fullonly, "F", false,
-		"Use full tables only and exclude C and H Options.")
-	flag.BoolVar(&componly, "C", false,
-		"Use compressed tables only and exclude F and H Options.")
+	var fixedonly, sparseonly, hybrid, all bool
+	flag.BoolVar(&fixedonly, "F", false,
+		"Use fixed tables only and exclude S and H Options.")
+	flag.BoolVar(&sparseonly, "S", false,
+		"Use sparse tables only and exclude F and H Options.")
 	flag.BoolVar(&hybrid, "H", false,
-		"Use compressed tables initially and exclude F and C Options.")
+		"Use sparse tables initially and exclude F and S Options.")
 	flag.BoolVar(&all, "A", false,
 		"Run all Tests w/ Options set to FixedTablesOnly, SparseTablesOnly, and HybridTables")
 
@@ -52,20 +52,20 @@ func TestMain(m *testing.M) {
 
 	flag.Parse()
 
-	// If all flag set, ignore fullonly, componly, and hybrid.
+	// If all flag set, ignore fixedonly, sparseonly, and hybrid.
 	if !all {
 
-		// only one flag may be set between fullonly, componly, and hybrid
-		if (fullonly && (componly || hybrid)) ||
-			(componly && (fullonly || hybrid)) ||
-			(hybrid && (componly || fullonly)) {
+		// only one flag may be set between fixedonly, sparseonly, and hybrid
+		if (fixedonly && (sparseonly || hybrid)) ||
+			(sparseonly && (fixedonly || hybrid)) ||
+			(hybrid && (sparseonly || fixedonly)) {
 			flag.PrintDefaults()
 			os.Exit(1)
 		}
 	}
 
 	// If no flags given, run all tests.
-	if !(all || fullonly || componly || hybrid) {
+	if !(all || fixedonly || sparseonly || hybrid) {
 		all = true
 	}
 
@@ -131,9 +131,9 @@ func TestMain(m *testing.M) {
 	} else {
 		if hybrid {
 			TableOption = hamt64.HybridTables
-		} else if fullonly {
+		} else if fixedonly {
 			TableOption = hamt64.FixedTablesOnly
-		} else /* if componly */ {
+		} else /* if sparseonly */ {
 			TableOption = hamt64.SparseTablesOnly
 		}
 
