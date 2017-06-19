@@ -10,25 +10,25 @@ import (
 type HashVal uint32
 
 func indexMask(depth uint) HashVal {
-	return HashVal((1<<BitsPerLevel)-1) << (depth * BitsPerLevel)
+	return HashVal((1<<IndexBits)-1) << (depth * IndexBits)
 }
 
-// Index returns the BitsPerLevel bit value of the HashVal at 'depth' number of
-// BitsPerLevel number of bits into HashVal.
+// Index returns the IndexBits bit value of the HashVal at 'depth' number of
+// IndexBits number of bits into HashVal.
 func (hv HashVal) Index(depth uint) uint {
 	if depth > MaxDepth {
 		log.Printf("Index: depth,%d > MaxIndex,%d", depth, MaxDepth)
 	}
 	var idxMask = indexMask(depth)
-	return uint((hv & idxMask) >> (depth * BitsPerLevel))
+	return uint((hv & idxMask) >> (depth * IndexBits))
 }
 
 func hashPathMask(depth uint) HashVal {
-	return HashVal(1<<((depth)*BitsPerLevel)) - 1
+	return HashVal(1<<((depth)*IndexBits)) - 1
 }
 
 // HashPath calculates the path required to read the given depth. In other words
-// it returns a HashVal that preserves the first depth-1 BitsPerLevel index
+// it returns a HashVal that preserves the first depth-1 IndexBits index
 // values. For depth=0 it always returns no path (aka a 0 value).
 // For depth=MaxDepth it returns all but the last index value.
 func (hv HashVal) HashPath(depth uint) HashVal {
@@ -51,7 +51,7 @@ func (hv HashVal) BuildHashPath(idx, depth uint) HashVal {
 		log.Panicf("BuildHashPath: idx,%d >= IndexLimit,%d", idx, IndexLimit)
 	}
 	hv &= hashPathMask(depth)
-	return hv | HashVal(idx<<(depth*BitsPerLevel))
+	return hv | HashVal(idx<<(depth*IndexBits))
 }
 
 // HashPathString returns a string representation of the index path of a
@@ -60,7 +60,7 @@ func (hv HashVal) BuildHashPath(idx, depth uint) HashVal {
 // number of such values where limit <= DepthLimit.
 // If the limit parameter is 0 then the method will simply return "/".
 // Warning: It will panic() if limit > DepthLimit.
-// Example: "/00/24/46/17" for limit=4 of a BitsPerLevel=5 hash value
+// Example: "/00/24/46/17" for limit=4 of a IndexBits=5 hash value
 // represented by "/00/24/46/17/34/08".
 func (hv HashVal) HashPathString(limit uint) string {
 	if limit > DepthLimit {
@@ -83,12 +83,12 @@ func (hv HashVal) HashPathString(limit uint) string {
 }
 
 // BitString returns a HashVal as a string of bits separated into groups of
-// BitsPerLevel bits.
+// IndexBits bits.
 func (hv HashVal) BitString() string {
 	var strs = make([]string, DepthLimit)
 
 	for d := uint(0); d < DepthLimit; d++ {
-		var fmtStr = fmt.Sprintf("%%0%dd", BitsPerLevel)
+		var fmtStr = fmt.Sprintf("%%0%dd", IndexBits)
 		strs[MaxDepth-d] = fmt.Sprintf(fmtStr, hv.Index(d))
 	}
 
@@ -122,12 +122,12 @@ func ParseHashPath(s string) HashVal {
 
 	var hv HashVal
 	for i, idxStr := range idxStrs {
-		var idx, err = strconv.ParseUint(idxStr, 10, int(BitsPerLevel))
+		var idx, err = strconv.ParseUint(idxStr, 10, int(IndexBits))
 		if err != nil {
 			log.Panicf("ParseHashPath: the %d'th index string failed to parse. err=%s", i, err)
 		}
 
-		//hv |= HashVal(idx << (uint(i) * BitsPerLevel))
+		//hv |= HashVal(idx << (uint(i) * IndexBits))
 		hv = hv.BuildHashPath(uint(idx), uint(i))
 	}
 

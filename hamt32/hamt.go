@@ -6,21 +6,25 @@ hamt32.Hamt interface.
 */
 package hamt32
 
-// HashSize is the size of the basic hash function output. Basically 32 or 64.
-const HashSize uint = 32
+import (
+	"unsafe"
+)
 
-// BitsPerLevel is the fundemental setting along with HashSize for the Key
+// HashSize is the size of HashVal in bits.
+const HashSize uint = uint(unsafe.Sizeof(HashVal(0))) * 8
+
+// IndexBits is the fundemental setting along with HashSize for the Key
 // constants. 2..HashSize/2 step 1
-const BitsPerLevel uint = 5
+const IndexBits uint = 5
 
 // DepthLimit is the maximum number of levels of the Hamt. It is calculated as
-// DepthLimit = floor(HashSize / BitsPerLevel) or a strict integer division.
-const DepthLimit = HashSize / BitsPerLevel
-const remainder = HashSize - (DepthLimit * BitsPerLevel)
+// DepthLimit = floor(HashSize / IndexBits) or a strict integer division.
+const DepthLimit = HashSize / IndexBits
+const remainder = HashSize - (DepthLimit * IndexBits)
 
 // IndexLimit is the maximum number of entries in the Hamt interior nodes.
-// IndexLimit = 1 << BitsPerLevel
-const IndexLimit = 1 << BitsPerLevel
+// IndexLimit = 1 << IndexBits
+const IndexLimit = 1 << IndexBits
 
 // MaxDepth is the maximum value of a depth variable. MaxDepth = DepthLimit - 1
 const MaxDepth = DepthLimit - 1
