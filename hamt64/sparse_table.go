@@ -8,7 +8,7 @@ import (
 
 // sparseTableInitCap constant sets the default capacity of a new
 // sparseTable.
-const sparseTableInitCap int = 8
+const sparseTableInitCap int = 16
 
 type sparseTable struct {
 	hashPath HashVal
@@ -187,7 +187,7 @@ func (t *sparseTable) entries() []tableEntry {
 	var n = t.nentries()
 	var ents = make([]tableEntry, n)
 
-	for i, j := uint(0), uint(0); i < tableCapacity; i++ {
+	for i, j := uint(0), uint(0); i < IndexLimit; i++ {
 		var nodeBit = uint64(1 << i)
 
 		if (t.nodeMap & nodeBit) > 0 {
