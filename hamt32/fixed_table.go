@@ -7,10 +7,10 @@ import (
 )
 
 type fixedTable struct {
-	hashPath HashVal
-	depth    uint
-	nents    uint
-	nodes    [IndexLimit]nodeI
+	nodes    [IndexLimit]nodeI // 512; 32*16, why 16? typeId + uintptr??
+	depth    uint              // 8; amd64
+	nents    uint              // 8; amd64
+	hashPath HashVal           // 4; 8 alignment
 }
 
 func (t *fixedTable) copy() tableI {
