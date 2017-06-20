@@ -13,7 +13,7 @@ const sparseTableInitCap int = 16
 type sparseTable struct {
 	hashPath HashVal
 	depth    uint
-	nodeMap  uint64
+	nodeMap  Bitmap
 	nodes    []nodeI
 }
 
@@ -50,7 +50,8 @@ func createRootSparseTable(lf leafI) tableI {
 	var ct = new(sparseTable)
 	//ct.hashPath = 0
 	//ct.depth = 0
-	ct.nodeMap = uint64(1 << idx)
+	//ct.nodeMap = uint64(1 << idx)
+	ct.nodeMap.Set(idx)
 	ct.nodes = make([]nodeI, 1, sparseTableInitCap)
 	ct.nodes[0] = lf
 
@@ -97,21 +98,6 @@ func createSparseTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	return retTable
 }
 
-func nodeMapString(nodeMap uint64) string {
-	var strs = make([]string, 7)
-
-	var top4 = nodeMap >> 60
-	strs[0] = fmt.Sprintf("%04b", top4)
-
-	const tenBitMask uint64 = 1<<10 - 1
-	for i := uint(0); i < 6; i++ {
-		var tenBitVal = (nodeMap & (tenBitMask << (i * 10))) >> (i * 10)
-		strs[6-i] = fmt.Sprintf("%010b", tenBitVal) // strs[6..1]
-	}
-
-	return strings.Join(strs, " ")
-}
-
 // downgradeToSparseTable() converts fixedTable structs that have less than
 // or equal to downgradeThreshold tableEntry's. One important thing we know is
 // that none of the entries will collide with another.
@@ -130,8 +116,7 @@ func downgradeToSparseTable(
 
 	for i := 0; i < len(ents); i++ {
 		var ent = ents[i]
-		var nodeBit = uint64(1 << ent.idx)
-		nt.nodeMap |= nodeBit
+		nt.nodeMap.Set(ent.idx)
 		nt.nodes[i] = ent.node
 	}
 
@@ -160,7 +145,7 @@ func (t *sparseTable) LongString(indent string, depth uint) string {
 		fmt.Sprintf("sparseTable{hashPath=%s, depth=%d, nentries()=%d,",
 			t.hashPath.HashPathString(depth), t.depth, t.nentries())
 
-	strs[1] = indent + "\tnodeMap=" + nodeMapString(t.nodeMap) + ","
+	strs[1] = indent + "\tnodeMap=" + t.nodeMap.String() + ","
 
 	for i, n := range t.nodes {
 		var idx = n.Hash().Index(depth)
@@ -180,18 +165,16 @@ func (t *sparseTable) LongString(indent string, depth uint) string {
 
 func (t *sparseTable) nentries() uint {
 	return uint(len(t.nodes))
-	//return bitCount64(t.nodeMap)
+	//return t.nodeMap.Count(IndexLimit)
 }
 
 func (t *sparseTable) entries() []tableEntry {
 	var n = t.nentries()
 	var ents = make([]tableEntry, n)
 
-	for i, j := uint(0), uint(0); i < IndexLimit; i++ {
-		var nodeBit = uint64(1 << i)
-
-		if (t.nodeMap & nodeBit) > 0 {
-			ents[j] = tableEntry{i, t.nodes[j]}
+	for idx, j := uint(0), uint(0); idx < IndexLimit; idx++ {
+		if t.nodeMap.IsSet(idx) {
+			ents[j] = tableEntry{idx, t.nodes[j]}
 			j++
 		}
 	}
@@ -200,83 +183,52 @@ func (t *sparseTable) entries() []tableEntry {
 }
 
 func (t *sparseTable) get(idx uint) nodeI {
-	var nodeBit = uint64(1 << idx)
-
-	if (t.nodeMap & nodeBit) == 0 {
+	if !t.nodeMap.IsSet(idx) {
 		return nil
 	}
 
-	var bitMask = nodeBit - 1
-	var i = bitCount64(t.nodeMap & bitMask)
+	var j = t.nodeMap.Count(idx)
 
-	return t.nodes[i]
-}
-
-func (t *sparseTable) set(idx uint, nn nodeI) {
-	var nodeBit = uint64(1 << idx)
-	var bitMask = nodeBit - 1
-	var i = bitCount64(t.nodeMap & bitMask)
-
-	if nn != nil {
-		if (t.nodeMap & nodeBit) == 0 {
-			t.nodeMap |= nodeBit
-			t.nodes = append(t.nodes[:i], append([]nodeI{nn}, t.nodes[i:]...)...)
-		} else {
-			t.nodes[i] = nn
-		}
-	} else /* if nn == nil */ {
-		if (t.nodeMap & nodeBit) > 0 {
-			t.nodeMap &^= nodeBit
-			t.nodes = append(t.nodes[:i], t.nodes[i+1:]...)
-		} /* else {
-			// do nothing
-		} */
-	}
-	return
+	return t.nodes[j]
 }
 
 func (t *sparseTable) insert(idx uint, n nodeI) {
-	var nodeBit = uint64(1 << idx)
-
-	if (t.nodeMap & nodeBit) > 0 {
+	// THIS SHOULD BE A DEV ASSERT
+	if t.nodeMap.IsSet(idx) {
 		panic("t.insert(idx, n) where idx slot is NOT empty; this should be a replace")
 	}
 
-	var bitMask = nodeBit - 1
-	var i = bitCount64(t.nodeMap & bitMask)
-	if i == uint(len(t.nodes)) {
+	var j = t.nodeMap.Count(idx)
+	if j == uint(len(t.nodes)) {
 		t.nodes = append(t.nodes, n)
 	} else {
-		t.nodes = append(t.nodes[:i], append([]nodeI{n}, t.nodes[i:]...)...)
+		t.nodes = append(t.nodes[:j], append([]nodeI{n}, t.nodes[j:]...)...)
 	}
-	t.nodeMap |= nodeBit
+	t.nodeMap.Set(idx)
 }
 
 func (t *sparseTable) replace(idx uint, n nodeI) {
-	var nodeBit = uint64(1 << idx)
-
-	if (t.nodeMap & nodeBit) == 0 {
+	// THIS SHOULD BE A DEV ASSERT
+	if !t.nodeMap.IsSet(idx) {
 		panic("t.replace(idx, n) where idx slot is empty; this should be an insert")
 	}
 
-	var bitMask = nodeBit - 1
-	var i = bitCount64(t.nodeMap & bitMask)
-	t.nodes[i] = n
+	var j = t.nodeMap.Count(idx)
+	t.nodes[j] = n
 }
 
 func (t *sparseTable) remove(idx uint) {
-	var nodeBit = uint64(1 << idx)
-
-	if (t.nodeMap & nodeBit) == 0 {
+	// THIS SHOULD BE A DEV ASSERT
+	if !t.nodeMap.IsSet(idx) {
 		panic("t.remove(idx) where idx slot is already empty")
 	}
 
-	var bitMask = nodeBit - 1
-	var i = bitCount64(t.nodeMap & bitMask)
-	if int(i) == len(t.nodes)-1 {
-		t.nodes = t.nodes[:i]
+	var j = t.nodeMap.Count(idx)
+	if int(j) == len(t.nodes)-1 {
+		t.nodes = t.nodes[:j]
 	} else {
-		t.nodes = append(t.nodes[:i], t.nodes[i+1:]...)
+		t.nodes = append(t.nodes[:j], t.nodes[j+1:]...)
 	}
-	t.nodeMap &^= nodeBit
+
+	t.nodeMap.Unset(idx)
 }
