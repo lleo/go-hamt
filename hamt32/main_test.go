@@ -34,6 +34,10 @@ var RunTime = make(map[string]time.Duration)
 func TestMain(m *testing.M) {
 	//fmt.Printf("Sizeof(fixedTable) = %d\n", hamt32.SizeofFixedTable)
 	//fmt.Printf("Sizeof(sparseTable) = %d\n", hamt32.SizeofSparseTable)
+	//fmt.Printf("Sizeof(Bitmap) = %d\n", hamt32.SizeofBitmap)
+	//fmt.Printf("Sizeof(NodeI) = %d\n", hamt32.SizeofNodeI)
+	//fmt.Printf("IndexLimit = %d\n", hamt32.IndexLimit)
+	//fmt.Printf("BitmapSize = %d\n", hamt32.BitmapSize)
 	//os.Exit(0)
 
 	var fixedonly, sparseonly, hybrid, all bool
