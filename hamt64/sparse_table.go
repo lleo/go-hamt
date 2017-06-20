@@ -10,11 +10,12 @@ import (
 // sparseTable.
 const sparseTableInitCap int = 16
 
+// New sparseTable layout size == 48
 type sparseTable struct {
-	hashPath HashVal
-	depth    uint
-	nodeMap  Bitmap
-	nodes    []nodeI
+	nodes    []nodeI // 24
+	depth    uint    // 8; amd64 cpu
+	nodeMap  Bitmap  // 8; uint32 x 2
+	hashPath HashVal // 8
 }
 
 func (t *sparseTable) copy() tableI {
