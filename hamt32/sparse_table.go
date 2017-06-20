@@ -98,21 +98,6 @@ func createSparseTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	return retTable
 }
 
-//func nodeMapString(nodeMap uint32) string {
-//	var strs = make([]string, 4)
-//
-//	var top2 = nodeMap >> 30
-//	strs[0] = fmt.Sprintf("%02b", top2)
-//
-//	const tenBitMask uint32 = 1<<10 - 1
-//	for i := uint(0); i < 3; i++ {
-//		var tenBitVal = (nodeMap & (tenBitMask << (i * 10))) >> (i * 10)
-//		strs[3-i] = fmt.Sprintf("%010b", tenBitVal)
-//	}
-//
-//	return strings.Join(strs, " ")
-//}
-
 // downgradeToSparseTable() converts fixedTable structs that have less than
 // or equal to downgradeThreshold tableEntry's. One important thing we know is
 // that none of the entries will collide with another.
@@ -207,29 +192,8 @@ func (t *sparseTable) get(idx uint) nodeI {
 	return t.nodes[j]
 }
 
-//func (t *sparseTable) set(idx uint, nn nodeI) {
-//	var nodeBit = uint32(1 << idx)
-//	var j = t.nodeMap.Count(idx)
-//
-//	if nn != nil {
-//		if (t.nodeMap & nodeBit) == 0 {
-//			t.nodeMap |= nodeBit
-//			t.nodes = append(t.nodes[:i], append([]nodeI{nn}, t.nodes[i:]...)...)
-//		} else {
-//			t.nodes[i] = nn
-//		}
-//	} else /* if nn == nil */ {
-//		if (t.nodeMap & nodeBit) > 0 {
-//			t.nodeMap &^= nodeBit
-//			t.nodes = append(t.nodes[:i], t.nodes[i+1:]...)
-//		} /* else {
-//			// do nothing
-//		} */
-//	}
-//	return
-//}
-
 func (t *sparseTable) insert(idx uint, n nodeI) {
+	// THIS SHOULD BE A DEV ASSERT
 	if t.nodeMap.IsSet(idx) {
 		panic("t.insert(idx, n) where idx slot is NOT empty; this should be a replace")
 	}
@@ -245,7 +209,7 @@ func (t *sparseTable) insert(idx uint, n nodeI) {
 }
 
 func (t *sparseTable) replace(idx uint, n nodeI) {
-	// SHOULD BE ASSERT
+	// SHOULD BE A DEV ASSERT
 	if !t.nodeMap.IsSet(idx) {
 		panic("t.replace(idx, n) where idx slot is empty; this should be an insert")
 	}
@@ -255,7 +219,7 @@ func (t *sparseTable) replace(idx uint, n nodeI) {
 }
 
 func (t *sparseTable) remove(idx uint) {
-	// SHOULD BE ASSERT
+	// SHOULD BE A DEV ASSERT
 	if !t.nodeMap.IsSet(idx) {
 		panic("t.remove(idx) where idx slot is already empty")
 	}
