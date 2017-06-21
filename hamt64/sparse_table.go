@@ -23,7 +23,11 @@ func (t *sparseTable) copy() tableI {
 	nt.hashPath = t.hashPath
 	nt.depth = t.depth
 	nt.nodeMap = t.nodeMap
-	nt.nodes = append(nt.nodes, t.nodes...)
+
+	nt.nodes = make([]nodeI, len(t.nodes), cap(t.nodes))
+	copy(nt.nodes, t.nodes)
+	//nt.nodes = append(nt.nodes, t.nodes...)
+
 	return nt
 }
 
@@ -32,16 +36,18 @@ func (t *sparseTable) deepCopy() tableI {
 	nt.hashPath = t.hashPath
 	nt.depth = t.depth
 	nt.nodeMap = t.nodeMap
+
 	nt.nodes = make([]nodeI, len(t.nodes), cap(t.nodes))
 	for i := 0; i < len(t.nodes); i++ {
 		if table, isTable := t.nodes[i].(tableI); isTable {
 			nt.nodes[i] = table.deepCopy()
 		} else {
-			//leafs are functional, so no need to copy
+			//leafI's are functional, so no need to copy them.
 			//nils can be copied just fine; duh!
 			nt.nodes[i] = t.nodes[i]
 		}
 	}
+
 	return nt
 }
 
