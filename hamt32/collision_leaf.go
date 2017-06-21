@@ -2,7 +2,6 @@ package hamt32
 
 import (
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -21,6 +20,8 @@ func (l *collisionLeaf) copy() *collisionLeaf {
 func newCollisionLeaf(kvs []KeyVal) *collisionLeaf {
 	var leaf = new(collisionLeaf)
 	leaf.kvs = append(leaf.kvs, kvs...)
+
+	//log.Println("newCollisionLeaf:", leaf)
 
 	return leaf
 }
@@ -56,25 +57,34 @@ func (l collisionLeaf) put(k Key, v interface{}) (leafI, bool) {
 			return l, false //key,val was not added, merely replaced
 		}
 	}
-	l.kvs = append(l.kvs, KeyVal{k, v})
+	var nl = new(collisionLeaf)
+	nl.kvs = make([]KeyVal, len(l.kvs)+1)
+	copy(nl.kvs, l.kvs)
+	nl.kvs[len(l.kvs)] = KeyVal{k, v}
+	//nl.kvs = append(nl.kvs, append(l.kvs, KeyVal{k, v})...)
 
-	log.Printf("%s : %d\n", l.Hash(), len(l.kvs))
+	//log.Printf("%s : %d\n", l.Hash(), len(l.kvs))
 
-	return l, true // key_,val was added
+	return nl, true // key_,val was added
 }
 
-func (l collisionLeaf) del(key Key) (leafI, interface{}, bool) {
-	var nl = l.copy()
+func (l collisionLeaf) del(k Key) (leafI, interface{}, bool) {
 	for i, kv := range l.kvs {
-		if kv.Key.Equals(key) {
-			nl.kvs = append(nl.kvs[:i], nl.kvs[i+1:]...)
-			if len(nl.kvs) == 1 {
-				var fl = newFlatLeaf(nl.kvs[0].Key, nl.kvs[0].Val)
-				return fl, kv.Val, true
+		if kv.Key.Equals(k) {
+			var nl leafI
+			if len(l.kvs) == 2 {
+				// think about the index... it works, really :)
+				nl = newFlatLeaf(l.kvs[1-i].Key, l.kvs[1-i].Val)
+			} else {
+				var cl = l.copy()
+				cl.kvs = append(cl.kvs[:i], cl.kvs[i+1:]...)
+				nl = cl // needed access to cl.kvs; nl is type nodeI
 			}
+			//log.Printf("cl.del(); kv=%s removed; returning %s", kv, nl)
 			return nl, kv.Val, true
 		}
 	}
+	//log.Printf("cl.del(%s) removed nothing.", k)
 	return l, nil, false
 }
 
