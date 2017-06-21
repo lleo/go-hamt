@@ -26,7 +26,7 @@ func New(str string) *StringKey {
 
 // String return a string representation of StringKey data structure.
 func (sk *StringKey) String() string {
-	return fmt.Sprintf("StringKey{%s, str:%q}", sk.KeyBase, sk.str)
+	return fmt.Sprintf("StringKey{%s, str:%q}", sk.Hash(), sk.str)
 }
 
 // Equals returns true iff the StringKey exactly matches the key passed it. If
