@@ -31,7 +31,11 @@ func (t *sparseTable) copy() tableI {
 	nt.hashPath = t.hashPath
 	nt.depth = t.depth
 	nt.nodeMap = t.nodeMap
-	nt.nodes = append(nt.nodes, t.nodes...)
+
+	nt.nodes = make([]nodeI, len(t.nodes), cap(t.nodes))
+	copy(nt.nodes, t.nodes)
+	//nt.nodes = append(nt.nodes, t.nodes...)
+
 	return nt
 }
 
