@@ -1,0 +1,229 @@
+$VAR1 = {
+          '32' => {
+                    'functional' => {
+                                      'spars' => {
+                                                   'del' => {
+                                                              'mean' => 0,
+                                                              'data' => [],
+                                                              'stddev' => 0
+                                                            },
+                                                   'put' => {
+                                                              'stddev' => 0,
+                                                              'mean' => 0,
+                                                              'data' => []
+                                                            },
+                                                   'get' => {
+                                                              'mean' => 0,
+                                                              'data' => [],
+                                                              'stddev' => 0
+                                                            }
+                                                 },
+                                      'fixed' => {
+                                                   'del' => {
+                                                              'data' => [],
+                                                              'mean' => 0,
+                                                              'stddev' => 0
+                                                            },
+                                                   'put' => {
+                                                              'mean' => 0,
+                                                              'data' => [],
+                                                              'stddev' => 0
+                                                            },
+                                                   'get' => {
+                                                              'mean' => 0,
+                                                              'data' => [],
+                                                              'stddev' => 0
+                                                            }
+                                                 },
+                                      'hybri' => {
+                                                   'del' => {
+                                                              'mean' => 0,
+                                                              'data' => [],
+                                                              'stddev' => 0
+                                                            },
+                                                   'get' => {
+                                                              'stddev' => 0,
+                                                              'data' => [],
+                                                              'mean' => 0
+                                                            },
+                                                   'put' => {
+                                                              'data' => [],
+                                                              'mean' => 0,
+                                                              'stddev' => 0
+                                                            }
+                                                 }
+                                    },
+                    'transient' => {
+                                     'hybri' => {
+                                                  'get' => {
+                                                             'stddev' => 0,
+                                                             'data' => [],
+                                                             'mean' => 0
+                                                           },
+                                                  'put' => {
+                                                             'stddev' => 0,
+                                                             'mean' => 0,
+                                                             'data' => []
+                                                           },
+                                                  'del' => {
+                                                             'mean' => 0,
+                                                             'data' => [],
+                                                             'stddev' => 0
+                                                           }
+                                                },
+                                     'fixed' => {
+                                                  'del' => {
+                                                             'data' => [],
+                                                             'mean' => 0,
+                                                             'stddev' => 0
+                                                           },
+                                                  'get' => {
+                                                             'stddev' => 0,
+                                                             'data' => [
+                                                                         '473',
+                                                                         '474',
+                                                                         '469',
+                                                                         '470',
+                                                                         '474',
+                                                                         '469',
+                                                                         '472',
+                                                                         '459',
+                                                                         '470',
+                                                                         '477'
+                                                                       ],
+                                                             'mean' => 0
+                                                           },
+                                                  'put' => {
+                                                             'data' => [],
+                                                             'mean' => 0,
+                                                             'stddev' => 0
+                                                           }
+                                                },
+                                     'spars' => {
+                                                  'del' => {
+                                                             'data' => [],
+                                                             'mean' => 0,
+                                                             'stddev' => 0
+                                                           },
+                                                  'put' => {
+                                                             'stddev' => 0,
+                                                             'mean' => 0,
+                                                             'data' => []
+                                                           },
+                                                  'get' => {
+                                                             'stddev' => 0,
+                                                             'data' => [],
+                                                             'mean' => 0
+                                                           }
+                                                }
+                                   }
+                  },
+          '64' => {
+                    'transient' => {
+                                     'spars' => {
+                                                  'del' => {
+                                                             'stddev' => 0,
+                                                             'data' => [],
+                                                             'mean' => 0
+                                                           },
+                                                  'get' => {
+                                                             'data' => [],
+                                                             'mean' => 0,
+                                                             'stddev' => 0
+                                                           },
+                                                  'put' => {
+                                                             'mean' => 0,
+                                                             'data' => [],
+                                                             'stddev' => 0
+                                                           }
+                                                },
+                                     'fixed' => {
+                                                  'put' => {
+                                                             'stddev' => 0,
+                                                             'mean' => 0,
+                                                             'data' => []
+                                                           },
+                                                  'get' => {
+                                                             'data' => [],
+                                                             'mean' => 0,
+                                                             'stddev' => 0
+                                                           },
+                                                  'del' => {
+                                                             'stddev' => 0,
+                                                             'mean' => 0,
+                                                             'data' => []
+                                                           }
+                                                },
+                                     'hybri' => {
+                                                  'get' => {
+                                                             'data' => [],
+                                                             'mean' => 0,
+                                                             'stddev' => 0
+                                                           },
+                                                  'put' => {
+                                                             'data' => [],
+                                                             'mean' => 0,
+                                                             'stddev' => 0
+                                                           },
+                                                  'del' => {
+                                                             'stddev' => 0,
+                                                             'data' => [],
+                                                             'mean' => 0
+                                                           }
+                                                }
+                                   },
+                    'functional' => {
+                                      'spars' => {
+                                                   'put' => {
+                                                              'data' => [],
+                                                              'mean' => 0,
+                                                              'stddev' => 0
+                                                            },
+                                                   'get' => {
+                                                              'stddev' => 0,
+                                                              'mean' => 0,
+                                                              'data' => []
+                                                            },
+                                                   'del' => {
+                                                              'data' => [],
+                                                              'mean' => 0,
+                                                              'stddev' => 0
+                                                            }
+                                                 },
+                                      'fixed' => {
+                                                   'get' => {
+                                                              'data' => [],
+                                                              'mean' => 0,
+                                                              'stddev' => 0
+                                                            },
+                                                   'put' => {
+                                                              'stddev' => 0,
+                                                              'data' => [],
+                                                              'mean' => 0
+                                                            },
+                                                   'del' => {
+                                                              'data' => [],
+                                                              'mean' => 0,
+                                                              'stddev' => 0
+                                                            }
+                                                 },
+                                      'hybri' => {
+                                                   'get' => {
+                                                              'stddev' => 0,
+                                                              'mean' => 0,
+                                                              'data' => []
+                                                            },
+                                                   'put' => {
+                                                              'stddev' => 0,
+                                                              'data' => [],
+                                                              'mean' => 0
+                                                            },
+                                                   'del' => {
+                                                              'data' => [],
+                                                              'mean' => 0,
+                                                              'stddev' => 0
+                                                            }
+                                                 }
+                                    }
+                  }
+        };
