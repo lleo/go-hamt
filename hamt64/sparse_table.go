@@ -2,7 +2,6 @@ package hamt64
 
 import (
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -66,20 +65,13 @@ func createRootSparseTable(lf leafI) tableI {
 }
 
 func createSparseTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
-	if depth < 1 {
-		log.Panic("createSparseTable(): depth < 1")
-	}
-	var hp1 = leaf1.Hash().HashPath(depth)
-	var hp2 = leaf2.Hash().HashPath(depth)
-	if hp1 != hp2 {
-		log.Panic("createSparseTable(): hp1,%s != hp2,%s",
-			hp1.HashPathString(depth), hp2.HashPathString(depth))
-	}
-	//for d := uint(0); d < depth; d++ {
-	//	if leaf1.Hash().Index(d) != leaf2.Hash().Index(d) {
-	//		log.Panicf("createSparseTable(): leaf1.Hash().Index(%d) != leaf2.Hash().Index(%d)", d, d)
-	//	}
-	//}
+	_ = AssertOn && assert(depth > 0, "createSparseTable(): depth < 1")
+
+	_ = AssertOn && assertf(
+		leaf1.Hash().HashPath(depth) == leaf2.Hash().HashPath(depth),
+		"createSparseTable(): hp1,%s != hp2,%s",
+		leaf1.Hash().HashPath(depth),
+		leaf2.Hash().HashPath(depth))
 
 	var retTable = new(sparseTable)
 	retTable.hashPath = leaf1.Hash().HashPath(depth)
@@ -200,10 +192,8 @@ func (t *sparseTable) get(idx uint) nodeI {
 }
 
 func (t *sparseTable) insert(idx uint, n nodeI) {
-	// THIS SHOULD BE A DEV ASSERT
-	if t.nodeMap.IsSet(idx) {
-		panic("t.insert(idx, n) where idx slot is NOT empty; this should be a replace")
-	}
+	_ = AssertOn && assert(!t.nodeMap.IsSet(idx),
+		"t.insert(idx, n) where idx slot is NOT empty; this should be a replace")
 
 	var j = t.nodeMap.Count(idx)
 	if j == uint(len(t.nodes)) {
@@ -215,20 +205,16 @@ func (t *sparseTable) insert(idx uint, n nodeI) {
 }
 
 func (t *sparseTable) replace(idx uint, n nodeI) {
-	// THIS SHOULD BE A DEV ASSERT
-	if !t.nodeMap.IsSet(idx) {
-		panic("t.replace(idx, n) where idx slot is empty; this should be an insert")
-	}
+	_ = AssertOn && assert(t.nodeMap.IsSet(idx),
+		"t.replace(idx, n) where idx slot is empty; this should be an insert")
 
 	var j = t.nodeMap.Count(idx)
 	t.nodes[j] = n
 }
 
 func (t *sparseTable) remove(idx uint) {
-	// THIS SHOULD BE A DEV ASSERT
-	if !t.nodeMap.IsSet(idx) {
-		panic("t.remove(idx) where idx slot is already empty")
-	}
+	_ = AssertOn && assert(t.nodeMap.IsSet(idx),
+		"t.remove(idx) where idx slot is already empty")
 
 	var j = t.nodeMap.Count(idx)
 	if int(j) == len(t.nodes)-1 {

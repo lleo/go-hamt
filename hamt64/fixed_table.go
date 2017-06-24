@@ -2,7 +2,6 @@ package hamt64
 
 import (
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -52,20 +51,13 @@ func createRootFixedTable(lf leafI) tableI {
 }
 
 func createFixedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
-	if depth < 1 {
-		log.Panic("createFixedTable(): depth < 1")
-	}
-	var hp1 = leaf1.Hash().HashPath(depth)
-	var hp2 = leaf2.Hash().HashPath(depth)
-	if hp1 != hp2 {
-		log.Panicf("createFixedTable(): hp1,%s != hp2,%s",
-			hp1.HashPathString(depth), hp2.HashPathString(depth))
-	}
-	//for d := uint(0); d < depth; d++ {
-	//	if leaf1.Hash().Index(d) != leaf2.Hash().Index(d) {
-	//		log.Panicf("createFixedTable(): leaf1.Hash().Index(%d) != leaf2.Hash().Index(%d)", d, d)
-	//	}
-	//}
+	_ = AssertOn && assertf(depth > 0, "createFixedTable(): depth,%d < 1", depth)
+
+	_ = AssertOn && assertf(
+		leaf1.Hash().HashPath(depth) == leaf2.Hash().HashPath(depth),
+		"createFixedTable(): hp1,%s != hp2,%s",
+		leaf1.Hash().HashPath(depth),
+		leaf2.Hash().HashPath(depth))
 
 	var retTable = new(fixedTable)
 	retTable.hashPath = leaf1.Hash().HashPath(depth)
@@ -179,24 +171,24 @@ func (t *fixedTable) set(idx uint, nn nodeI) {
 }
 
 func (t *fixedTable) insert(idx uint, n nodeI) {
-	if t.nodes[idx] != nil {
-		panic("t.insert(idx, n) where idx slot is NOT empty; this should be a replace")
-	}
+	_ = AssertOn && assert(t.nodes[idx] == nil,
+		"t.insert(idx, n) where idx slot is NOT empty; this should be a replace")
+
 	t.nodes[idx] = n
 	t.nents++
 }
 
 func (t *fixedTable) replace(idx uint, n nodeI) {
-	if t.nodes[idx] == nil {
-		panic("t.replace(idx, n) where idx slot is empty; this should be an insert")
-	}
+	_ = AssertOn && assert(t.nodes[idx] != nil,
+		"t.replace(idx, n) where idx slot is empty; this should be an insert")
+
 	t.nodes[idx] = n
 }
 
 func (t *fixedTable) remove(idx uint) {
-	if t.nodes[idx] == nil {
-		panic("t.remove(idx) where idx slot is already empty")
-	}
+	_ = AssertOn && assert(t.nodes[idx] != nil,
+		"t.remove(idx) where idx slot is already empty")
+
 	t.nodes[idx] = nil
 	t.nents--
 }
