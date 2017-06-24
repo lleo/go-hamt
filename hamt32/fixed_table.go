@@ -51,13 +51,13 @@ func createRootFixedTable(lf leafI) tableI {
 }
 
 func createFixedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
-	//_ = AssertOn && assertf(depth > 0, "createFixedTable(): depth,%d < 1", depth)
+	_ = AssertOn && assertf(depth > 0, "createFixedTable(): depth,%d < 1", depth)
 
-	//_ = AssertOn && assertf(
-	//	leaf1.Hash().HashPath(depth) == leaf2.Hash().HashPath(depth),
-	//	"createFixedTable(): hp1,%s != hp2,%s",
-	//	leaf1.Hash().HashPath(depth),
-	//	leaf2.Hash().HashPath(depth))
+	_ = AssertOn && assertf(
+		leaf1.Hash().HashPath(depth) == leaf2.Hash().HashPath(depth),
+		"createFixedTable(): hp1,%s != hp2,%s",
+		leaf1.Hash().HashPath(depth),
+		leaf2.Hash().HashPath(depth))
 
 	var retTable = new(fixedTable)
 	retTable.hashPath = leaf1.Hash().HashPath(depth)
@@ -160,23 +160,23 @@ func (t *fixedTable) get(idx uint) nodeI {
 }
 
 func (t *fixedTable) insert(idx uint, n nodeI) {
-	//_ = AssertOn && assert(t.nodes[idx] == nil,
-	//	"t.insert(idx, n) where idx slot is NOT empty; this should be a replace")
+	_ = AssertOn && assert(t.nodes[idx] == nil,
+		"t.insert(idx, n) where idx slot is NOT empty; this should be a replace")
 
 	t.nodes[idx] = n
 	t.nents++
 }
 
 func (t *fixedTable) replace(idx uint, n nodeI) {
-	//_ = AssertOn && assert(t.nodes[idx] != nil,
-	//	"t.replace(idx, n) where idx slot is empty; this should be an insert")
+	_ = AssertOn && assert(t.nodes[idx] != nil,
+		"t.replace(idx, n) where idx slot is empty; this should be an insert")
 
 	t.nodes[idx] = n
 }
 
 func (t *fixedTable) remove(idx uint) {
-	//_ = AssertOn && assert(t.nodes[idx] != nil,
-	//	"t.remove(idx) where idx slot is already empty")
+	_ = AssertOn && assert(t.nodes[idx] != nil,
+		"t.remove(idx) where idx slot is already empty")
 
 	t.nodes[idx] = nil
 	t.nents--

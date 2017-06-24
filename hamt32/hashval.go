@@ -16,7 +16,7 @@ func indexMask(depth uint) HashVal {
 // Index returns the IndexBits bit value of the HashVal at 'depth' number of
 // IndexBits number of bits into HashVal.
 func (hv HashVal) Index(depth uint) uint {
-	//_ = AssertOn && assert(depth < DepthLimit, "Index: depth > MaxDepth")
+	_ = AssertOn && assert(depth < DepthLimit, "Index: depth > MaxDepth")
 
 	var idxMask = indexMask(depth)
 	return uint((hv & idxMask) >> (depth * IndexBits))
@@ -31,7 +31,7 @@ func hashPathMask(depth uint) HashVal {
 // values. For depth=0 it always returns no path (aka a 0 value).
 // For depth=MaxDepth it returns all but the last index value.
 func (hv HashVal) HashPath(depth uint) HashVal {
-	//_ = AssertOn && assert(depth < DepthLimit, "HashPath(): dept > MaxDepth")
+	_ = AssertOn && assert(depth < DepthLimit, "HashPath(): dept > MaxDepth")
 
 	if depth == 0 {
 		return 0
@@ -46,7 +46,7 @@ func (hv HashVal) HashPath(depth uint) HashVal {
 // will return hashPath "/11/07/13/23". hashPath is shown here in the string
 // representation, but the real value is HashVal (aka uint32).
 func (hv HashVal) BuildHashPath(idx, depth uint) HashVal {
-	//_ = AssertOn && assert(idx < DepthLimit, "BuildHashPath: idx > MaxIndex")
+	_ = AssertOn && assert(idx < DepthLimit, "BuildHashPath: idx > MaxIndex")
 
 	hv &= hashPathMask(depth)
 	return hv | HashVal(idx<<(depth*IndexBits))
@@ -61,8 +61,8 @@ func (hv HashVal) BuildHashPath(idx, depth uint) HashVal {
 // Example: "/00/24/46/17" for limit=4 of a IndexBits=5 hash value
 // represented by "/00/24/46/17/34/08".
 func (hv HashVal) HashPathString(limit uint) string {
-	//_ = AssertOn && assertf(limit <= DepthLimit,
-	//	"HashPathString: limit,%d > DepthLimit,%d\n", limit, DepthLimit)
+	_ = AssertOn && assertf(limit <= DepthLimit,
+		"HashPathString: limit,%d > DepthLimit,%d\n", limit, DepthLimit)
 
 	if limit == 0 {
 		return "/"
@@ -104,15 +104,15 @@ func (hv HashVal) String() string {
 
 // ParseHashPath
 func ParseHashPath(s string) HashVal {
-	//_ = AssertOn && assertf(strings.HasPrefix(s, "/"),
-	//	"ParseHashPath: input, %q, does not start with '/'", s)
+	_ = AssertOn && assertf(strings.HasPrefix(s, "/"),
+		"ParseHashPath: input, %q, does not start with '/'", s)
 
 	if len(s) == 1 { // s="/"
 		return 0
 	}
 
-	//_ = AssertOn && assertf(!strings.HasSuffix(s, "/"),
-	//	"ParseHashPath: input, %q, ends with '/'", s)
+	_ = AssertOn && assertf(!strings.HasSuffix(s, "/"),
+		"ParseHashPath: input, %q, ends with '/'", s)
 
 	var s0 = s[1:] //take the leading '/' off
 	var idxStrs = strings.Split(s0, "/")
