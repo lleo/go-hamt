@@ -3,6 +3,8 @@ Package hamt32 is the package that implements two Hamt structures for both
 functional and transient implementations. The first structure is HamtFunctional,
 and the second is HamtTransient. Each of these datastructures implemnents the
 hamt32.Hamt interface.
+
+Fundementally HashVal is set to a uint32.
 */
 package hamt32
 
