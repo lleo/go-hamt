@@ -90,7 +90,8 @@ func TestMain(m *testing.M) {
 
 	log.SetFlags(log.Lshortfile)
 
-	var logfile, err = os.Create("test.log")
+	var logfn = fmt.Sprintf("test-%d.log", hamt64.IndexBits)
+	var logfile, err = os.Create(logfn)
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to os.Create(\"test.log\")"))
 	}
