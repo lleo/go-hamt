@@ -80,12 +80,13 @@ func (l collisionLeaf) del(k Key) (leafI, interface{}, bool) {
 				var cl = l.copy()
 				cl.kvs = append(cl.kvs[:i], cl.kvs[i+1:]...)
 				nl = cl // needed access to cl.kvs; nl is type nodeI
+				log.Printf("cl.del(); kv=%s removed; returning %s", kv, nl)
 			}
-			log.Printf("cl.del(); kv=%s removed; returning %s", kv, nl) //ditto
+			//log.Printf("cl.del(); kv=%s removed; returning %s", kv, nl)
 			return nl, kv.Val, true
 		}
 	}
-	log.Printf("cl.del(%s) removed nothing.", k) //staying in cuz its so rare
+	log.Printf("cl.del(%s) removed nothing.", k)
 	return l, nil, false
 }
 

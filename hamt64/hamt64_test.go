@@ -179,7 +179,7 @@ func BenchmarkHamt64Get(b *testing.B) {
 		}
 	}
 
-	log.Printf("%s: Functional=%t; b.N=%d", name, Functional, b.N)
+	log.Printf("%s: b.N=%d", name, b.N)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -306,7 +306,7 @@ func BenchmarkHamt64Put(b *testing.B) {
 			hamt64.TableOptionName[TableOption], err)
 	}
 
-	log.Printf("%s: Functional=%t; b.N=%d;", name, Functional, b.N)
+	log.Printf("%s: b.N=%d;", name, b.N)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -383,7 +383,7 @@ func BenchmarkHamt64Del(b *testing.B) {
 			hamt64.TableOptionName[TableOption], err)
 	}
 
-	log.Printf("%s: Functional=%t; b.N=%d;", name, Functional, b.N)
+	log.Printf("%s: b.N=%d;", name, b.N)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
