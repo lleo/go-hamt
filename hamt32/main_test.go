@@ -103,6 +103,15 @@ func TestMain(m *testing.M) {
 
 	KVS = buildKeyVals("TestMain", numKvs)
 
+	log.Printf("TestMain: HashSize=%d\n", hamt32.HashSize)
+	fmt.Printf("TestMain: HashSize=%d\n", hamt32.HashSize)
+	log.Printf("TestMain: IndexBits=%d\n", hamt32.IndexBits)
+	fmt.Printf("TestMain: IndexBits=%d\n", hamt32.IndexBits)
+	log.Printf("TestMain: IndexLimit=%d\n", hamt32.IndexLimit)
+	fmt.Printf("TestMain: IndexLimit=%d\n", hamt32.IndexLimit)
+	log.Printf("TestMain: DepthLimit=%d\n", hamt32.DepthLimit)
+	fmt.Printf("TestMain: DepthLimit=%d\n", hamt32.DepthLimit)
+
 	// execute
 	var xit int
 	if all {
