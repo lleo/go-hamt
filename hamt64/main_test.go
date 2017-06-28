@@ -16,9 +16,9 @@ import (
 )
 
 // 4 million & change
-var InitHamtNumKvsForPut = 1000000
-var InitHamtNumKvs = 3000000 + InitHamtNumKvsForPut
-var numKvs = (4 * 1024 * 1024) + (4 * 1024)
+var InitHamtNumKvsForPut = 1024 * 1024
+var InitHamtNumKvs = (2 * 1024 * 1024) + InitHamtNumKvsForPut
+var numKvs = InitHamtNumKvs + (4 * 1024)
 var KVS []hamt64.KeyVal
 
 var Functional bool
@@ -111,6 +111,12 @@ func TestMain(m *testing.M) {
 	fmt.Printf("TestMain: IndexLimit=%d\n", hamt64.IndexLimit)
 	log.Printf("TestMain: DepthLimit=%d\n", hamt64.DepthLimit)
 	fmt.Printf("TestMain: DepthLimit=%d\n", hamt64.DepthLimit)
+	log.Printf("TestMain: SizeofFixedTale=%d\n", hamt64.SizeofFixedTable)
+	fmt.Printf("TestMain: SizeofFixedTale=%d\n", hamt64.SizeofFixedTable)
+	log.Printf("TestMain: SizeofSparseTable=%d\n", hamt64.SizeofSparseTable)
+	fmt.Printf("TestMain: SizeofSparseTable=%d\n", hamt64.SizeofSparseTable)
+	log.Printf("TestMain: BitmapSize=%d\n", hamt64.BitmapSize)
+	fmt.Printf("TestMain: BitmapSize=%d\n", hamt64.BitmapSize)
 
 	// execute
 	var xit int
