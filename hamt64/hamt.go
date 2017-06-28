@@ -65,8 +65,9 @@ const (
 	HybridTables
 )
 
-// TableOptionName is a lookup table to map the integer value of FixedTablesOnly,
-// SparseTablesOnly, and HybridTables to a string representing that option.
+// TableOptionName is a lookup table to map the integer value of
+// FixedTablesOnly, SparseTablesOnly, and HybridTables to a string representing
+// that option.
 //     var option = hamt64.FixedTablesOnly
 //     hamt64.TableOptionName[option] == "FixedTablesOnly"
 var TableOptionName [3]string
