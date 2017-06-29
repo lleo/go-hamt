@@ -2,7 +2,7 @@
 Package stringkey is an implementation of the
 "github.com/lleo/go-hamt/hamt64" Key interface.
 */
-package stringkey
+package stringkey64
 
 import (
 	"fmt"

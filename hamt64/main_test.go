@@ -258,7 +258,7 @@ func buildKeyVals(prefix string, num int) []hamt64.KeyVal {
 	var s = "aaa"
 
 	for i := 0; i < num; i++ {
-		var k = stringkey.New(s)
+		var k = stringkey64.New(s)
 
 		kvs[i] = hamt64.KeyVal{k, i}
 		s = Inc(s)
