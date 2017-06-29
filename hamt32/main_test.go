@@ -252,7 +252,7 @@ func buildKeyVals(prefix string, num int) []hamt32.KeyVal {
 	var s = "aaa"
 
 	for i := 0; i < num; i++ {
-		var k = stringkey.New(s)
+		var k = stringkey32.New(s)
 
 		kvs[i] = hamt32.KeyVal{k, i}
 		s = Inc(s)
