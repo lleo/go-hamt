@@ -17,7 +17,7 @@ const HashSize uint = uint(unsafe.Sizeof(HashVal(0))) * 8
 
 // IndexBits is the fundemental setting along with HashSize for the Key
 // constants. 2..HashSize/2 step 1
-const IndexBits uint = 6
+const IndexBits uint = 5
 
 // DepthLimit is the maximum number of levels of the Hamt. It is calculated as
 // DepthLimit = floor(HashSize / IndexBits) or a strict integer division.
