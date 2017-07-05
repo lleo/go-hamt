@@ -373,7 +373,7 @@ func BenchmarkHamt64Del(b *testing.B) {
 	}
 	log.Print(name)
 
-	var h, err = buildHamt64(name, KVS, Functional, TableOption)
+	var h, err = buildHamt64(name, KVS[:TwoKK], Functional, TableOption)
 	if err != nil {
 		log.Printf("%s: failed buildHamt64(%q, KVS:%d, %t, %s) => %s", name,
 			name, len(KVS), Functional,
