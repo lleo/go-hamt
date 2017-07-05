@@ -1,10 +1,5 @@
 package hamt64
 
-import (
-	"fmt"
-	"log"
-)
-
 // HamtTransient is the datastructure which the Transient Hamt methods are
 // called upon. In fact it is identical to the HamtFunctional datastructure and
 // all the table and leaf datastructures it uses are the same ones used by the
@@ -15,10 +10,7 @@ import (
 // in-place. So sharing this datastruture between threads is NOT safe unless
 // you were to implement a locking stategy CORRECTLY.
 type HamtTransient struct {
-	root     tableI
-	nentries uint
-	grade    bool
-	compinit bool
+	Common
 }
 
 // NewTransient constructs a new HamtTransient datastructure based on the opt
@@ -45,13 +37,13 @@ func NewTransient(opt int) *HamtTransient {
 
 // IsEmpty simply returns if the HamtTransient datastucture has no entries.
 func (h *HamtTransient) IsEmpty() bool {
-	return h.root == nil
+	return h.Common.IsEmpty()
 }
 
 // Nentries return the number of (key,value) pairs are stored in the
 // HamtTransient datastructure.
 func (h *HamtTransient) Nentries() uint {
-	return h.nentries
+	return h.Common.Nentries()
 }
 
 // ToFunctional creates a new HamtFunctional datastructure and simply copies the
@@ -72,10 +64,12 @@ func (h *HamtTransient) Nentries() uint {
 // functionality of both is to first perfom a DeepCopy().
 func (h *HamtTransient) ToFunctional() Hamt {
 	return &HamtFunctional{
-		root:     h.root,
-		nentries: h.nentries,
-		grade:    h.grade,
-		compinit: h.compinit,
+		Common{
+			root:     h.root,
+			nentries: h.nentries,
+			grade:    h.grade,
+			compinit: h.compinit,
+		},
 	}
 }
 
@@ -89,115 +83,14 @@ func (h *HamtTransient) ToTransient() Hamt {
 // recursively. This is expensive, but usefull, if you want to use ToTransient()
 // and ToFunctional().
 func (h *HamtTransient) DeepCopy() Hamt {
-	var nh = new(HamtTransient)
-	nh.root = h.root.deepCopy()
-	nh.nentries = h.nentries
-	nh.grade = h.grade
-	nh.compinit = h.compinit
-	return nh
+	return h.Common.DeepCopy()
 }
-
-func (h *HamtTransient) find(k Key) (tableStack, leafI, uint) {
-	if h.IsEmpty() {
-		return nil, nil, 0
-	}
-
-	var hv = k.Hash()
-	var curTable = h.root
-
-	var path = newTableStack()
-	var leaf leafI
-	var idx uint
-
-	var depth uint
-DepthIter:
-	for depth = 0; depth <= MaxDepth; depth++ {
-		path.push(curTable)
-		idx = hv.Index(depth)
-
-		var curNode = curTable.get(idx)
-		switch n := curNode.(type) {
-		case nil:
-			leaf = nil
-			break DepthIter
-		case leafI:
-			leaf = n
-			break DepthIter
-		case tableI:
-			if depth == MaxDepth {
-				log.Panicf("SHOULD NOT BE REACHED; depth,%d == MaxDepth,%d & tableI entry found; %s", depth, MaxDepth, n)
-			}
-			curTable = n
-			// exit switch then loop for
-		default:
-			log.Panicf("SHOULD NOT BE REACHED: depth=%d; curNode unknown type=%T;", depth, curNode)
-		}
-	}
-
-	return path, leaf, idx
-}
-
-// Get Hamt method looks up a given key in the Hamt data structure.
-// BenchHamt64:
-//func (h *HamtTransient) Get(k Key) (interface{}, bool) {
-//	var _, leaf, _ = h.find(k)
-//
-//	if leaf == nil {
-//		return nil, false
-//	}
-//
-//	return leaf.get(k)
-//}
 
 // Get retrieves the value related to the key in the HamtTransient
 // datastructure. It also return a bool to indicate the value was found. This
 // allows you to store nil values in the HamtTransient datastructure.
 func (h *HamtTransient) Get(k Key) (interface{}, bool) {
-	if h.IsEmpty() {
-		return nil, false
-	}
-
-	var val interface{}
-	var found bool
-
-	var hv = k.Hash()
-
-	var curTable = h.root //ISA tableI
-
-	for depth := uint(0); depth <= MaxDepth; depth++ {
-		var idx = hv.Index(depth)
-		var curNode = curTable.get(idx) //nodeI
-
-		if curNode == nil {
-			return nil, false
-		}
-
-		if leaf, isLeaf := curNode.(leafI); isLeaf {
-			val, found = leaf.get(k)
-			return val, found
-		}
-
-		if depth == MaxDepth {
-			panic("SHOULD NOT HAPPEN")
-		}
-		curTable = curNode.(tableI)
-	}
-
-	panic("SHOULD NEVER BE REACHED")
-}
-
-func (h *HamtTransient) createRootTable(leaf leafI) tableI {
-	if h.compinit {
-		return createRootSparseTable(leaf)
-	}
-	return createRootFixedTable(leaf)
-}
-
-func (h *HamtTransient) createTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
-	if h.compinit {
-		return createSparseTable(depth, leaf1, leaf2)
-	}
-	return createFixedTable(depth, leaf1, leaf2)
+	return h.Common.Get(k)
 }
 
 // Put stores a new (key,value) pair in the HamtTransient datastructure. It
@@ -332,24 +225,10 @@ func (h *HamtTransient) Del(k Key) (Hamt, interface{}, bool) {
 
 // String returns a string representation of the Hamt string.
 func (h *HamtTransient) String() string {
-	return fmt.Sprintf(
-		"HamtTransient{ nentries: %d, root: %s }",
-		h.nentries,
-		h.root.LongString("", 0),
-	)
+	return h.Common.String()
 }
 
 // LongString returns a complete listing of the entire Hamt data structure.
 func (h *HamtTransient) LongString(indent string) string {
-	var str string
-	if h.root != nil {
-		str = indent +
-			fmt.Sprintf("HamtTransient{ nentries: %d, root:\n", h.nentries)
-		str += indent + h.root.LongString(indent, 0)
-		str += indent + "} //HamtTransient"
-	} else {
-		str = indent +
-			fmt.Sprintf("HamtTransient{ nentries: %d, root: nil }", h.nentries)
-	}
-	return str
+	return h.Common.LongString(indent)
 }

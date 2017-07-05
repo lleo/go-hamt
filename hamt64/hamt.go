@@ -1,14 +1,30 @@
 /*
-Package hamt64 is the package that implements two Hamt structures for both
-functional and transient implementations. The first structure is HamtFunctional,
-and the second is HamtTransient. Each of these datastructures implemnents the
-hamt64.Hamt interface.
+Package hamt64 defines interface to access a Hamt data structure based on
+64bit hash values. The Hamt data structure is built with interior nodes and leaf
+nodes. The interior nodes are called tables and the leaf nodes are call, well,
+leafs. Furthur the tables come is two varieties fixed size tables and a
+compressed form to handle sparse tables. Leafs come in two forms the common flat
+leaf form with a singe key/value pair and the rare form used when two leafs have
+the same hash value called collision leafs.
 
-Fundementally HashVal is set to a uint64.
+The Hamt data structure is implemented with two code bases, which both implement
+the hamt64.Hamt interface, the transient replace in place code and the
+functional copy on write code. We define a HamtTransient base data structure and
+a HamtFunctional base data structure. Both of these data structures are
+identical, they only have unique names so we can hang the different code
+implementations off them.
+
+Lastly, the Hamt data structure can be implemented with fixed tables only or
+with sparse tables only or with a hybrid of the two. Thia hybid form is meant
+to allow the denser lower inner nodes to be implemented by the faster fixed
+tables and the much more numerous but sparser higher inner nodes to be
+implemented by the space conscious sparse tables.
 */
 package hamt64
 
 import (
+	"fmt"
+	"log"
 	"unsafe"
 )
 
@@ -40,7 +56,7 @@ const MaxIndex = IndexLimit - 1
 //
 // This conversion only happens if the Hamt structure has be constructed with
 // the HybridTables option.
-const DowngradeThreshold uint = IndexLimit / 3 // 21
+const DowngradeThreshold uint = IndexLimit * 3 / 8 //12 for IndexBits=5
 
 // UpgradeThreshold is the constant that sets the threshold for the size of a
 // table, that when a table increases to the threshold size, the table is
@@ -48,7 +64,7 @@ const DowngradeThreshold uint = IndexLimit / 3 // 21
 //
 // This conversion only happens if the Hamt structure has be constructed with
 // the HybridTables option.
-const UpgradeThreshold uint = IndexLimit * 2 / 3 // 42
+const UpgradeThreshold uint = IndexLimit * 5 / 8 //20 for IndexBits=5
 
 // Configuration contants to be passed to `hamt64.New(int) *Hamt`.
 const (
@@ -100,6 +116,14 @@ type Hamt interface {
 	LongString(string) string
 }
 
+// This is here as the Hamt base data struture.
+type Common struct {
+	root     tableI
+	nentries uint
+	grade    bool
+	compinit bool
+}
+
 // New() constructs a datastucture that implements the Hamt interface. When the
 // functional argument is true it implements a HamtFunctional datastructure.
 // When the functional argument is false it implements a HamtTransient
@@ -110,4 +134,157 @@ func New(functional bool, opt int) Hamt {
 		return NewFunctional(opt)
 	}
 	return NewTransient(opt)
+}
+
+// IsEmpty simply returns if the HamtFunctional datastucture has no entries.
+func (h *Common) IsEmpty() bool {
+	return h.root == nil
+	//return h.nentries == 0
+}
+
+// Nentries return the number of (key,value) pairs are stored in the
+// HamtFunctional datastructure.
+func (h *Common) Nentries() uint {
+	return h.nentries
+}
+
+// DeepCopy() copies the HamtFunctional datastructure and every table it
+// contains recursively. This is expensive, but usefull, if you want to use
+// ToTransient() and ToFunctional().
+func (h *Common) DeepCopy() Hamt {
+	var nh = new(HamtFunctional)
+	nh.root = h.root.deepCopy()
+	nh.nentries = h.nentries
+	nh.grade = h.grade
+	nh.compinit = h.compinit
+	return nh
+}
+
+func (h *Common) find(k Key) (tableStack, leafI, uint) {
+	if h.IsEmpty() {
+		return nil, nil, 0
+	}
+
+	var hv = k.Hash()
+	var curTable = h.root
+
+	var path = newTableStack()
+	var leaf leafI
+	var idx uint
+
+	var depth uint
+DepthIter:
+	for depth = 0; depth <= MaxDepth; depth++ {
+		path.push(curTable)
+		idx = hv.Index(depth)
+
+		var curNode = curTable.get(idx)
+		switch n := curNode.(type) {
+		case nil:
+			leaf = nil
+			break DepthIter
+		case leafI:
+			leaf = n
+			break DepthIter
+		case tableI:
+			if depth == MaxDepth {
+				log.Panicf("SHOULD NOT BE REACHED; depth,%d == MaxDepth,%d & tableI entry found; %s", depth, MaxDepth, n)
+			}
+			curTable = n
+			// exit switch then loop for
+		default:
+			log.Panicf("SHOULD NOT BE REACHED: depth=%d; curNode unknown type=%T;", depth, curNode)
+		}
+	}
+
+	return path, leaf, idx
+}
+
+// This is slower due to extraneous code and allocations in find().
+//func (h *Common) Get(k Key) (interface{}, bool) {
+//	var _, leaf, _ = h.find(k)
+//
+//	if leaf == nil {
+//		return nil, false
+//	}
+//
+//	return leaf.get(k)
+//}
+
+// Get retrieves the value related to the key in the HamtFunctional
+// datastructure. It also return a bool to indicate the value was found. This
+// allows you to store nil values in the HamtFunctional datastructure.
+func (h *Common) Get(k Key) (interface{}, bool) {
+	if h.IsEmpty() {
+		return nil, false
+	}
+
+	var val interface{}
+	var found bool
+
+	var hv = k.Hash()
+
+	var curTable = h.root //ISA tableI
+
+	for depth := uint(0); depth <= MaxDepth; depth++ {
+		var idx = hv.Index(depth)
+		var curNode = curTable.get(idx) //nodeI
+
+		if curNode == nil {
+			return nil, false
+		}
+
+		if leaf, isLeaf := curNode.(leafI); isLeaf {
+			val, found = leaf.get(k)
+			return val, found
+		}
+
+		if depth == MaxDepth {
+			panic("SHOULD NOT HAPPEN")
+		}
+		curTable = curNode.(tableI)
+	}
+
+	panic("SHOULD NEVER BE REACHED")
+}
+
+func (h *Common) createRootTable(leaf leafI) tableI {
+	if h.compinit {
+		return createRootSparseTable(leaf)
+	}
+	return createRootFixedTable(leaf)
+}
+
+func (h *Common) createTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
+	if h.compinit {
+		return createSparseTable(depth, leaf1, leaf2)
+	}
+	return createFixedTable(depth, leaf1, leaf2)
+}
+
+// String returns a string representation of the Common stastructure.
+// Secifically it returns a representation of the datastructure with the
+// nentries value of Nentries() and a representation of the root table.
+func (h *Common) String() string {
+	return fmt.Sprintf(
+		"Common{ nentries: %d, root: %s }",
+		h.nentries,
+		h.root.LongString("", 0),
+	)
+}
+
+// LongString returns a complete listing of the entire Hamt data structure
+// recursively indented..
+func (h *Common) LongString(indent string) string {
+	var str string
+	if h.root != nil {
+		str = indent +
+			fmt.Sprintf("Common{ nentries: %d, root:\n", h.nentries)
+		str += indent + h.root.LongString(indent, 0)
+		str += indent + "} //Common"
+	} else {
+		str = indent +
+			fmt.Sprintf("Common{ nentries: %d, root: nil }", h.nentries)
+	}
+	return str
 }
