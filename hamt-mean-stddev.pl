@@ -155,12 +155,12 @@ if ($input_fn eq '-') {
 		for my $mode (keys %{$s->{$bit}}) {
 			for my $ttype (keys %{$s->{$bit}{$mode}}) {
 				for my $op (keys %{$s->{$bit}{$mode}{$ttype}}) {
-					if (ref($s->{$bit}{$mode}{$ttype}{$op}{'mean'})) {
+					if (exists $s->{$bit}{$mode}{$ttype}{$op}{'mean'}) {
 						delete $s->{$bit}{$mode}{$ttype}{$op}{'mean'};
 						$need_write = "true"
 					}
-					if (ref $s->{$bit}{$mode}{$ttype}{$op}{'stdev'}) {
-						delete $s->{$bit}{$mode}{$ttype}{$op}{'stdev'};
+					if (exists $s->{$bit}{$mode}{$ttype}{$op}{'stddev'}) {
+						delete $s->{$bit}{$mode}{$ttype}{$op}{'stddev'};
 						$need_write = "true"
 					}
 				}
