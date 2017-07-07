@@ -301,9 +301,13 @@ func RunTimes() string {
 	s += "Key                                                Val\n"
 	s += "==================================================+==========\n"
 
+	var tot time.Duration
 	for _, k := range ks {
 		v := RunTime[k]
 		s += fmt.Sprintf("%-50s %s\n", k, v)
+		tot += v
 	}
+	s += fmt.Sprintf("%50s %s\n", "TOTAL", tot)
+
 	return s
 }
