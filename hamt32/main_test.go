@@ -10,15 +10,16 @@ import (
 	"time"
 
 	"github.com/lleo/go-hamt/hamt32"
-	"github.com/lleo/go-hamt/hamt32/stringkey"
+	"github.com/lleo/go-hamt/stringkey32"
 	"github.com/lleo/stringutil"
 	"github.com/pkg/errors"
 )
 
 // 4 million & change
-var InitHamtNumKvsForPut = 1000000
-var InitHamtNumKvs = 3000000 + InitHamtNumKvsForPut
-var numKvs = (4 * 1024 * 1024) + (4 * 1024)
+var InitHamtNumKvsForPut = 1024 * 1024
+var InitHamtNumKvs = (2 * 1024 * 1024) + InitHamtNumKvsForPut
+var numKvs = InitHamtNumKvs + (4 * 1024)
+var TwoKK = 2 * 1024 * 1024
 var KVS []hamt32.KeyVal
 
 var Functional bool
@@ -32,14 +33,6 @@ var StartTime = make(map[string]time.Time)
 var RunTime = make(map[string]time.Duration)
 
 func TestMain(m *testing.M) {
-	//fmt.Printf("Sizeof(fixedTable) = %d\n", hamt32.SizeofFixedTable)
-	//fmt.Printf("Sizeof(sparseTable) = %d\n", hamt32.SizeofSparseTable)
-	//fmt.Printf("Sizeof(Bitmap) = %d\n", hamt32.SizeofBitmap)
-	//fmt.Printf("Sizeof(NodeI) = %d\n", hamt32.SizeofNodeI)
-	//fmt.Printf("IndexLimit = %d\n", hamt32.IndexLimit)
-	//fmt.Printf("BitmapSize = %d\n", hamt32.BitmapSize)
-	//os.Exit(0)
-
 	var fixedonly, sparseonly, hybrid, all bool
 	flag.BoolVar(&fixedonly, "F", false,
 		"Use fixed tables only and exclude C and H Options.")
@@ -111,6 +104,12 @@ func TestMain(m *testing.M) {
 	fmt.Printf("TestMain: IndexLimit=%d\n", hamt32.IndexLimit)
 	log.Printf("TestMain: DepthLimit=%d\n", hamt32.DepthLimit)
 	fmt.Printf("TestMain: DepthLimit=%d\n", hamt32.DepthLimit)
+	log.Printf("TestMain: SizeofFixedTable=%d\n", hamt32.SizeofFixedTable)
+	fmt.Printf("TestMain: SizeofFixedTable=%d\n", hamt32.SizeofFixedTable)
+	log.Printf("TestMain: SizeofSparseTable=%d\n", hamt32.SizeofSparseTable)
+	fmt.Printf("TestMain: SizeofSparseTable=%d\n", hamt32.SizeofSparseTable)
+	log.Printf("TestMain: BitmapSize=%d\n", hamt32.BitmapSize)
+	fmt.Printf("TestMain: BitmapSize=%d\n", hamt32.BitmapSize)
 
 	// execute
 	var xit int
