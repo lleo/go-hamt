@@ -29,9 +29,6 @@ type tableI interface {
 
 	get(idx uint) nodeI
 
-	//occupied(idx uint) bool
-
-	//set(idx uint, entry nodeI)
 	insert(idx uint, n nodeI)
 	replace(idx uint, n nodeI)
 	remove(idx uint)

@@ -45,7 +45,7 @@ func createRootFixedTable(lf leafI) tableI {
 	//ft.hashPath = 0
 	//ft.depth = 0
 	//ft.nents = 0
-	ft.set(idx, lf)
+	ft.insert(idx, lf)
 
 	return ft
 }
@@ -157,17 +157,6 @@ func (t *fixedTable) entries() []tableEntry {
 
 func (t *fixedTable) get(idx uint) nodeI {
 	return t.nodes[idx]
-}
-
-func (t *fixedTable) set(idx uint, nn nodeI) {
-	if nn != nil && t.nodes[idx] == nil {
-		t.nents++
-	} else if nn == nil && t.nodes[idx] != nil {
-		t.nents--
-	}
-	t.nodes[idx] = nn
-
-	return
 }
 
 func (t *fixedTable) insert(idx uint, n nodeI) {
