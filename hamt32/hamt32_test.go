@@ -15,7 +15,6 @@ func TestBuild(t *testing.T) {
 	} else {
 		name += ":transient:" + hamt32.TableOptionName[TableOption]
 	}
-	log.Print(name)
 
 	var h = hamt32.New(Functional, TableOption)
 
@@ -41,7 +40,6 @@ func TestHamt32Put(t *testing.T) {
 	} else {
 		name += ":transient:" + hamt32.TableOptionName[TableOption]
 	}
-	log.Print(name)
 
 	StartTime[name] = time.Now()
 	Hamt32 = hamt32.New(Functional, TableOption)
@@ -77,7 +75,6 @@ func TestHamt32Get(t *testing.T) {
 	} else {
 		name += ":transient:" + hamt32.TableOptionName[TableOption]
 	}
-	log.Print(name)
 
 	if Hamt32 == nil {
 		var err error
@@ -118,7 +115,6 @@ func TestHamt32Del(t *testing.T) {
 	} else {
 		name += ":transient:" + hamt32.TableOptionName[TableOption]
 	}
-	log.Print(name)
 
 	if Hamt32 == nil {
 		var err error
@@ -164,7 +160,6 @@ func BenchmarkHamt32Get(b *testing.B) {
 	} else {
 		name += ":transient:" + hamt32.TableOptionName[TableOption]
 	}
-	log.Print(name)
 
 	if BenchHamt32Get == nil || BenchHamt32Get_Functional != Functional {
 		BenchHamt32Get_Functional = Functional
@@ -205,7 +200,6 @@ var BenchHamt32_T2F hamt32.Hamt
 func BenchmarkHamt32_T2F_Get(b *testing.B) {
 	var name = "BenchmarkHamt32_T2F_Get"
 	name += ":functional:" + hamt32.TableOptionName[TableOption]
-	log.Print(name)
 
 	if BenchHamt32_T2F == nil {
 		var err error
@@ -245,7 +239,6 @@ var BenchHamt32_F2T hamt32.Hamt
 func BenchmarkHamt32_F2T_Get(b *testing.B) {
 	var name = "BenchmarkHamt32_F2T_Get"
 	name += ":transient:" + hamt32.TableOptionName[TableOption]
-	log.Print(name)
 
 	if BenchHamt32_F2T == nil {
 		var err error
@@ -287,7 +280,6 @@ func BenchmarkHamt32Put(b *testing.B) {
 	} else {
 		name += ":transient:" + hamt32.TableOptionName[TableOption]
 	}
-	log.Print(name)
 
 	if b.N+InitHamtNumKvsForPut > len(KVS) {
 		log.Printf("%s: Can't run: b.N+num > len(KVS)", name)
@@ -326,7 +318,6 @@ func BenchmarkHamt32Put(b *testing.B) {
 func BenchmarkHamt32_T2F_Put(b *testing.B) {
 	var name = "BenchmarkHamt32Put_T2F"
 	name += ":functional:" + hamt32.TableOptionName[TableOption]
-	log.Print(name)
 
 	var InitHamtNumKvsForPut int //= 1000000 // 1 million; allows b.N=3,000,000
 	if b.N+InitHamtNumKvsForPut > len(KVS) {
@@ -371,7 +362,6 @@ func BenchmarkHamt32Del(b *testing.B) {
 	} else {
 		name += ":transient:" + hamt32.TableOptionName[TableOption]
 	}
-	log.Print(name)
 
 	var h, err = buildHamt32(name, KVS, Functional, TableOption)
 	if err != nil {
