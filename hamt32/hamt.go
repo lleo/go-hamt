@@ -1,10 +1,24 @@
 /*
-Package hamt32 is the package that implements two Hamt structures for both
-functional and transient implementations. The first structure is HamtFunctional,
-and the second is HamtTransient. Each of these datastructures implemnents the
-hamt32.Hamt interface.
+Package hamt32 defines interface to access a Hamt data structure based on
+32bit hash values. The Hamt data structure is built with interior nodes and leaf
+nodes. The interior nodes are called tables and the leaf nodes are call, well,
+leafs. Furthur the tables come is two varieties fixed size tables and a
+compressed form to handle sparse tables. Leafs come in two forms the common flat
+leaf form with a singe key/value pair and the rare form used when two leafs have
+the same hash value called collision leafs.
 
-Fundementally HashVal is set to a uint32.
+The Hamt data structure is implemented with two code bases, which both implement
+the hamt32.Hamt interface, the transient replace in place code and the
+functional copy on write code. We define a HamtTransient base data structure and
+a HamtFunctional base data structure. Both of these data structures are
+identical, they only have unique names so we can hang the different code
+implementations off them.
+
+Lastly, the Hamt data structure can be implemented with fixed tables only or
+with sparse tables only or with a hybrid of the two. Thia hybid form is meant
+to allow the denser lower inner nodes to be implemented by the faster fixed
+tables and the much more numerous but sparser higher inner nodes to be
+implemented by the space conscious sparse tables.
 */
 package hamt32
 
@@ -40,7 +54,7 @@ const MaxIndex = IndexLimit - 1
 //
 // This conversion only happens if the Hamt structure has be constructed with
 // the HybridTables option.
-const DowngradeThreshold uint = IndexLimit / 3 // 10
+const DowngradeThreshold uint = IndexLimit * 3 / 8 //12 for IndexBits=5
 
 // UpgradeThreshold is the constant that sets the threshold for the size of a
 // table, that when a table increases to the threshold size, the table is
@@ -48,7 +62,7 @@ const DowngradeThreshold uint = IndexLimit / 3 // 10
 //
 // This conversion only happens if the Hamt structure has be constructed with
 // the HybridTables option.
-const UpgradeThreshold uint = IndexLimit * 2 / 3 // 21
+const UpgradeThreshold uint = IndexLimit * 5 / 8 //20 for IndexBits=5
 
 // Configuration contants to be passed to `hamt32.New(int) *Hamt`.
 const (
