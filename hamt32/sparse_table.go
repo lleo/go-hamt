@@ -7,7 +7,7 @@ import (
 
 // sparseTableInitCap constant sets the default capacity of a new
 // sparseTable.
-const sparseTableInitCap int = 8
+const sparseTableInitCap int = 2
 
 // OLD sparsTable layout size == 48
 //type sparseTable struct {
