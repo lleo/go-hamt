@@ -52,35 +52,36 @@ import (
 // WARNING!!! Duplicated code with both hamt32 and hamt64. Must have
 // test to guarantee they stay in lock step.
 const (
-	// FullTableOnly indicates the structure should use fullTables ONLY.
-	// This was intended to be for speed, as compressed tables use a software
+	// FixedTableOnly indicates the structure should use fixedTables ONLY.
+	// This was intended to be for speed, as sparse tables use a software
 	// bitCount function to access individual cells.
-	FullTablesOnly = iota
-	// CompTablesOnly indicates the structure should use compressedTables ONLY.
+	FixedTablesOnly = iota
+	// SparseTablesOnly indicates the structure should use sparseTable's ONLY.
 	// This was intended just save space, but also seems to be faster; CPU cache
 	// locality maybe?
-	CompTablesOnly
-	// HybridTables indicates the structure should use compressedTable
-	// initially, then upgrad to fullTable when appropriate.
+	SparseTablesOnly
+	// HybridTables indicates the structure should use sparseTable
+	// initially, then upgrad to fixedTable when appropriate.
 	HybridTables
 )
 
-// TableOptionName is a lookup table to map the integer value of FullTablesOnly,
-// CompTablesOnly, and HybridTables to a string representing that option.
-//     var option = hamt32.FullTablesOnly
-//     hamt32.TableOptionName[option] == "FullTablesOnly"
+// TableOptionName is a lookup table to map the integer value of
+// FixedTablesOnly, SparseTablesOnly, and HybridTables to a string representing
+// that option.
+//     var option = hamt32.FixedTablesOnly
+//     hamt32.TableOptionName[option] == "FixedTablesOnly"
 var TableOptionName [3]string
 
 // Could have used...
 //var TableOptionName = [3]string{
-//	"FullTablesOnly",
-//	"CompTablesOnly",
+//	"FixedTablesOnly",
+//	"SparseTablesOnly",
 //	"HybridTables",
 //}
 
 func init() {
-	TableOptionName[FullTablesOnly] = "FullTablesOnly"
-	TableOptionName[CompTablesOnly] = "CompTablesOnly"
+	TableOptionName[FixedTablesOnly] = "FixedTablesOnly"
+	TableOptionName[SparseTablesOnly] = "SparseTablesOnly"
 	TableOptionName[HybridTables] = "HybridTables"
 }
 
@@ -88,7 +89,7 @@ func init() {
 // hamt32.Hamt interface. The arguments are a bool and an int. The bool argument
 // determines if a functional structure(true) or transient stucture(false) is
 // produced. The int option is either 0, 1, or 2 conforming to the
-// FullTablesOnly, CompTablesOnly, or HybridTables constants.
+// FixedTablesOnly, SparseTablesOnly, or HybridTables constants.
 func New32(functional bool, opt int) hamt32.Hamt {
 	return hamt32.New(functional, opt)
 }
@@ -97,7 +98,7 @@ func New32(functional bool, opt int) hamt32.Hamt {
 // hamt64.Hamt interface. The arguments are a bool and an int. The bool argument
 // determines if a functional structure(true) or transient stucture(false) is
 // produced. The int option is either 0, 1, or 2 conforming to the
-// FullTablesOnly, CompTablesOnly, or HybridTables constants.
+// FixedTablesOnly, SparseTablesOnly, or HybridTables constants.
 func New64(functional bool, opt int) hamt64.Hamt {
 	return hamt64.New(functional, opt)
 }
