@@ -22,7 +22,7 @@ func newCollisionLeaf(kvs []KeyVal) *collisionLeaf {
 	var leaf = new(collisionLeaf)
 	leaf.kvs = append(leaf.kvs, kvs...)
 
-	//log.Println("newCollisionLeaf:", leaf)
+	log.Println("newCollisionLeaf:", leaf) //staying in cuz its so rare
 
 	return leaf
 }
@@ -64,9 +64,9 @@ func (l collisionLeaf) put(k Key, v interface{}) (leafI, bool) {
 	nl.kvs[len(l.kvs)] = KeyVal{k, v}
 	//nl.kvs = append(nl.kvs, append(l.kvs, KeyVal{k, v})...)
 
-	//log.Printf("%s : %d\n", l.Hash(), len(l.kvs))
+	log.Printf("%s : %d\n", l.Hash(), len(l.kvs)) //staying in cuz its so rare
 
-	return nl, true // key_,val was added
+	return nl, true // k,v was added
 }
 
 func (l collisionLeaf) del(k Key) (leafI, interface{}, bool) {

@@ -56,7 +56,6 @@ func createRootSparseTable(lf leafI) tableI {
 	var ct = new(sparseTable)
 	//ct.hashPath = 0
 	//ct.depth = 0
-	//ct.nodeMap = uint64(1 << idx)
 	ct.nodeMap.Set(idx)
 	ct.nodes = make([]nodeI, 1, sparseTableInitCap)
 	ct.nodes[0] = lf
@@ -201,6 +200,7 @@ func (t *sparseTable) insert(idx uint, n nodeI) {
 	} else {
 		t.nodes = append(t.nodes[:j], append([]nodeI{n}, t.nodes[j:]...)...)
 	}
+
 	t.nodeMap.Set(idx)
 }
 

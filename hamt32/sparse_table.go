@@ -43,6 +43,7 @@ func (t *sparseTable) deepCopy() tableI {
 	nt.hashPath = t.hashPath
 	nt.depth = t.depth
 	nt.nodeMap = t.nodeMap
+
 	nt.nodes = make([]nodeI, len(t.nodes), cap(t.nodes))
 	for i := 0; i < len(t.nodes); i++ {
 		if table, isTable := t.nodes[i].(tableI); isTable {
@@ -53,6 +54,7 @@ func (t *sparseTable) deepCopy() tableI {
 			nt.nodes[i] = t.nodes[i]
 		}
 	}
+
 	return nt
 }
 
@@ -62,7 +64,6 @@ func createRootSparseTable(lf leafI) tableI {
 	var ct = new(sparseTable)
 	//ct.hashPath = 0
 	//ct.depth = 0
-	//ct.nodeMap = uint32(1 << idx)
 	ct.nodeMap.Set(idx)
 	ct.nodes = make([]nodeI, 1, sparseTableInitCap)
 	ct.nodes[0] = lf
