@@ -8,8 +8,8 @@ import (
 	"github.com/lleo/go-hamt/hamt32"
 )
 
-func TestBuild(t *testing.T) {
-	var name = "TestBuild"
+func TestBuild32(t *testing.T) {
+	var name = "TestBuild32"
 	if Functional {
 		name += ":functional:" + hamt32.TableOptionName[TableOption]
 	} else {
@@ -18,7 +18,7 @@ func TestBuild(t *testing.T) {
 
 	var h = hamt32.New(Functional, TableOption)
 
-	for _, kv := range KVS[:30] {
+	for _, kv := range KVS32[:30] {
 		var k = kv.Key
 		var v = kv.Val
 
@@ -43,7 +43,7 @@ func TestHamt32Put(t *testing.T) {
 
 	StartTime[name] = time.Now()
 	Hamt32 = hamt32.New(Functional, TableOption)
-	for _, kv := range KVS {
+	for _, kv := range KVS32 {
 		var k = kv.Key
 		var v = kv.Val
 
@@ -78,19 +78,19 @@ func TestHamt32Get(t *testing.T) {
 
 	if Hamt32 == nil {
 		var err error
-		Hamt32, err = buildHamt32(name, KVS, Functional, TableOption)
+		Hamt32, err = buildHamt32(name, KVS32, Functional, TableOption)
 		if err != nil {
-			log.Printf("%s: failed buildHamt32(%q, KVS#%d, %t, %s) => %s", name,
-				name, len(KVS), Functional,
+			log.Printf("%s: failed buildHamt32(%q, KVS32#%d, %t, %s) => %s", name,
+				name, len(KVS32), Functional,
 				hamt32.TableOptionName[TableOption], err)
-			t.Fatalf("%s: failed buildHamt32(%q, KVS#%d, %t, %s) => %s", name,
-				name, len(KVS), Functional,
+			t.Fatalf("%s: failed buildHamt32(%q, KVS32#%d, %t, %s) => %s", name,
+				name, len(KVS32), Functional,
 				hamt32.TableOptionName[TableOption], err)
 		}
 	}
 
 	StartTime[name] = time.Now()
-	for _, kv := range KVS {
+	for _, kv := range KVS32 {
 		var k = kv.Key
 		var v = kv.Val
 
@@ -118,19 +118,19 @@ func TestHamt32Del(t *testing.T) {
 
 	if Hamt32 == nil {
 		var err error
-		Hamt32, err = buildHamt32(name, KVS, Functional, TableOption)
+		Hamt32, err = buildHamt32(name, KVS32, Functional, TableOption)
 		if err != nil {
-			log.Printf("%s: failed buildHamt32(%q, KVS#%d, %t, %s) => %s", name,
-				name, len(KVS), Functional,
+			log.Printf("%s: failed buildHamt32(%q, KVS32#%d, %t, %s) => %s", name,
+				name, len(KVS32), Functional,
 				hamt32.TableOptionName[TableOption], err)
-			t.Fatalf("%s: failed buildHamt32(%q, KVS#%d, %t, %s) => %s", name,
-				name, len(KVS), Functional,
+			t.Fatalf("%s: failed buildHamt32(%q, KVS32#%d, %t, %s) => %s", name,
+				name, len(KVS32), Functional,
 				hamt32.TableOptionName[TableOption], err)
 		}
 	}
 
 	StartTime[name] = time.Now()
-	for _, kv := range KVS {
+	for _, kv := range KVS32 {
 		var k = kv.Key
 		var v = kv.Val
 
@@ -165,12 +165,12 @@ func BenchmarkHamt32Get(b *testing.B) {
 		BenchHamt32Get_Functional = Functional
 
 		var err error
-		BenchHamt32Get, err = buildHamt32(name, KVS, Functional, TableOption)
+		BenchHamt32Get, err = buildHamt32(name, KVS32, Functional, TableOption)
 		if err != nil {
-			log.Printf("%s: failed buildHamt32(%q, KVS#%d, %t, %s) => %s", name,
-				name, len(KVS), false, hamt32.TableOptionName[TableOption], err)
-			b.Fatalf("%s: failed buildHamt32(%q, KVS#%d, %t, %s) => %s", name,
-				name, len(KVS), false, hamt32.TableOptionName[TableOption], err)
+			log.Printf("%s: failed buildHamt32(%q, KVS32#%d, %t, %s) => %s", name,
+				name, len(KVS32), false, hamt32.TableOptionName[TableOption], err)
+			b.Fatalf("%s: failed buildHamt32(%q, KVS32#%d, %t, %s) => %s", name,
+				name, len(KVS32), false, hamt32.TableOptionName[TableOption], err)
 		}
 	}
 
@@ -178,9 +178,9 @@ func BenchmarkHamt32Get(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		var j = i % len(KVS)
-		var k = KVS[j].Key
-		var v = KVS[j].Val
+		var j = i % len(KVS32)
+		var k = KVS32[j].Key
+		var v = KVS32[j].Val
 
 		var val, found = BenchHamt32Get.Get(k)
 		if !found {
@@ -203,12 +203,12 @@ func BenchmarkHamt32_T2F_Get(b *testing.B) {
 
 	if BenchHamt32_T2F == nil {
 		var err error
-		BenchHamt32_T2F, err = buildHamt32(name, KVS, false, TableOption)
+		BenchHamt32_T2F, err = buildHamt32(name, KVS32, false, TableOption)
 		if err != nil {
-			log.Printf("%s: failed buildHamt32(%q, KVS#%d, %t, %s) => %s", name,
-				name, len(KVS), false, hamt32.TableOptionName[TableOption], err)
-			b.Fatalf("%s: failed buildHamt32(%q, KVS#%d, %t, %s) => %s", name,
-				name, len(KVS), false, hamt32.TableOptionName[TableOption], err)
+			log.Printf("%s: failed buildHamt32(%q, KVS32#%d, %t, %s) => %s", name,
+				name, len(KVS32), false, hamt32.TableOptionName[TableOption], err)
+			b.Fatalf("%s: failed buildHamt32(%q, KVS32#%d, %t, %s) => %s", name,
+				name, len(KVS32), false, hamt32.TableOptionName[TableOption], err)
 		}
 		BenchHamt32_T2F = BenchHamt32_T2F.ToFunctional()
 	}
@@ -217,9 +217,9 @@ func BenchmarkHamt32_T2F_Get(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		var j = i % len(KVS)
-		var k = KVS[j].Key
-		var v = KVS[j].Val
+		var j = i % len(KVS32)
+		var k = KVS32[j].Key
+		var v = KVS32[j].Val
 
 		var val, found = BenchHamt32_T2F.Get(k)
 		if !found {
@@ -242,12 +242,12 @@ func BenchmarkHamt32_F2T_Get(b *testing.B) {
 
 	if BenchHamt32_F2T == nil {
 		var err error
-		BenchHamt32_F2T, err = buildHamt32(name, KVS, true, TableOption)
+		BenchHamt32_F2T, err = buildHamt32(name, KVS32, true, TableOption)
 		if err != nil {
-			log.Printf("%s: failed buildHamt32(%q, KVS#%d, %t, %s) => %s", name,
-				name, len(KVS), false, hamt32.TableOptionName[TableOption], err)
-			b.Fatalf("%s: failed buildHamt32(%q, KVS#%d, %t, %s) => %s", name,
-				name, len(KVS), false, hamt32.TableOptionName[TableOption], err)
+			log.Printf("%s: failed buildHamt32(%q, KVS32#%d, %t, %s) => %s", name,
+				name, len(KVS32), false, hamt32.TableOptionName[TableOption], err)
+			b.Fatalf("%s: failed buildHamt32(%q, KVS32#%d, %t, %s) => %s", name,
+				name, len(KVS32), false, hamt32.TableOptionName[TableOption], err)
 		}
 		BenchHamt32_F2T = BenchHamt32_F2T.ToTransient()
 	}
@@ -256,9 +256,9 @@ func BenchmarkHamt32_F2T_Get(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		var j = i % len(KVS)
-		var k = KVS[j].Key
-		var v = KVS[j].Val
+		var j = i % len(KVS32)
+		var k = KVS32[j].Key
+		var v = KVS32[j].Val
 
 		var val, found = BenchHamt32_F2T.Get(k)
 		if !found {
@@ -281,19 +281,19 @@ func BenchmarkHamt32Put(b *testing.B) {
 		name += ":transient:" + hamt32.TableOptionName[TableOption]
 	}
 
-	if b.N+InitHamtNumKvsForPut > len(KVS) {
-		log.Printf("%s: Can't run: b.N+num > len(KVS)", name)
-		b.Fatalf("%s: Can't run: b.N+num > len(KVS)", name)
+	if b.N+InitHamtNumKvsForPut > len(KVS32) {
+		log.Printf("%s: Can't run: b.N+num > len(KVS32)", name)
+		b.Fatalf("%s: Can't run: b.N+num > len(KVS32)", name)
 	}
 
-	var kvs = KVS[:InitHamtNumKvsForPut]
+	var kvs = KVS32[:InitHamtNumKvsForPut]
 
 	var h, err = buildHamt32(name, kvs, Functional, TableOption)
 	if err != nil {
-		log.Printf("%s: failed buildHamt32(%q, KVS[:%d], %t, %s) => %s", name,
+		log.Printf("%s: failed buildHamt32(%q, KVS32[:%d], %t, %s) => %s", name,
 			name, InitHamtNumKvsForPut, Functional,
 			hamt32.TableOptionName[TableOption], err)
-		b.Fatalf("%s: failed buildHamt32(%q, KVS[:%d], %t, %s) => %s", name,
+		b.Fatalf("%s: failed buildHamt32(%q, KVS32[:%d], %t, %s) => %s", name,
 			name, InitHamtNumKvsForPut, Functional,
 			hamt32.TableOptionName[TableOption], err)
 	}
@@ -302,8 +302,8 @@ func BenchmarkHamt32Put(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		var k = KVS[InitHamtNumKvsForPut+i].Key
-		var v = KVS[InitHamtNumKvsForPut+i].Val
+		var k = KVS32[InitHamtNumKvsForPut+i].Key
+		var v = KVS32[InitHamtNumKvsForPut+i].Val
 
 		var added bool
 		h, added = h.Put(k, v)
@@ -320,19 +320,19 @@ func BenchmarkHamt32_T2F_Put(b *testing.B) {
 	name += ":functional:" + hamt32.TableOptionName[TableOption]
 
 	var InitHamtNumKvsForPut int //= 1000000 // 1 million; allows b.N=3,000,000
-	if b.N+InitHamtNumKvsForPut > len(KVS) {
-		log.Printf("%s: Can't run: b.N+num > len(KVS)", name)
-		b.Fatalf("%s: Can't run: b.N+num > len(KVS)", name)
+	if b.N+InitHamtNumKvsForPut > len(KVS32) {
+		log.Printf("%s: Can't run: b.N+num > len(KVS32)", name)
+		b.Fatalf("%s: Can't run: b.N+num > len(KVS32)", name)
 	}
 
-	var kvs = KVS[:InitHamtNumKvsForPut]
+	var kvs = KVS32[:InitHamtNumKvsForPut]
 
 	var h, err = buildHamt32(name, kvs, false, TableOption)
 	if err != nil {
-		log.Printf("%s: failed buildHamt32(%q, KVS[:%d], %t, %s) => %s", name,
+		log.Printf("%s: failed buildHamt32(%q, KVS32[:%d], %t, %s) => %s", name,
 			name, InitHamtNumKvsForPut, Functional,
 			hamt32.TableOptionName[TableOption], err)
-		b.Fatalf("%s: failed buildHamt32(%q, KVS[:%d], %t, %s) => %s", name,
+		b.Fatalf("%s: failed buildHamt32(%q, KVS32[:%d], %t, %s) => %s", name,
 			name, InitHamtNumKvsForPut, Functional,
 			hamt32.TableOptionName[TableOption], err)
 	}
@@ -342,8 +342,8 @@ func BenchmarkHamt32_T2F_Put(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		var k = KVS[InitHamtNumKvsForPut+i].Key
-		var v = KVS[InitHamtNumKvsForPut+i].Val
+		var k = KVS32[InitHamtNumKvsForPut+i].Key
+		var v = KVS32[InitHamtNumKvsForPut+i].Val
 
 		var added bool
 		h, added = h.Put(k, v)
@@ -363,13 +363,13 @@ func BenchmarkHamt32Del(b *testing.B) {
 		name += ":transient:" + hamt32.TableOptionName[TableOption]
 	}
 
-	var h, err = buildHamt32(name, KVS, Functional, TableOption)
+	var h, err = buildHamt32(name, KVS32[:TwoKK], Functional, TableOption)
 	if err != nil {
-		log.Printf("%s: failed buildHamt32(%q, KVS:%d, %t, %s) => %s", name,
-			name, len(KVS), Functional,
+		log.Printf("%s: failed buildHamt32(%q, KVS32:%d, %t, %s) => %s", name,
+			name, len(KVS32), Functional,
 			hamt32.TableOptionName[TableOption], err)
-		b.Fatalf("%s: failed buildHamt32(%q, KVS:%d, %t, %s) => %s", name,
-			name, len(KVS), Functional,
+		b.Fatalf("%s: failed buildHamt32(%q, KVS32:%d, %t, %s) => %s", name,
+			name, len(KVS32), Functional,
 			hamt32.TableOptionName[TableOption], err)
 	}
 
@@ -377,8 +377,8 @@ func BenchmarkHamt32Del(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		var k = KVS[i].Key
-		var v = KVS[i].Val
+		var k = KVS32[i].Key
+		var v = KVS32[i].Val
 
 		var deleted bool
 		var val interface{}

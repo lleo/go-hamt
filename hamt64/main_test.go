@@ -20,7 +20,7 @@ var InitHamtNumKvsForPut = 1024 * 1024
 var InitHamtNumKvs = (2 * 1024 * 1024) + InitHamtNumKvsForPut
 var numKvs = InitHamtNumKvs + (4 * 1024)
 var TwoKK = 2 * 1024 * 1024
-var KVS []hamt64.KeyVal
+var KVS64 []hamt64.KeyVal
 
 var Functional bool
 var TableOption int
@@ -94,7 +94,7 @@ func TestMain(m *testing.M) {
 
 	log.Println("TestMain: and so it begins...")
 
-	KVS = buildKeyVals("TestMain", numKvs)
+	KVS64 = buildKeyVals("TestMain", numKvs)
 
 	log.Printf("TestMain: HashSize=%d\n", hamt64.HashSize)
 	fmt.Printf("TestMain: HashSize=%d\n", hamt64.HashSize)
