@@ -1,8 +1,8 @@
 /*
 Package hamt32 defines interface to access a Hamt data structure based on
 32bit hash values. The Hamt data structure is built with interior nodes and leaf
-nodes. The interior nodes are called tables and the leaf nodes are call, well,
-leafs. Furthur the tables come is two varieties fixed size tables and a
+nodes. The interior nodes are called tables and the leaf nodes are called, well,
+leafs. Furthermore, the tables come is two varieties fixed size tables and a
 compressed form to handle sparse tables. Leafs come in two forms the common flat
 leaf form with a singe key/value pair and the rare form used when two leafs have
 the same hash value called collision leafs.
@@ -62,7 +62,7 @@ const DowngradeThreshold uint = IndexLimit * 3 / 8 //12 for IndexBits=5
 //
 // This conversion only happens if the Hamt structure has be constructed with
 // the HybridTables option.
-const UpgradeThreshold uint = IndexLimit * 5 / 8 //20 for IndexBits=5
+const UpgradeThreshold uint = IndexLimit / 2 //16 for IndexBits=5
 
 // Configuration contants to be passed to `hamt32.New(int) *Hamt`.
 const (

@@ -62,7 +62,7 @@ const DowngradeThreshold uint = IndexLimit * 3 / 8 //12 for IndexBits=5
 //
 // This conversion only happens if the Hamt structure has be constructed with
 // the HybridTables option.
-const UpgradeThreshold uint = IndexLimit * 5 / 8 //20 for IndexBits=5
+const UpgradeThreshold uint = IndexLimit / 2 //16 for IndexBits=5
 
 // Configuration contants to be passed to `hamt64.New(int) *Hamt`.
 const (
