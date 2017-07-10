@@ -44,7 +44,7 @@ func (bm *Bitmap) Set(i uint) {
 	var idx = i >> BitmapShift
 	var bit = i & ((1 << BitmapShift) - 1)
 
-	bm[idx] |= (1 << bit)
+	bm[idx] |= 1 << bit
 
 	return
 }
@@ -54,9 +54,10 @@ func (bm *Bitmap) Unset(i uint) {
 	var idx = i >> BitmapShift
 	var bit = i & ((1 << BitmapShift) - 1)
 
-	if bm[idx]&(1<<bit) > 0 {
-		bm[idx] &^= 1 << bit
-	}
+	//if bm[idx]&(1<<bit) > 0 {
+	//	bm[idx] &^= 1 << bit
+	//}
+	bm[idx] &^= 1 << bit
 
 	return
 }

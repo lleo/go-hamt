@@ -12,12 +12,6 @@ type collisionLeaf struct {
 	kvs []KeyVal
 }
 
-func (l *collisionLeaf) copy() *collisionLeaf {
-	var nl = new(collisionLeaf)
-	nl.kvs = append(nl.kvs, l.kvs...)
-	return nl
-}
-
 func newCollisionLeaf(kvs []KeyVal) *collisionLeaf {
 	var leaf = new(collisionLeaf)
 	leaf.kvs = append(leaf.kvs, kvs...)
@@ -27,11 +21,17 @@ func newCollisionLeaf(kvs []KeyVal) *collisionLeaf {
 	return leaf
 }
 
-func (l collisionLeaf) Hash() HashVal {
+func (l *collisionLeaf) copy() *collisionLeaf {
+	var nl = new(collisionLeaf)
+	nl.kvs = append(nl.kvs, l.kvs...)
+	return nl
+}
+
+func (l *collisionLeaf) Hash() HashVal {
 	return l.kvs[0].Key.Hash()
 }
 
-func (l collisionLeaf) String() string {
+func (l *collisionLeaf) String() string {
 	var kvstrs = make([]string, len(l.kvs))
 	for i := 0; i < len(l.kvs); i++ {
 		kvstrs[i] = l.kvs[i].String()
@@ -42,7 +42,7 @@ func (l collisionLeaf) String() string {
 		l.Hash(), jkvstr)
 }
 
-func (l collisionLeaf) get(key Key) (interface{}, bool) {
+func (l *collisionLeaf) get(key Key) (interface{}, bool) {
 	for _, kv := range l.kvs {
 		if kv.Key.Equals(key) {
 			return kv.Val, true
@@ -51,7 +51,7 @@ func (l collisionLeaf) get(key Key) (interface{}, bool) {
 	return nil, false
 }
 
-func (l collisionLeaf) put(k Key, v interface{}) (leafI, bool) {
+func (l *collisionLeaf) put(k Key, v interface{}) (leafI, bool) {
 	for _, kv := range l.kvs {
 		if kv.Key.Equals(k) {
 			kv.Val = v
@@ -69,7 +69,7 @@ func (l collisionLeaf) put(k Key, v interface{}) (leafI, bool) {
 	return nl, true // k,v was added
 }
 
-func (l collisionLeaf) del(k Key) (leafI, interface{}, bool) {
+func (l *collisionLeaf) del(k Key) (leafI, interface{}, bool) {
 	for i, kv := range l.kvs {
 		if kv.Key.Equals(k) {
 			var nl leafI
@@ -90,7 +90,7 @@ func (l collisionLeaf) del(k Key) (leafI, interface{}, bool) {
 	return l, nil, false
 }
 
-func (l collisionLeaf) keyVals() []KeyVal {
+func (l *collisionLeaf) keyVals() []KeyVal {
 	var r = make([]KeyVal, 0, len(l.kvs))
 	r = append(r, l.kvs...)
 	return r
