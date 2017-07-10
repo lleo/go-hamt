@@ -6,7 +6,7 @@ import (
 )
 
 type fixedTable struct {
-	nodes    [IndexLimit]nodeI // 1024; 64*16
+	nodes    [IndexLimit]nodeI // 512; 32*16
 	depth    uint              // 8; amd64
 	nents    uint              // 8; amd64
 	hashPath HashVal           // 8

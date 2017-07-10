@@ -25,7 +25,6 @@ func (t *sparseTable) copy() tableI {
 
 	nt.nodes = make([]nodeI, len(t.nodes), cap(t.nodes))
 	copy(nt.nodes, t.nodes)
-	//nt.nodes = append(nt.nodes, t.nodes...)
 
 	return nt
 }

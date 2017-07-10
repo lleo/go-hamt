@@ -96,9 +96,6 @@ func (h *Common) Get(k Key) (interface{}, bool) {
 		return nil, false
 	}
 
-	var val interface{}
-	var found bool
-
 	var hv = k.Hash()
 
 	var curTable = h.root //ISA tableI
@@ -112,8 +109,7 @@ func (h *Common) Get(k Key) (interface{}, bool) {
 		}
 
 		if leaf, isLeaf := curNode.(leafI); isLeaf {
-			val, found = leaf.get(k)
-			return val, found
+			return leaf.get(k)
 		}
 
 		if depth == MaxDepth {
