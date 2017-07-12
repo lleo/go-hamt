@@ -37,7 +37,7 @@ func (h *Common) DeepCopy() Hamt {
 	return nh
 }
 
-func (h *Common) find(k Key) (tableStack, leafI, uint) {
+func (h *Common) find(k *Key) (tableStack, leafI, uint) {
 	if h.IsEmpty() {
 		return nil, nil, 0
 	}
@@ -78,7 +78,7 @@ DepthIter:
 }
 
 // This is slower due to extraneous code and allocations in find().
-//func (h *Common) Get(k Key) (interface{}, bool) {
+//func (h *Common) Get(bs []byte) (interface{}, bool) {
 //	var _, leaf, _ = h.find(k)
 //
 //	if leaf == nil {
@@ -91,11 +91,12 @@ DepthIter:
 // Get retrieves the value related to the key in the HamtFunctional
 // datastructure. It also return a bool to indicate the value was found. This
 // allows you to store nil values in the HamtFunctional datastructure.
-func (h *Common) Get(k Key) (interface{}, bool) {
+func (h *Common) Get(bs []byte) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
 	}
 
+	var k = newKey(bs)
 	var hv = k.Hash()
 
 	var curTable = h.root //ISA tableI
@@ -163,7 +164,7 @@ func (h *Common) LongString(indent string) string {
 	return str
 }
 
-func (h *Common) Visit(fn VisitFn, arg interface{}) uint {
+func (h *Common) Visit(fn visitFn, arg interface{}) uint {
 	return h.root.visit(fn, arg, 0)
 }
 
@@ -174,7 +175,7 @@ func (h *Common) Count() (maxDepth uint, counts *Counts) {
 	return maxDepth, counts
 }
 
-type VisitFn func(nodeI, interface{})
+type visitFn func(nodeI, interface{})
 
 //var deepest uint
 

@@ -11,9 +11,9 @@ type nodeI interface {
 type leafI interface {
 	nodeI
 
-	get(key Key) (interface{}, bool)
-	put(key Key, val interface{}) (leafI, bool)
-	del(key Key) (leafI, interface{}, bool)
+	get(key *Key) (interface{}, bool)
+	put(key *Key, val interface{}) (leafI, bool)
+	del(key *Key) (leafI, interface{}, bool)
 	keyVals() []KeyVal
 }
 

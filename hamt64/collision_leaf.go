@@ -42,16 +42,16 @@ func (l *collisionLeaf) String() string {
 		l.Hash(), jkvstr)
 }
 
-func (l *collisionLeaf) get(key Key) (interface{}, bool) {
+func (l *collisionLeaf) get(k *Key) (interface{}, bool) {
 	for _, kv := range l.kvs {
-		if kv.Key.Equals(key) {
+		if kv.Key.Equals(k) {
 			return kv.Val, true
 		}
 	}
 	return nil, false
 }
 
-func (l *collisionLeaf) put(k Key, v interface{}) (leafI, bool) {
+func (l *collisionLeaf) put(k *Key, v interface{}) (leafI, bool) {
 	for _, kv := range l.kvs {
 		if kv.Key.Equals(k) {
 			kv.Val = v
@@ -69,7 +69,7 @@ func (l *collisionLeaf) put(k Key, v interface{}) (leafI, bool) {
 	return nl, true // k,v was added
 }
 
-func (l *collisionLeaf) del(k Key) (leafI, interface{}, bool) {
+func (l *collisionLeaf) del(k *Key) (leafI, interface{}, bool) {
 	for i, kv := range l.kvs {
 		if kv.Key.Equals(k) {
 			var nl leafI

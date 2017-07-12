@@ -182,7 +182,7 @@ func (t *fixedTable) remove(idx uint) {
 	t.nents--
 }
 
-func (t *fixedTable) visit(fn visitFn, arg interface{}, depth uint) uint {
+func (t *fixedTable) visit(fn VisitFn, arg interface{}, depth uint) uint {
 	//if depth > deepest {
 	//	deepest = depth
 	//	log.Printf("*fixedTable.visit(): deepest=%d\n", deepest)

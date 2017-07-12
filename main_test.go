@@ -12,19 +12,28 @@ import (
 	"github.com/lleo/go-hamt"
 	"github.com/lleo/go-hamt/hamt32"
 	"github.com/lleo/go-hamt/hamt64"
-	"github.com/lleo/go-hamt/stringkey32"
-	"github.com/lleo/go-hamt/stringkey64"
 	"github.com/lleo/stringutil"
 	"github.com/pkg/errors"
 )
 
+type StrVal struct {
+	Str string
+	Val interface{}
+}
+
+type BslVal struct {
+	Bsl []byte
+	Val interface{}
+}
+
 // 1 million & change
-var InitHamtNumKvsForPut = 1024 * 1024
-var InitHamtNumKvs = InitHamtNumKvsForPut + (2 * 1024 * 1024)
-var numKvs = InitHamtNumKvs + (4 * 1024)
+var InitHamtNumBvsForPut = 1024 * 1024
+var InitHamtNumBvs = InitHamtNumBvsForPut + (2 * 1024 * 1024)
+var numBvs = InitHamtNumBvs + (4 * 1024)
 var TwoKK = 2 * 1024 * 1024
-var KVS32 []hamt32.KeyVal
-var KVS64 []hamt64.KeyVal
+var BVS []BslVal
+
+//var SVS []StrVal
 
 var Functional bool
 var TableOption int
@@ -98,8 +107,7 @@ func TestMain(m *testing.M) {
 
 	log.Println("TestMain: and so it begins...")
 
-	KVS32 = buildKeyVals32("TestMain", numKvs)
-	KVS64 = buildKeyVals64("TestMain", numKvs)
+	BVS = buildBslVals("TestMain", numBvs)
 
 	// execute
 	var xit int
@@ -237,60 +245,56 @@ func executeAll(m *testing.M) int {
 	return xit
 }
 
-func buildKeyVals32(prefix string, num int) []hamt32.KeyVal {
-	var name = fmt.Sprintf("%s-buildKeyVals64-%d", prefix, num)
+func buildBslVals(prefix string, num int) []BslVal {
+	var name = fmt.Sprintf("%s-buildBslVals-%d", prefix, num)
 	StartTime[name] = time.Now()
 
-	var kvs = make([]hamt32.KeyVal, num)
+	var bvs = make([]BslVal, num)
 	var s = "aaa"
 
 	for i := 0; i < num; i++ {
-		var k = stringkey32.New(s)
-
-		kvs[i] = hamt32.KeyVal{k, i}
+		bvs[i] = BslVal{[]byte(s), i}
 		s = Inc(s)
 	}
 
 	RunTime[name] = time.Since(StartTime[name])
-	return kvs
+	return bvs
 }
 
-func buildKeyVals64(prefix string, num int) []hamt64.KeyVal {
-	var name = fmt.Sprintf("%s-buildKeyVals64-%d", prefix, num)
+func buildStrVals(prefix string, num int) []StrVal {
+	var name = fmt.Sprintf("%s-buildStrVals-%d", prefix, num)
 	StartTime[name] = time.Now()
 
-	var kvs = make([]hamt64.KeyVal, num)
+	var svs = make([]StrVal, num)
 	var s = "aaa"
 
 	for i := 0; i < num; i++ {
-		var k = stringkey64.New(s)
-
-		kvs[i] = hamt64.KeyVal{k, i}
+		svs[i] = StrVal{s, i}
 		s = Inc(s)
 	}
 
 	RunTime[name] = time.Since(StartTime[name])
-	return kvs
+	return svs
 }
 
 func buildHamt32(
 	prefix string,
-	kvs []hamt32.KeyVal,
+	bvs []BslVal,
 	functional bool,
 	opt int,
 ) (hamt32.Hamt, error) {
-	var name = fmt.Sprintf("%s-buildHamt32-%d", prefix, len(kvs))
+	var name = fmt.Sprintf("%s-buildHamt32-%d", prefix, len(bvs))
 
 	StartTime[name] = time.Now()
 	var h = hamt32.New(functional, opt)
-	for _, kv := range kvs {
-		var k = kv.Key
-		var v = kv.Val
+	for _, sv := range bvs {
+		var b = sv.Bsl
+		var v = sv.Val
 
 		var inserted bool
-		h, inserted = h.Put(k, v)
+		h, inserted = h.Put(b, v)
 		if !inserted {
-			return nil, fmt.Errorf("failed to Put(%s, %v)", k, v)
+			return nil, fmt.Errorf("failed to Put(%q, %v)", string(b), v)
 		}
 	}
 	RunTime[name] = time.Since(StartTime[name])
@@ -300,22 +304,22 @@ func buildHamt32(
 
 func buildHamt64(
 	prefix string,
-	kvs []hamt64.KeyVal,
+	bvs []BslVal,
 	functional bool,
 	opt int,
 ) (hamt64.Hamt, error) {
-	var name = fmt.Sprintf("%s-buildHamt64-%d", prefix, len(kvs))
+	var name = fmt.Sprintf("%s-buildHamt64-%d", prefix, len(bvs))
 
 	StartTime[name] = time.Now()
 	var h = hamt64.New(functional, opt)
-	for _, kv := range kvs {
-		var k = kv.Key
-		var v = kv.Val
+	for _, sv := range bvs {
+		var b = sv.Bsl
+		var v = sv.Val
 
 		var inserted bool
-		h, inserted = h.Put(k, v)
+		h, inserted = h.Put(b, v)
 		if !inserted {
-			return nil, fmt.Errorf("failed to Put(%s, %v)", k, v)
+			return nil, fmt.Errorf("failed to Put(%q, %v)", string(b), v)
 		}
 	}
 	RunTime[name] = time.Since(StartTime[name])

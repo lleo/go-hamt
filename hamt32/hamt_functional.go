@@ -121,17 +121,19 @@ func (h *HamtFunctional) persist(oldTable, newTable tableI, path tableStack) {
 // Get retrieves the value related to the key in the HamtFunctional
 // datastructure. It also return a bool to indicate the value was found. This
 // allows you to store nil values in the HamtFunctional datastructure.
-func (h *HamtFunctional) Get(k Key) (interface{}, bool) {
-	return h.Common.Get(k)
+func (h *HamtFunctional) Get(bs []byte) (interface{}, bool) {
+	return h.Common.Get(bs)
 }
 
 // Put stores a new (key,value) pair in the HamtFunctional datastructure. It
 // returns a bool indicating if a new pair were added or if the value replaced
 // the value in a previously stored (key,value) pair. Either way it returns and
 // new HamtFunctional datastructure containing the modification.
-func (h *HamtFunctional) Put(k Key, v interface{}) (Hamt, bool) {
+func (h *HamtFunctional) Put(bs []byte, v interface{}) (Hamt, bool) {
 	var nh = new(HamtFunctional)
 	*nh = *h
+
+	var k = newKey(bs)
 
 	if nh.IsEmpty() {
 		nh.root = nh.createRootTable(newFlatLeaf(k, v))
@@ -183,10 +185,12 @@ func (h *HamtFunctional) Put(k Key, v interface{}) (Hamt, bool) {
 // the returned Hamt is a new HamtFunctional datastructure without. If the
 // (key, value) pair. If key was not found, then the bool is false, the value is
 // nil, and the Hamt value is the original HamtFunctional datastructure.
-func (h *HamtFunctional) Del(k Key) (Hamt, interface{}, bool) {
+func (h *HamtFunctional) Del(bs []byte) (Hamt, interface{}, bool) {
 	if h.IsEmpty() {
 		return h, nil, false
 	}
+
+	var k = newKey(bs)
 
 	var path, leaf, idx = h.find(k)
 
@@ -242,7 +246,7 @@ func (h *HamtFunctional) LongString(indent string) string {
 	return h.Common.LongString(indent)
 }
 
-func (h *HamtFunctional) Visit(fn visitFn, arg interface{}) uint {
+func (h *HamtFunctional) Visit(fn VisitFn, arg interface{}) uint {
 	return h.Common.Visit(fn, arg)
 }
 

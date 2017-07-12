@@ -5,15 +5,15 @@ import "fmt"
 type nodeI interface {
 	Hash() HashVal
 	String() string
-	visit(fn visitFn, arg interface{}, depth uint) uint
+	visit(fn VisitFn, arg interface{}, depth uint) uint
 }
 
 type leafI interface {
 	nodeI
 
-	get(key Key) (interface{}, bool)
-	put(key Key, val interface{}) (leafI, bool)
-	del(key Key) (leafI, interface{}, bool)
+	get(key *Key) (interface{}, bool)
+	put(key *Key, val interface{}) (leafI, bool)
+	del(key *Key) (leafI, interface{}, bool)
 	keyVals() []KeyVal
 }
 

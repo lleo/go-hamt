@@ -107,9 +107,9 @@ type Hamt interface {
 	ToFunctional() Hamt
 	ToTransient() Hamt
 	DeepCopy() Hamt
-	Get(Key) (interface{}, bool)
-	Put(Key, interface{}) (Hamt, bool)
-	Del(Key) (Hamt, interface{}, bool)
+	Get([]byte) (interface{}, bool)
+	Put([]byte, interface{}) (Hamt, bool)
+	Del([]byte) (Hamt, interface{}, bool)
 	String() string
 	LongString(string) string
 	Visit(visitFn, interface{}) uint

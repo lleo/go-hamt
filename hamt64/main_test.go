@@ -10,17 +10,21 @@ import (
 	"time"
 
 	"github.com/lleo/go-hamt/hamt64"
-	"github.com/lleo/go-hamt/stringkey64"
 	"github.com/lleo/stringutil"
 	"github.com/pkg/errors"
 )
 
+type BslVal struct {
+	Bsl []byte
+	Val interface{}
+}
+
 // 4 million & change
-var InitHamtNumKvsForPut = 1024 * 1024
-var InitHamtNumKvs = (2 * 1024 * 1024) + InitHamtNumKvsForPut
-var numKvs = InitHamtNumKvs + (4 * 1024)
+var InitHamtNumBvsForPut = 1024 * 1024
+var InitHamtNumBvs = (2 * 1024 * 1024) + InitHamtNumBvsForPut
+var numBvs = InitHamtNumBvs + (4 * 1024)
 var TwoKK = 2 * 1024 * 1024
-var KVS64 []hamt64.KeyVal
+var BVS []BslVal
 
 var Functional bool
 var TableOption int
@@ -94,7 +98,7 @@ func TestMain(m *testing.M) {
 
 	log.Println("TestMain: and so it begins...")
 
-	KVS64 = buildKeyVals("TestMain", numKvs)
+	BVS = buildBslVals("TestMain", numBvs)
 
 	log.Printf("TestMain: HashSize=%d\n", hamt64.HashSize)
 	fmt.Printf("TestMain: HashSize=%d\n", hamt64.HashSize)
@@ -243,42 +247,40 @@ func executeAll(m *testing.M) int {
 	return xit
 }
 
-func buildKeyVals(prefix string, num int) []hamt64.KeyVal {
-	var name = fmt.Sprintf("%s-buildKeyVals-%d", prefix, num)
+func buildBslVals(prefix string, num int) []BslVal {
+	var name = fmt.Sprintf("%s-buildBslVals-%d", prefix, num)
 	StartTime[name] = time.Now()
 
-	var kvs = make([]hamt64.KeyVal, num)
+	var bvs = make([]BslVal, num)
 	var s = "aaa"
 
 	for i := 0; i < num; i++ {
-		var k = stringkey64.New(s)
-
-		kvs[i] = hamt64.KeyVal{k, i}
+		bvs[i] = BslVal{[]byte(s), i}
 		s = Inc(s)
 	}
 
 	RunTime[name] = time.Since(StartTime[name])
-	return kvs
+	return bvs
 }
 
 func buildHamt64(
 	prefix string,
-	kvs []hamt64.KeyVal,
+	bvs []BslVal,
 	functional bool,
 	opt int,
 ) (hamt64.Hamt, error) {
-	var name = fmt.Sprintf("%s-buildHamt64-%d", prefix, len(kvs))
+	var name = fmt.Sprintf("%s-buildHamt64-%d", prefix, len(bvs))
 
 	StartTime[name] = time.Now()
 	var h = hamt64.New(functional, opt)
-	for _, kv := range kvs {
-		var k = kv.Key
-		var v = kv.Val
+	for _, sv := range bvs {
+		var bs = sv.Bsl
+		var v = sv.Val
 
 		var inserted bool
-		h, inserted = h.Put(k, v)
+		h, inserted = h.Put(bs, v)
 		if !inserted {
-			return nil, fmt.Errorf("failed to Put(%s, %v)", k, v)
+			return nil, fmt.Errorf("failed to Put(%q, %v)", string(bs), v)
 		}
 	}
 	RunTime[name] = time.Since(StartTime[name])

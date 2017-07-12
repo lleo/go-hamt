@@ -37,7 +37,7 @@ func (h *Common) DeepCopy() Hamt {
 	return nh
 }
 
-func (h *Common) find(k Key) (tableStack, leafI, uint) {
+func (h *Common) find(k *Key) (tableStack, leafI, uint) {
 	if h.IsEmpty() {
 		return nil, nil, 0
 	}
@@ -91,11 +91,12 @@ DepthIter:
 // Get retrieves the value related to the key in the HamtFunctional
 // datastructure. It also return a bool to indicate the value was found. This
 // allows you to store nil values in the HamtFunctional datastructure.
-func (h *Common) Get(k Key) (interface{}, bool) {
+func (h *Common) Get(bs []byte) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
 	}
 
+	var k = newKey(bs)
 	var hv = k.Hash()
 
 	var curTable = h.root //ISA tableI

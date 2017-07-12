@@ -8,13 +8,6 @@ import (
 	"time"
 )
 
-//var SVS []StrVal
-
-type StrVal struct {
-	Str string
-	Val int
-}
-
 func genRandomizedSvs(svs []StrVal) []StrVal {
 	var randSvs = make([]StrVal, len(svs))
 	copy(randSvs, svs)

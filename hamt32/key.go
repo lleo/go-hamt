@@ -5,27 +5,43 @@ import (
 	"hash/fnv"
 )
 
-// Key interface descibes the methods any struct needs to implement to be used
-// as a Key in github.com/lleo/go-hamt/hamt32
-type Key interface {
-	Hash() HashVal
-	Equals(Key) bool
-	String() string
+type Key struct {
+	hash HashVal
+	bs   []byte
 }
 
-// KeyBase is the fundemental struct of any derived key structure.
-type KeyBase struct {
-	hash HashVal
+func newKey(bs []byte) *Key {
+	var k = new(Key)
+
+	k.bs = make([]byte, len(bs))
+	copy(k.bs, bs)
+
+	k.hash = HashVal(fold(hash(bs), remainder))
+
+	return k
 }
 
 // Hash return the HashVal of KeyBase
-func (kb *KeyBase) Hash() HashVal {
-	return kb.hash
+func (k *Key) Hash() HashVal {
+	return k.hash
+}
+
+func (k *Key) Equals(k0 *Key) bool {
+	//return string(k.bs) == string(k0)
+	if len(k.bs) == len(k0.bs) {
+		for i, ke := range k.bs {
+			if ke != k0.bs[i] {
+				return false
+			}
+			return true
+		}
+	}
+	return false
 }
 
 // String return a human readable representation of KeyBase
-func (kb *KeyBase) String() string {
-	return fmt.Sprintf("KeyBase{%s}", kb.hash)
+func (k *Key) String() string {
+	return fmt.Sprintf("Key{%s}", k.hash)
 }
 
 func hash(bs []byte) uint32 {
@@ -40,10 +56,4 @@ func mask(size uint) uint32 {
 
 func fold(hash uint32, rem uint) uint32 {
 	return (hash >> (HashSize - rem)) ^ (hash & mask(HashSize-rem))
-}
-
-// Initialize MUST be call when a derived Key structure is created as it sets
-// the KeyBase.hash value.
-func (b *KeyBase) Initialize(basis []byte) {
-	b.hash = HashVal(fold(hash(basis), remainder))
 }
