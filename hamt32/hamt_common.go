@@ -147,7 +147,7 @@ func (h *Common) String() string {
 }
 
 // LongString returns a complete listing of the entire Hamt data structure
-// recursively indented..
+// recursively indented.
 func (h *Common) LongString(indent string) string {
 	var str string
 	if h.root != nil {
@@ -160,4 +160,50 @@ func (h *Common) LongString(indent string) string {
 			fmt.Sprintf("Common{ nentries: %d, root: nil }", h.nentries)
 	}
 	return str
+}
+
+func (h *Common) Visit(fn visitFn, arg interface{}) uint {
+	return h.root.visit(fn, arg, 0)
+}
+
+// Count returns a break down of the number of items in the HAMT.
+func (h *Common) Count() (maxDepth uint, counts *Counts) {
+	counts = new(Counts)
+	maxDepth = h.Visit(count, counts)
+	return maxDepth, counts
+}
+
+type visitFn func(nodeI, interface{})
+
+//var deepest uint
+
+func count(n nodeI, arg interface{}) {
+	var counts = arg.(*Counts)
+
+	switch x := n.(type) {
+	case nil:
+		counts.Nils++
+	case *fixedTable:
+		counts.Nodes++
+		counts.Tables++
+		counts.FixedTables++
+		counts.TableCountsByNentries[x.nentries()]++
+		counts.TableCountsByDepth[x.depth]++
+	case *sparseTable:
+		counts.Nodes++
+		counts.Tables++
+		counts.SparseTables++
+		counts.TableCountsByNentries[x.nentries()]++
+		counts.TableCountsByDepth[x.depth]++
+	case *flatLeaf:
+		counts.Nodes++
+		counts.Leafs++
+		counts.FlatLeafs++
+		counts.KeyVals += 1
+	case *collisionLeaf:
+		counts.Nodes++
+		counts.Leafs++
+		counts.CollisionLeafs++
+		counts.KeyVals += uint(len(x.kvs))
+	}
 }

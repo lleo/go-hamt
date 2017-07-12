@@ -112,6 +112,8 @@ type Hamt interface {
 	Del(Key) (Hamt, interface{}, bool)
 	String() string
 	LongString(string) string
+	Visit(visitFn, interface{}) uint
+	Count() (uint, *Counts)
 }
 
 // New() constructs a datastucture that implements the Hamt interface. When the
@@ -124,4 +126,34 @@ func New(functional bool, opt int) Hamt {
 		return NewFunctional(opt)
 	}
 	return NewTransient(opt)
+}
+
+type Counts struct {
+	// TableCountsByNentries is a Hash table of the number of tables with each
+	// given number of entries in the tatble. There are slots for
+	// [0..IndexLimit] inclusive (so there are IndexLimit+1 slots). Technically,
+	// there should never be a table with zero entries, but I allow counting
+	// tables with zero entries just to catch those errors.
+	TableCountsByNentries [IndexLimit + 1]uint // [0..IndexLimit] inclusive
+	// TableCountsByDepth is a Hash table of the number of tables at a given
+	// depth. There are slots for [0..DepthLimit).
+	TableCountsByDepth [DepthLimit]uint // [0..DepthLimit)
+	// Nils is the total count of allocated slots that are unused in the HAMT.
+	Nils uint
+	// Nodes is the total count of nodeI capable structs in the HAMT.
+	Nodes uint
+	// Tables is the total count of tableI capable structs in the HAMT.
+	Tables uint
+	// Leafs is the total count of leafI capable structs in the HAMT.
+	Leafs uint
+	// FixedTables is the total count of fixedTable structs in the HAMT.
+	FixedTables uint
+	// SparseTables is the total count of sparseTable structs in the HAMT.
+	SparseTables uint
+	// FlatLeafs is the total count of flatLeaf structs in the HAMT.
+	FlatLeafs uint
+	// CollisionLeafs is the total count of collisionLeaf structs in the HAMT.
+	CollisionLeafs uint
+	// KeyVals is the total number of Key,Val pairs int the HAMT.
+	KeyVals uint
 }

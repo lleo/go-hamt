@@ -66,6 +66,9 @@ func TestHamt64Put(t *testing.T) {
 		}
 	}
 	RunTime[name] = time.Since(StartTime[name])
+
+	var maxDepth, counts = Hamt64.Count()
+	log.Printf("%s: maxDepth=%d; counts=%+v;\n", name, maxDepth, counts)
 }
 
 func TestHamt64Get(t *testing.T) {
@@ -87,6 +90,9 @@ func TestHamt64Get(t *testing.T) {
 				name, len(KVS64), Functional,
 				hamt64.TableOptionName[TableOption], err)
 		}
+
+		var maxDepth, counts = Hamt64.Count()
+		log.Printf("%s: maxDepth=%d; counts=%+v;\n", name, maxDepth, counts)
 	}
 
 	StartTime[name] = time.Now()
@@ -127,6 +133,9 @@ func TestHamt64Del(t *testing.T) {
 				name, len(KVS64), Functional,
 				hamt64.TableOptionName[TableOption], err)
 		}
+
+		var maxDepth, counts = Hamt64.Count()
+		log.Printf("%s: maxDepth=%d; counts=%+v;\n", name, maxDepth, counts)
 	}
 
 	StartTime[name] = time.Now()

@@ -232,3 +232,11 @@ func (h *HamtTransient) String() string {
 func (h *HamtTransient) LongString(indent string) string {
 	return h.Common.LongString(indent)
 }
+
+func (h *HamtTransient) Visit(fn visitFn, arg interface{}) uint {
+	return h.Common.Visit(fn, arg)
+}
+
+func (h *HamtTransient) Count() (uint, *Counts) {
+	return h.Common.Count()
+}

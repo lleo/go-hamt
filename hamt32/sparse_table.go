@@ -232,3 +232,22 @@ func (t *sparseTable) remove(idx uint) {
 
 	t.nodeMap.Unset(idx)
 }
+
+func (t *sparseTable) visit(fn visitFn, arg interface{}, depth uint) uint {
+	//if depth > deepest {
+	//	deepest = depth
+	//	log.Printf("*sparseTable.visit(): deepest=%d\n", deepest)
+	//}
+
+	fn(t, arg)
+
+	var maxDepth = depth
+	for _, n := range t.nodes {
+		var md = n.visit(fn, arg, depth+1)
+		if md > maxDepth {
+			maxDepth = md
+		}
+	}
+
+	return maxDepth
+}

@@ -1,46 +1,78 @@
 /*
-Package hamt is the unifying package between the 32bit and 64bit implementations
-of Hash Array Mapped Tries (HAMT). HAMT datastructure make an efficient hashed
-map data structure. You can `import "github.com/lleo/go-hamt"` then instantiate
-either a hamt32 or hamt64 datastructure with the `hamt.New32()` or
-`hamt.New64()` functions. Both datastructures have the same exported API defined
-by the hamt32.Hamt and hamt64.Hamt interfaces.
+Package hamt is just a trivial front door to the hamt32 and hamt64 packages
+which really contain the HAMT implementations. Those HAMT implementations are
+identical in every way but the size of the computed hash, called Hashval. Those
+are either uint32 or uint64 values for hamt32 and hamt64 respectively. To repeat
+myself, the hamt32 and hamt64 HAMT implementations are almost completely
+identical code.
 
-Given how wide a HAMT node is (either 32 or 64 nodes wide) HAMT datastructures
-not very deep; either 6, for 32bit, or 10, for 64bit implementations, nodes
-deep. This neans HAMTs are effectively O(1) for Search, Insertions, and
-Deletions.
+This package merely implements New32() and New64() functions and the table
+option constants FixedTablesOnly, SparseTablesOnly, HybridTables, and the map
+TableOptionName (eg. hamt.TableOptionName[hamt.FixedTablesOnly] ==
+"FixedTablesOnly").
 
-Both 32 and 64 bit implementations of HAMTs are of fixed depth is because they
-are [Tries](https://en.wikipedia.org/wiki/Trie). The key of a Trie is split
-into n-number smaller indecies and each node from the root uses each successive
-index.
+Choices
 
-In the case of a this HAMT implementation the key is hashed into a 30 or 60 bit
-number. In the case of the stringkey we take the []byte slice of the string
-and feed it to hash.fnv.New32() or New64() hash generator. Since these
-generate 32 and 64 bit hash values respectively and we need 30 and 60 bit
-values, we use the [xor-fold technique](http://www.isthe.com/chongo/tech/comp/fnv/index.html#xor-fold)
-to "fold" the high 2 or 4 bits of the 32 and 64 bit hash values into 30 and
-60 bit values for our needs.
+There are several choices to make: Hashval hamt32 versus hamt64, FixedTablesOnly
+versus SparseTablesOnly versus HybridTables, and Functional versus
+Transient. Then there is a hidden choice; you can change the source code
+constant, IndexBits, to a value other than the current setting of 5.
 
-We want 30 and 60 bit values because they split nicely into six 5bit and ten
-6bit values respectively. Each of these 5 and 6 bit values become the indexies
-of our Trie nodes with a maximum depth of 6 or 10 respectively. Further 5 bits
-indexe into a 32 entry table nodes for 32 bit HAMTs and 6 bit index into 64
-entry table nodes for 64 bit HAMTs; isn't that symmetrical :).
 
-For a this HAMT implementation, when key/value pair must be created, deleted,
-or changed the key is hashed into a 30 or 60 bit value (described above) and
-that hash30 or hash60 value represents a path of 5 or 6 bit values to place a
-leaf containing the key, value pair. For a Get() or Del() operation we lookup
-the deepest node along that path that is not-nil. For a Put() operation we
-lookup the deepest location that is a leaf or nil and not beyond the lenth of
-the path.
+Hashval hamt64 versus hamt32
 
-You may implement your own Key type by implementeding the Key interface
-defined in "github.com/lleo/go-hamt/key" or you may used the example
-StringKey interface described in "github.com/lleo/go-hamt/stringkey".
+Just use hamt64. I implemnted both before I really understood HAMT. I was
+conflating 32 bit hash values with 32 wide branching factor (that was just a
+feature of the other implmentations I was looking at).
+
+While 32bit FNV hash values are still pretty random I have seen plenty of
+collisions in my benchmarks.
+
+I have never seen 64bit FNV hash values collide and in the current state of
+computing having 64bit CPUs as the norm. I recommend using hamt64. If you are
+on 32bit CPUs then maybe you could choose hamt32.
+
+FixedTablesOnly versus SparseTablesOnly versus HybridTables
+
+This is the classic speed versus memory choice with a twist. The facts to
+consider are: The tree is indexed by essentially random values (the parts of the
+hash value of the key), so the tree is going to be "balanced" to a statistical
+likelihood. The inner branching nodes will be very densely populated, and the
+outer branching nodes will probably be very sparsely populated.
+
+FixedTables are fastest to access and modify, because it is a simple mater of
+getting and setting preallocated fixed sized arrays. However, they will be
+wasting most of their allocated space most of the time.
+
+SparseTables are slowest because we always have to calculate bit counts of bit
+arrays for get or set type operations. Further, inserting or removing values
+is a matter of manipulating slice values. On the other hand, given the way
+slice memory allocation works, they will usually waste less than half their
+allocated memory.
+
+If you are going to have very large number of entries in your HAMT to the degree
+that your program will start paging occationally, DEFINITELY switch away from
+FixedTablesOnly to HybridTables or even SparseTablesOnly.
+
+As a general rule if the number of entry is only in the 100,000s or less, choose
+FixedTablesOnly
+
+Transient versus Ffunctional
+
+Good question!
+
+IndexBits
+
+Both hamt32 and hamt64 have a constant IndexBits which determines all the other
+constants defining the HAMT structures. For both hamt32 and hamt64, the
+IndexBits constant is set to 5. You can manually change the
+source code to set IndexBits to some uint other than 5. IndexBits is set to 5
+because that is how other people do it.
+
+IndexBits determines the branching factor (IndexLimit) and the depth
+(DepthLimit) of the HAMT data structure. Given IndexBits=5 IndexLimit=32, and
+DepthLimit=6 for hamt32 and DepthLimit=10 for hamt64.
+
 */
 package hamt
 

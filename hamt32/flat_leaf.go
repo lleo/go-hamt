@@ -50,3 +50,8 @@ func (l *flatLeaf) del(key Key) (leafI, interface{}, bool) {
 func (l *flatLeaf) keyVals() []KeyVal {
 	return []KeyVal{{l.key, l.val}}
 }
+
+func (l *flatLeaf) visit(fn visitFn, arg interface{}, depth uint) uint {
+	fn(l, arg)
+	return depth - 1 //remove cuz this method is called with depth+1
+}

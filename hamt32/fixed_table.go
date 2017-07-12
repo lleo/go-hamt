@@ -181,3 +181,26 @@ func (t *fixedTable) remove(idx uint) {
 	t.nodes[idx] = nil
 	t.nents--
 }
+
+func (t *fixedTable) visit(fn visitFn, arg interface{}, depth uint) uint {
+	//if depth > deepest {
+	//	deepest = depth
+	//	log.Printf("*fixedTable.visit(): deepest=%d\n", deepest)
+	//}
+
+	fn(t, arg)
+
+	var maxDepth = depth
+	for _, n := range t.nodes {
+		if n == nil {
+			fn(n, arg)
+		} else {
+			var md = n.visit(fn, arg, depth+1)
+			if md > maxDepth {
+				maxDepth = md
+			}
+		}
+	}
+
+	return maxDepth
+}

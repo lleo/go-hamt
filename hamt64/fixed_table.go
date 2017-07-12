@@ -73,6 +73,7 @@ func createFixedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 		if depth == MaxDepth {
 			node = newCollisionLeaf(append(leaf1.keyVals(), leaf2.keyVals()...))
 		} else {
+			//log.Printf("createFixedTable(depth=%d, ...) recursing\n", depth+1)
 			node = createFixedTable(depth+1, leaf1, leaf2)
 		}
 		retTable.insert(idx1, node)
@@ -180,4 +181,27 @@ func (t *fixedTable) remove(idx uint) {
 
 	t.nodes[idx] = nil
 	t.nents--
+}
+
+func (t *fixedTable) visit(fn visitFn, arg interface{}, depth uint) uint {
+	//if depth > deepest {
+	//	deepest = depth
+	//	log.Printf("*fixedTable.visit(): deepest=%d\n", deepest)
+	//}
+
+	fn(t, arg)
+
+	var maxDepth = depth
+	for _, n := range t.nodes {
+		if n == nil {
+			fn(n, arg)
+		} else {
+			var md = n.visit(fn, arg, depth+1)
+			if md > maxDepth {
+				maxDepth = md
+			}
+		}
+	}
+
+	return maxDepth
 }

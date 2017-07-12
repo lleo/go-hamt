@@ -241,3 +241,11 @@ func (h *HamtFunctional) String() string {
 func (h *HamtFunctional) LongString(indent string) string {
 	return h.Common.LongString(indent)
 }
+
+func (h *HamtFunctional) Visit(fn visitFn, arg interface{}) uint {
+	return h.Common.Visit(fn, arg)
+}
+
+func (h *HamtFunctional) Count() (uint, *Counts) {
+	return h.Common.Count()
+}
