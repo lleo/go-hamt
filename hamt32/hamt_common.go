@@ -162,7 +162,7 @@ func (h *Common) LongString(indent string) string {
 	return str
 }
 
-func (h *Common) Visit(fn visitFn, arg interface{}) uint {
+func (h *Common) Visit(fn VisitFn, arg interface{}) uint {
 	return h.root.visit(fn, arg, 0)
 }
 
@@ -173,7 +173,7 @@ func (h *Common) Count() (maxDepth uint, counts *Counts) {
 	return maxDepth, counts
 }
 
-type visitFn func(nodeI, interface{})
+type VisitFn func(nodeI, interface{})
 
 //var deepest uint
 
