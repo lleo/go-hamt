@@ -1,4 +1,4 @@
-package key
+package hamt32
 
 import (
 	"fmt"

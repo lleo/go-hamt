@@ -12,20 +12,19 @@ import (
 	"github.com/lleo/go-hamt"
 	"github.com/lleo/go-hamt/hamt32"
 	"github.com/lleo/go-hamt/hamt64"
-	"github.com/lleo/go-hamt/key"
-	"github.com/lleo/go-hamt/stringkey"
+	"github.com/lleo/go-hamt/stringkey32"
+	"github.com/lleo/go-hamt/stringkey64"
 	"github.com/lleo/stringutil"
 	"github.com/pkg/errors"
 )
 
 // 1 million & change
-var InitHamtNumKvsForPut = 1024 * 1024 //1000000
-
-// 4 million & change
-var InitHamtNumKvs = InitHamtNumKvsForPut + (3 * 1024 * 1024) //+ 3000000
-
-//var numKvs = (4 * 1024 * 1024) + (4 * 1024)
-var KVS []key.KeyVal
+var InitHamtNumKvsForPut = 1024 * 1024
+var InitHamtNumKvs = InitHamtNumKvsForPut + (2 * 1024 * 1024)
+var numKvs = InitHamtNumKvs + (4 * 1024)
+var TwoKK = 2 * 1024 * 1024
+var KVS32 []hamt32.KeyVal
+var KVS64 []hamt64.KeyVal
 
 var Functional bool
 var TableOption int
@@ -39,23 +38,17 @@ var StartTime = make(map[string]time.Time)
 var RunTime = make(map[string]time.Duration)
 
 func TestMain(m *testing.M) {
-	var fullonly, componly, hybrid, all bool
-	flag.BoolVar(&fullonly, "F", false,
-		"Use full tables only and exclude C and H Options.")
-	flag.BoolVar(&componly, "C", false,
-		"Use compressed tables only and exclude F and H Options.")
+	var fixedonly, sparseonly, hybrid, all bool
+	flag.BoolVar(&fixedonly, "F", false,
+		"Use fixed tables only and exclude C and H Options.")
+	flag.BoolVar(&sparseonly, "S", false,
+		"Use sparse tables only and exclude F and H Options.")
 	flag.BoolVar(&hybrid, "H", false,
-		"Use compressed tables initially and exclude F and C Options.")
+		"Use sparse tables initially and exclude F and S Options.")
 	flag.BoolVar(&all, "A", false,
-		"Run all Tests w/ Options set to FullTablesOnly, CompTablesOnly, and HybridTables")
+		"Run all Tests w/ Options set to FixedTablesOnly, SparseTablesOnly, and HybridTables")
 
 	var functional, transient, both bool
-	flag.BoolVar(&functional, "functional", false,
-		"Run Tests against HamtFunctional struct; excludes transient option")
-	flag.BoolVar(&transient, "transient", false,
-		"Run Tests against HamtFunctional struct; excludes functional option")
-	flag.BoolVar(&both, "both", false,
-		"Run Tests against both transient and functional Hamt types.")
 	flag.BoolVar(&functional, "f", false,
 		"Run Tests against HamtFunctional struct; excludes transient option")
 	flag.BoolVar(&transient, "t", false,
@@ -65,20 +58,20 @@ func TestMain(m *testing.M) {
 
 	flag.Parse()
 
-	// If all flag set, ignore fullonly, componly, and hybrid.
+	// If all flag set, ignore fixedonly, sparseonly, and hybrid.
 	if !all {
 
-		// only one flag may be set between fullonly, componly, and hybrid
-		if (fullonly && (componly || hybrid)) ||
-			(componly && (fullonly || hybrid)) ||
-			(hybrid && (componly || fullonly)) {
+		// only one flag may be set between fixedonly, sparseonly, and hybrid
+		if (fixedonly && (sparseonly || hybrid)) ||
+			(sparseonly && (fixedonly || hybrid)) ||
+			(hybrid && (sparseonly || fixedonly)) {
 			flag.PrintDefaults()
 			os.Exit(1)
 		}
 	}
 
 	// If no flags given, run all tests.
-	if !(all || fullonly || componly || hybrid) {
+	if !(all || fixedonly || sparseonly || hybrid) {
 		all = true
 	}
 
@@ -105,7 +98,8 @@ func TestMain(m *testing.M) {
 
 	log.Println("TestMain: and so it begins...")
 
-	KVS = buildKeyVals("TestMain", InitHamtNumKvs)
+	KVS32 = buildKeyVals32("TestMain", numKvs)
+	KVS64 = buildKeyVals64("TestMain", numKvs)
 
 	// execute
 	var xit int
@@ -145,10 +139,10 @@ func TestMain(m *testing.M) {
 	} else {
 		if hybrid {
 			TableOption = hamt32.HybridTables
-		} else if fullonly {
-			TableOption = hamt32.FullTablesOnly
-		} else /* if componly */ {
-			TableOption = hamt32.CompTablesOnly
+		} else if fixedonly {
+			TableOption = hamt32.FixedTablesOnly
+		} else /* if sparseonly */ {
+			TableOption = hamt32.SparseTablesOnly
 		}
 
 		if both {
@@ -201,7 +195,7 @@ func TestMain(m *testing.M) {
 }
 
 func executeAll(m *testing.M) int {
-	TableOption = hamt32.FullTablesOnly
+	TableOption = hamt32.FixedTablesOnly
 
 	log.Printf("TestMain: TableOption=%s;\n",
 		hamt32.TableOptionName[TableOption])
@@ -216,7 +210,7 @@ func executeAll(m *testing.M) int {
 
 	Hamt32 = nil
 	Hamt64 = nil
-	TableOption = hamt32.CompTablesOnly
+	TableOption = hamt32.SparseTablesOnly
 
 	log.Printf("TestMain: TableOption=%s;\n",
 		hamt32.TableOptionName[TableOption])
@@ -243,22 +237,90 @@ func executeAll(m *testing.M) int {
 	return xit
 }
 
-func buildKeyVals(prefix string, num int) []key.KeyVal {
-	var name = fmt.Sprintf("%s-buildKeyVals-%d", prefix, num)
+func buildKeyVals32(prefix string, num int) []hamt32.KeyVal {
+	var name = fmt.Sprintf("%s-buildKeyVals64-%d", prefix, num)
 	StartTime[name] = time.Now()
 
-	var kvs = make([]key.KeyVal, num)
+	var kvs = make([]hamt32.KeyVal, num)
 	var s = "aaa"
 
 	for i := 0; i < num; i++ {
-		var k = stringkey.New(s)
+		var k = stringkey32.New(s)
 
-		kvs[i] = key.KeyVal{k, i}
+		kvs[i] = hamt32.KeyVal{k, i}
 		s = Inc(s)
 	}
 
 	RunTime[name] = time.Since(StartTime[name])
 	return kvs
+}
+
+func buildKeyVals64(prefix string, num int) []hamt64.KeyVal {
+	var name = fmt.Sprintf("%s-buildKeyVals64-%d", prefix, num)
+	StartTime[name] = time.Now()
+
+	var kvs = make([]hamt64.KeyVal, num)
+	var s = "aaa"
+
+	for i := 0; i < num; i++ {
+		var k = stringkey64.New(s)
+
+		kvs[i] = hamt64.KeyVal{k, i}
+		s = Inc(s)
+	}
+
+	RunTime[name] = time.Since(StartTime[name])
+	return kvs
+}
+
+func buildHamt32(
+	prefix string,
+	kvs []hamt32.KeyVal,
+	functional bool,
+	opt int,
+) (hamt32.Hamt, error) {
+	var name = fmt.Sprintf("%s-buildHamt32-%d", prefix, len(kvs))
+
+	StartTime[name] = time.Now()
+	var h = hamt32.New(functional, opt)
+	for _, kv := range kvs {
+		var k = kv.Key
+		var v = kv.Val
+
+		var inserted bool
+		h, inserted = h.Put(k, v)
+		if !inserted {
+			return nil, fmt.Errorf("failed to Put(%s, %v)", k, v)
+		}
+	}
+	RunTime[name] = time.Since(StartTime[name])
+
+	return h, nil
+}
+
+func buildHamt64(
+	prefix string,
+	kvs []hamt64.KeyVal,
+	functional bool,
+	opt int,
+) (hamt64.Hamt, error) {
+	var name = fmt.Sprintf("%s-buildHamt64-%d", prefix, len(kvs))
+
+	StartTime[name] = time.Now()
+	var h = hamt64.New(functional, opt)
+	for _, kv := range kvs {
+		var k = kv.Key
+		var v = kv.Val
+
+		var inserted bool
+		h, inserted = h.Put(k, v)
+		if !inserted {
+			return nil, fmt.Errorf("failed to Put(%s, %v)", k, v)
+		}
+	}
+	RunTime[name] = time.Since(StartTime[name])
+
+	return h, nil
 }
 
 func RunTimes() string {
@@ -276,19 +338,23 @@ func RunTimes() string {
 	s += "Key                                                Val\n"
 	s += "==================================================+==========\n"
 
+	var tot time.Duration
 	for _, k := range ks {
 		v := RunTime[k]
 		s += fmt.Sprintf("%-50s %s\n", k, v)
+		tot += v
 	}
+	s += fmt.Sprintf("%50s %s\n", "TOTAL", tot)
+
 	return s
 }
 
 func TestConstantsInSync(t *testing.T) {
-	if hamt.FullTablesOnly != hamt32.FullTablesOnly {
-		t.Fatal("hamt.FullTablesOnly != hamt32.FullTablesOnly")
+	if hamt.FixedTablesOnly != hamt32.FixedTablesOnly {
+		t.Fatal("hamt.FixedTablesOnly != hamt32.FixedTablesOnly")
 	}
-	if hamt.CompTablesOnly != hamt32.CompTablesOnly {
-		t.Fatal("hamt.CompTablesOnly != hamt32.CompTablesOnly")
+	if hamt.SparseTablesOnly != hamt32.SparseTablesOnly {
+		t.Fatal("hamt.SparseTablesOnly != hamt32.SparseTablesOnly")
 	}
 	if hamt.HybridTables != hamt32.HybridTables {
 		t.Fatal("hamt.HybridTables != hamt32.HybridTables")
@@ -297,11 +363,11 @@ func TestConstantsInSync(t *testing.T) {
 		t.Fatal("TableOptionName != hamt32.TableOptionName")
 	}
 
-	if hamt.FullTablesOnly != hamt64.FullTablesOnly {
-		t.Fatal("hamt.FullTablesOnly != hamt64.FullTablesOnly")
+	if hamt.FixedTablesOnly != hamt64.FixedTablesOnly {
+		t.Fatal("hamt.FixedTablesOnly != hamt64.FixedTablesOnly")
 	}
-	if hamt.CompTablesOnly != hamt64.CompTablesOnly {
-		t.Fatal("hamt.CompTablesOnly != hamt64.CompTablesOnly")
+	if hamt.SparseTablesOnly != hamt64.SparseTablesOnly {
+		t.Fatal("hamt.SparseTablesOnly != hamt64.SparseTablesOnly")
 	}
 	if hamt.HybridTables != hamt64.HybridTables {
 		t.Fatal("hamt.HybridTables != hamt64.HybridTables")
@@ -312,11 +378,11 @@ func TestConstantsInSync(t *testing.T) {
 
 	// Well... the communative property makes these true BUT...
 	// aah dont truck wit nun of dat fancy mathamagical bullshit! Vote Trump!
-	if hamt32.FullTablesOnly != hamt64.FullTablesOnly {
-		t.Fatal("hamt32.FullTablesOnly != hamt64.FullTablesOnly")
+	if hamt32.FixedTablesOnly != hamt64.FixedTablesOnly {
+		t.Fatal("hamt32.FixedTablesOnly != hamt64.FixedTablesOnly")
 	}
-	if hamt32.CompTablesOnly != hamt64.CompTablesOnly {
-		t.Fatal("hamt32.CompTablesOnly != hamt64.CompTablesOnly")
+	if hamt32.SparseTablesOnly != hamt64.SparseTablesOnly {
+		t.Fatal("hamt32.SparseTablesOnly != hamt64.SparseTablesOnly")
 	}
 	if hamt32.HybridTables != hamt64.HybridTables {
 		t.Fatal("hamt32.HybridTables != hamt64.HybridTables")

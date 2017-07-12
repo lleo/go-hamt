@@ -1,23 +1,19 @@
 package hamt32
 
-import (
-	"fmt"
-
-	"github.com/lleo/go-hamt/key"
-)
+import "fmt"
 
 type nodeI interface {
-	Hash30() key.HashVal30
+	Hash() HashVal
 	String() string
 }
 
 type leafI interface {
 	nodeI
 
-	get(key key.Key) (interface{}, bool)
-	put(key key.Key, val interface{}) (leafI, bool)
-	del(key key.Key) (leafI, interface{}, bool)
-	keyVals() []key.KeyVal
+	get(key Key) (interface{}, bool)
+	put(key Key, val interface{}) (leafI, bool)
+	del(key Key) (leafI, interface{}, bool)
+	keyVals() []KeyVal
 }
 
 type tableI interface {
@@ -33,9 +29,6 @@ type tableI interface {
 
 	get(idx uint) nodeI
 
-	//occupied(idx uint) bool
-
-	//set(idx uint, entry nodeI)
 	insert(idx uint, n nodeI)
 	replace(idx uint, n nodeI)
 	remove(idx uint)

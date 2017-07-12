@@ -10,17 +10,17 @@ import (
 	"time"
 
 	"github.com/lleo/go-hamt/hamt32"
-	"github.com/lleo/go-hamt/key"
-	"github.com/lleo/go-hamt/stringkey"
+	"github.com/lleo/go-hamt/stringkey32"
 	"github.com/lleo/stringutil"
 	"github.com/pkg/errors"
 )
 
 // 4 million & change
-var InitHamtNumKvsForPut = 1000000
-var InitHamtNumKvs = 3000000 + InitHamtNumKvsForPut
-var numKvs = (4 * 1024 * 1024) + (4 * 1024)
-var KVS []key.KeyVal
+var InitHamtNumKvsForPut = 1024 * 1024
+var InitHamtNumKvs = (2 * 1024 * 1024) + InitHamtNumKvsForPut
+var numKvs = InitHamtNumKvs + (4 * 1024)
+var TwoKK = 2 * 1024 * 1024
+var KVS32 []hamt32.KeyVal
 
 var Functional bool
 var TableOption int
@@ -33,40 +33,40 @@ var StartTime = make(map[string]time.Time)
 var RunTime = make(map[string]time.Duration)
 
 func TestMain(m *testing.M) {
-	var fullonly, componly, hybrid, all bool
-	flag.BoolVar(&fullonly, "F", false,
-		"Use full tables only and exclude C and H Options.")
-	flag.BoolVar(&componly, "C", false,
-		"Use compressed tables only and exclude F and H Options.")
+	var fixedonly, sparseonly, hybrid, all bool
+	flag.BoolVar(&fixedonly, "F", false,
+		"Use fixed tables only and exclude C and H Options.")
+	flag.BoolVar(&sparseonly, "S", false,
+		"Use sparse tables only and exclude F and H Options.")
 	flag.BoolVar(&hybrid, "H", false,
-		"Use compressed tables initially and exclude F and C Options.")
+		"Use sparse tables initially and exclude F and S Options.")
 	flag.BoolVar(&all, "A", false,
-		"Run all Tests w/ Options set to FullTablesOnly, CompTablesOnly, and HybridTables")
+		"Run all Tests w/ Options set to FixedTablesOnly, SparseTablesOnly, and HybridTables")
 
 	var functional, transient, both bool
-	flag.BoolVar(&functional, "functional", false,
+	flag.BoolVar(&functional, "f", false,
 		"Run Tests against HamtFunctional struct; excludes transient option")
-	flag.BoolVar(&transient, "transient", false,
+	flag.BoolVar(&transient, "t", false,
 		"Run Tests against HamtFunctional struct; excludes functional option")
-	flag.BoolVar(&both, "both", false,
+	flag.BoolVar(&both, "b", false,
 		"Run Tests against both transient and functional Hamt types.")
 
 	flag.Parse()
 
-	// If all flag set, ignore fullonly, componly, and hybrid.
+	// If all flag set, ignore fixedonly, sparseonly, and hybrid.
 	if !all {
 
-		// only one flag may be set between fullonly, componly, and hybrid
-		if (fullonly && (componly || hybrid)) ||
-			(componly && (fullonly || hybrid)) ||
-			(hybrid && (componly || fullonly)) {
+		// only one flag may be set between fixedonly, sparseonly, and hybrid
+		if (fixedonly && (sparseonly || hybrid)) ||
+			(sparseonly && (fixedonly || hybrid)) ||
+			(hybrid && (sparseonly || fixedonly)) {
 			flag.PrintDefaults()
 			os.Exit(1)
 		}
 	}
 
 	// If no flags given, run all tests.
-	if !(all || fullonly || componly || hybrid) {
+	if !(all || fixedonly || sparseonly || hybrid) {
 		all = true
 	}
 
@@ -83,7 +83,8 @@ func TestMain(m *testing.M) {
 
 	log.SetFlags(log.Lshortfile)
 
-	var logfile, err = os.Create("test.log")
+	var logfn = fmt.Sprintf("test-%d.log", hamt32.IndexBits)
+	var logfile, err = os.Create(logfn)
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to os.Create(\"test.log\")"))
 	}
@@ -93,7 +94,22 @@ func TestMain(m *testing.M) {
 
 	log.Println("TestMain: and so it begins...")
 
-	KVS = buildKeyVals("TestMain", numKvs)
+	KVS32 = buildKeyVals("TestMain", numKvs)
+
+	log.Printf("TestMain: HashSize=%d\n", hamt32.HashSize)
+	fmt.Printf("TestMain: HashSize=%d\n", hamt32.HashSize)
+	log.Printf("TestMain: IndexBits=%d\n", hamt32.IndexBits)
+	fmt.Printf("TestMain: IndexBits=%d\n", hamt32.IndexBits)
+	log.Printf("TestMain: IndexLimit=%d\n", hamt32.IndexLimit)
+	fmt.Printf("TestMain: IndexLimit=%d\n", hamt32.IndexLimit)
+	log.Printf("TestMain: DepthLimit=%d\n", hamt32.DepthLimit)
+	fmt.Printf("TestMain: DepthLimit=%d\n", hamt32.DepthLimit)
+	log.Printf("TestMain: SizeofFixedTable=%d\n", hamt32.SizeofFixedTable)
+	fmt.Printf("TestMain: SizeofFixedTable=%d\n", hamt32.SizeofFixedTable)
+	log.Printf("TestMain: SizeofSparseTable=%d\n", hamt32.SizeofSparseTable)
+	fmt.Printf("TestMain: SizeofSparseTable=%d\n", hamt32.SizeofSparseTable)
+	log.Printf("TestMain: BitmapSize=%d\n", hamt32.BitmapSize)
+	fmt.Printf("TestMain: BitmapSize=%d\n", hamt32.BitmapSize)
 
 	// execute
 	var xit int
@@ -132,10 +148,10 @@ func TestMain(m *testing.M) {
 	} else {
 		if hybrid {
 			TableOption = hamt32.HybridTables
-		} else if fullonly {
-			TableOption = hamt32.FullTablesOnly
-		} else /* if componly */ {
-			TableOption = hamt32.CompTablesOnly
+		} else if fixedonly {
+			TableOption = hamt32.FixedTablesOnly
+		} else /* if sparseonly */ {
+			TableOption = hamt32.SparseTablesOnly
 		}
 
 		if both {
@@ -187,7 +203,7 @@ func TestMain(m *testing.M) {
 }
 
 func executeAll(m *testing.M) int {
-	TableOption = hamt32.FullTablesOnly
+	TableOption = hamt32.FixedTablesOnly
 
 	log.Printf("TestMain: TableOption=%s;\n",
 		hamt32.TableOptionName[TableOption])
@@ -201,7 +217,7 @@ func executeAll(m *testing.M) int {
 	}
 
 	Hamt32 = nil
-	TableOption = hamt32.CompTablesOnly
+	TableOption = hamt32.SparseTablesOnly
 
 	log.Printf("TestMain: TableOption=%s;\n",
 		hamt32.TableOptionName[TableOption])
@@ -227,17 +243,17 @@ func executeAll(m *testing.M) int {
 	return xit
 }
 
-func buildKeyVals(prefix string, num int) []key.KeyVal {
+func buildKeyVals(prefix string, num int) []hamt32.KeyVal {
 	var name = fmt.Sprintf("%s-buildKeyVals-%d", prefix, num)
 	StartTime[name] = time.Now()
 
-	var kvs = make([]key.KeyVal, num)
+	var kvs = make([]hamt32.KeyVal, num)
 	var s = "aaa"
 
 	for i := 0; i < num; i++ {
-		var k = stringkey.New(s)
+		var k = stringkey32.New(s)
 
-		kvs[i] = key.KeyVal{k, i}
+		kvs[i] = hamt32.KeyVal{k, i}
 		s = Inc(s)
 	}
 
@@ -247,7 +263,7 @@ func buildKeyVals(prefix string, num int) []key.KeyVal {
 
 func buildHamt32(
 	prefix string,
-	kvs []key.KeyVal,
+	kvs []hamt32.KeyVal,
 	functional bool,
 	opt int,
 ) (hamt32.Hamt, error) {
@@ -285,9 +301,13 @@ func RunTimes() string {
 	s += "Key                                                Val\n"
 	s += "==================================================+==========\n"
 
+	var tot time.Duration
 	for _, k := range ks {
 		v := RunTime[k]
 		s += fmt.Sprintf("%-50s %s\n", k, v)
+		tot += v
 	}
+	s += fmt.Sprintf("%50s %s\n", "TOTAL", tot)
+
 	return s
 }
