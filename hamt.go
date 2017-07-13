@@ -7,14 +7,14 @@ myself, the hamt32 and hamt64 HAMT implementations are almost completely
 identical code.
 
 This package merely implements New32() and New64() functions and the table
-option constants FixedTablesOnly, SparseTablesOnly, HybridTables, and the map
-TableOptionName (eg. hamt.TableOptionName[hamt.FixedTablesOnly] ==
-"FixedTablesOnly").
+option constants FixedTables, SparseTables, HybridTables, and the map
+TableOptionName (eg. hamt.TableOptionName[hamt.FixedTables] ==
+"FixedTables").
 
 Choices
 
-There are several choices to make: Hashval hamt32 versus hamt64, FixedTablesOnly
-versus SparseTablesOnly versus HybridTables, and Functional versus
+There are several choices to make: Hashval hamt32 versus hamt64, FixedTables
+versus SparseTables versus HybridTables, and Functional versus
 Transient. Then there is a hidden choice; you can change the source code
 constant, IndexBits, to a value other than the current setting of 5.
 
@@ -32,7 +32,7 @@ I have never seen 64bit FNV hash values collide and in the current state of
 computing having 64bit CPUs as the norm. I recommend using hamt64. If you are
 on 32bit CPUs then maybe you could choose hamt32.
 
-FixedTablesOnly versus SparseTablesOnly versus HybridTables
+FixedTables versus SparseTables versus HybridTables
 
 This is the classic speed versus memory choice with a twist. The facts to
 consider are: The tree is indexed by essentially random values (the parts of the
@@ -52,10 +52,10 @@ allocated memory.
 
 If you are going to have very large number of entries in your HAMT to the degree
 that your program will start paging occationally, DEFINITELY switch away from
-FixedTablesOnly to HybridTables or even SparseTablesOnly.
+FixedTables to HybridTables or even SparseTables.
 
 As a general rule if the number of entry is only in the 100,000s or less, choose
-FixedTablesOnly
+FixedTables
 
 Transient versus Ffunctional
 
@@ -84,36 +84,36 @@ import (
 // WARNING!!! Duplicated code with both hamt32 and hamt64. Must have
 // test to guarantee they stay in lock step.
 const (
-	// FixedTableOnly indicates the structure should use fixedTables ONLY.
+	// FixedTable indicates the structure should use fixedTables ONLY.
 	// This was intended to be for speed, as sparse tables use a software
 	// bitCount function to access individual cells.
-	FixedTablesOnly = iota
-	// SparseTablesOnly indicates the structure should use sparseTable's ONLY.
+	FixedTables = iota
+	// SparseTables indicates the structure should use sparseTable's ONLY.
 	// This was intended just save space, but also seems to be faster; CPU cache
 	// locality maybe?
-	SparseTablesOnly
+	SparseTables
 	// HybridTables indicates the structure should use sparseTable
 	// initially, then upgrad to fixedTable when appropriate.
 	HybridTables
 )
 
 // TableOptionName is a lookup table to map the integer value of
-// FixedTablesOnly, SparseTablesOnly, and HybridTables to a string representing
+// FixedTables, SparseTables, and HybridTables to a string representing
 // that option.
-//     var option = hamt32.FixedTablesOnly
-//     hamt32.TableOptionName[option] == "FixedTablesOnly"
+//     var option = hamt32.FixedTables
+//     hamt32.TableOptionName[option] == "FixedTables"
 var TableOptionName [3]string
 
 // Could have used...
 //var TableOptionName = [3]string{
-//	"FixedTablesOnly",
-//	"SparseTablesOnly",
+//	"FixedTables",
+//	"SparseTables",
 //	"HybridTables",
 //}
 
 func init() {
-	TableOptionName[FixedTablesOnly] = "FixedTablesOnly"
-	TableOptionName[SparseTablesOnly] = "SparseTablesOnly"
+	TableOptionName[FixedTables] = "FixedTables"
+	TableOptionName[SparseTables] = "SparseTables"
 	TableOptionName[HybridTables] = "HybridTables"
 }
 
@@ -121,7 +121,7 @@ func init() {
 // hamt32.Hamt interface. The arguments are a bool and an int. The bool argument
 // determines if a functional structure(true) or transient stucture(false) is
 // produced. The int option is either 0, 1, or 2 conforming to the
-// FixedTablesOnly, SparseTablesOnly, or HybridTables constants.
+// FixedTables, SparseTables, or HybridTables constants.
 func New32(functional bool, opt int) hamt32.Hamt {
 	return hamt32.New(functional, opt)
 }
@@ -130,7 +130,7 @@ func New32(functional bool, opt int) hamt32.Hamt {
 // hamt64.Hamt interface. The arguments are a bool and an int. The bool argument
 // determines if a functional structure(true) or transient stucture(false) is
 // produced. The int option is either 0, 1, or 2 conforming to the
-// FixedTablesOnly, SparseTablesOnly, or HybridTables constants.
+// FixedTables, SparseTables, or HybridTables constants.
 func New64(functional bool, opt int) hamt64.Hamt {
 	return hamt64.New(functional, opt)
 }

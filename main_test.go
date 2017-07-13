@@ -55,7 +55,7 @@ func TestMain(m *testing.M) {
 	flag.BoolVar(&hybrid, "H", false,
 		"Use sparse tables initially and exclude F and S Options.")
 	flag.BoolVar(&all, "A", false,
-		"Run all Tests w/ Options set to FixedTablesOnly, SparseTablesOnly, and HybridTables")
+		"Run all Tests w/ Options set to FixedTables, SparseTables, and HybridTables")
 
 	var functional, transient, both bool
 	flag.BoolVar(&functional, "f", false,
@@ -148,9 +148,9 @@ func TestMain(m *testing.M) {
 		if hybrid {
 			TableOption = hamt32.HybridTables
 		} else if fixedonly {
-			TableOption = hamt32.FixedTablesOnly
+			TableOption = hamt32.FixedTables
 		} else /* if sparseonly */ {
-			TableOption = hamt32.SparseTablesOnly
+			TableOption = hamt32.SparseTables
 		}
 
 		if both {
@@ -203,7 +203,7 @@ func TestMain(m *testing.M) {
 }
 
 func executeAll(m *testing.M) int {
-	TableOption = hamt32.FixedTablesOnly
+	TableOption = hamt32.FixedTables
 
 	log.Printf("TestMain: TableOption=%s;\n",
 		hamt32.TableOptionName[TableOption])
@@ -218,7 +218,7 @@ func executeAll(m *testing.M) int {
 
 	Hamt32 = nil
 	Hamt64 = nil
-	TableOption = hamt32.SparseTablesOnly
+	TableOption = hamt32.SparseTables
 
 	log.Printf("TestMain: TableOption=%s;\n",
 		hamt32.TableOptionName[TableOption])
@@ -354,11 +354,11 @@ func RunTimes() string {
 }
 
 func TestConstantsInSync(t *testing.T) {
-	if hamt.FixedTablesOnly != hamt32.FixedTablesOnly {
-		t.Fatal("hamt.FixedTablesOnly != hamt32.FixedTablesOnly")
+	if hamt.FixedTables != hamt32.FixedTables {
+		t.Fatal("hamt.FixedTables != hamt32.FixedTables")
 	}
-	if hamt.SparseTablesOnly != hamt32.SparseTablesOnly {
-		t.Fatal("hamt.SparseTablesOnly != hamt32.SparseTablesOnly")
+	if hamt.SparseTables != hamt32.SparseTables {
+		t.Fatal("hamt.SparseTables != hamt32.SparseTables")
 	}
 	if hamt.HybridTables != hamt32.HybridTables {
 		t.Fatal("hamt.HybridTables != hamt32.HybridTables")
@@ -367,11 +367,11 @@ func TestConstantsInSync(t *testing.T) {
 		t.Fatal("TableOptionName != hamt32.TableOptionName")
 	}
 
-	if hamt.FixedTablesOnly != hamt64.FixedTablesOnly {
-		t.Fatal("hamt.FixedTablesOnly != hamt64.FixedTablesOnly")
+	if hamt.FixedTables != hamt64.FixedTables {
+		t.Fatal("hamt.FixedTables != hamt64.FixedTables")
 	}
-	if hamt.SparseTablesOnly != hamt64.SparseTablesOnly {
-		t.Fatal("hamt.SparseTablesOnly != hamt64.SparseTablesOnly")
+	if hamt.SparseTables != hamt64.SparseTables {
+		t.Fatal("hamt.SparseTables != hamt64.SparseTables")
 	}
 	if hamt.HybridTables != hamt64.HybridTables {
 		t.Fatal("hamt.HybridTables != hamt64.HybridTables")
@@ -382,11 +382,11 @@ func TestConstantsInSync(t *testing.T) {
 
 	// Well... the communative property makes these true BUT...
 	// aah dont truck wit nun of dat fancy mathamagical bullshit! Vote Trump!
-	if hamt32.FixedTablesOnly != hamt64.FixedTablesOnly {
-		t.Fatal("hamt32.FixedTablesOnly != hamt64.FixedTablesOnly")
+	if hamt32.FixedTables != hamt64.FixedTables {
+		t.Fatal("hamt32.FixedTables != hamt64.FixedTables")
 	}
-	if hamt32.SparseTablesOnly != hamt64.SparseTablesOnly {
-		t.Fatal("hamt32.SparseTablesOnly != hamt64.SparseTablesOnly")
+	if hamt32.SparseTables != hamt64.SparseTables {
+		t.Fatal("hamt32.SparseTables != hamt64.SparseTables")
 	}
 	if hamt32.HybridTables != hamt64.HybridTables {
 		t.Fatal("hamt32.HybridTables != hamt64.HybridTables")

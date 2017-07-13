@@ -22,10 +22,10 @@ func NewTransient(opt int) *HamtTransient {
 	case HybridTables:
 		h.grade = true
 		h.compinit = true
-	case SparseTablesOnly:
+	case SparseTables:
 		h.grade = false
 		h.compinit = true
-	case FixedTablesOnly:
+	case FixedTables:
 		fallthrough
 	default:
 		h.grade = false

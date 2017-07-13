@@ -66,36 +66,36 @@ const UpgradeThreshold uint = IndexLimit / 2 //16 for IndexBits=5
 
 // Configuration contants to be passed to `hamt64.New(int) *Hamt`.
 const (
-	// FixedTableOnly indicates the structure should use fixedTables ONLY.
+	// FixedTable indicates the structure should use fixedTables ONLY.
 	// This was intended to be for speed, as compressed tables use a software
 	// bitCount function to access individual cells.
-	FixedTablesOnly = iota
-	// SparseTablesOnly indicates the structure should use sparseTables ONLY.
+	FixedTables = iota
+	// SparseTables indicates the structure should use sparseTables ONLY.
 	// This was intended just save space, but also seems to be faster; CPU cache
 	// locality maybe?
-	SparseTablesOnly
+	SparseTables
 	// HybridTables indicates the structure should use sparseTable
 	// initially, then upgrade to fixedTable when appropriate.
 	HybridTables
 )
 
 // TableOptionName is a lookup table to map the integer value of
-// FixedTablesOnly, SparseTablesOnly, and HybridTables to a string representing
+// FixedTables, SparseTables, and HybridTables to a string representing
 // that option.
-//     var option = hamt64.FixedTablesOnly
-//     hamt64.TableOptionName[option] == "FixedTablesOnly"
+//     var option = hamt64.FixedTables
+//     hamt64.TableOptionName[option] == "FixedTables"
 var TableOptionName [3]string
 
 // Could have used...
 //var TableOptionName = [3]string{
-//	"FixedTablesOnly",
-//	"SparseTablesOnly",
+//	"FixedTables",
+//	"SparseTables",
 //	"HybridTables",
 //}
 
 func init() {
-	TableOptionName[FixedTablesOnly] = "FixedTablesOnly"
-	TableOptionName[SparseTablesOnly] = "SparseTablesOnly"
+	TableOptionName[FixedTables] = "FixedTables"
+	TableOptionName[SparseTables] = "SparseTables"
 	TableOptionName[HybridTables] = "HybridTables"
 }
 
