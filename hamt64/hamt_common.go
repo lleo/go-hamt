@@ -7,10 +7,25 @@ import (
 
 // This is here as the Hamt base data struture.
 type Common struct {
-	root     tableI
-	nentries uint
-	grade    bool
-	compinit bool
+	root       tableI
+	nentries   uint
+	grade      bool
+	startFixed bool
+}
+
+func (h *Common) init(opt int) {
+	// boolean zero value is false
+	switch opt {
+	case HybridTables:
+		h.grade = true
+		//h.startFixed = false
+	case SparseTables:
+		//h.grade = false
+		//h.startFixed = false
+	case FixedTables:
+		//h.grade = false
+		h.startFixed = true
+	}
 }
 
 // IsEmpty simply returns if the HamtFunctional datastucture has no entries.
@@ -33,7 +48,7 @@ func (h *Common) DeepCopy() Hamt {
 	nh.root = h.root.deepCopy()
 	nh.nentries = h.nentries
 	nh.grade = h.grade
-	nh.compinit = h.compinit
+	nh.startFixed = h.startFixed
 	return nh
 }
 
@@ -123,18 +138,17 @@ func (h *Common) Get(bs []byte) (interface{}, bool) {
 }
 
 func (h *Common) createRootTable(leaf leafI) tableI {
-	if h.compinit {
-		return createRootSparseTable(leaf)
+	if h.startFixed {
+		return createRootFixedTable(leaf)
 	}
-	return createRootFixedTable(leaf)
+	return createRootSparseTable(leaf)
 }
 
 func (h *Common) createTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
-	//log.Printf("*Common.createTable(depth=%d, ...)\n", depth)
-	if h.compinit {
-		return createSparseTable(depth, leaf1, leaf2)
+	if h.startFixed {
+		return createFixedTable(depth, leaf1, leaf2)
 	}
-	return createFixedTable(depth, leaf1, leaf2)
+	return createSparseTable(depth, leaf1, leaf2)
 }
 
 // String returns a string representation of the Common stastructure.

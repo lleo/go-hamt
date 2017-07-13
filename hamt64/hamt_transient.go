@@ -18,19 +18,7 @@ type HamtTransient struct {
 func NewTransient(opt int) *HamtTransient {
 	var h = new(HamtTransient)
 
-	switch opt {
-	case HybridTables:
-		h.grade = true
-		h.compinit = true
-	case SparseTables:
-		h.grade = false
-		h.compinit = true
-	case FixedTables:
-		fallthrough
-	default:
-		h.grade = false
-		h.compinit = false
-	}
+	h.Common.init(opt)
 
 	return h
 }
@@ -65,10 +53,10 @@ func (h *HamtTransient) Nentries() uint {
 func (h *HamtTransient) ToFunctional() Hamt {
 	return &HamtFunctional{
 		Common{
-			root:     h.root,
-			nentries: h.nentries,
-			grade:    h.grade,
-			compinit: h.compinit,
+			root:       h.root,
+			nentries:   h.nentries,
+			grade:      h.grade,
+			startFixed: h.startFixed,
 		},
 	}
 }
