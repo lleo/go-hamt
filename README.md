@@ -3,7 +3,7 @@ This is a merger with github.com/lleo/go-hamt-functional which it obsoletes.
 The motivation for this was because I was seeing slower performance for 
 go-hamt-functional Get() operations even though I was certain that they were
 using the same algorithm. This merger guarantees that the transient and
-functinal Hamt implementations are useing the exact same datastructures. This
+functinal Hamt implementations are using the exact same data structures. This
 is true even to the degree that I can recast a pointer to HamtTransient or
 HamtFunctional data structure and the code will switch from transient to
 functional behavior (or vice versa).
@@ -11,14 +11,19 @@ functional behavior (or vice versa).
 It also obsoletes github.com/lleo/go-hamt-key because it need not be a separate
 repository.
 
+Note #2: I have elimitated the need for a external Key datastructure like
+github.com/go-hamt/stringkey(32,64). Now the public API for Get/Put/Del ops
+take a []byte slice instead of a Key complient data structure. Simpler API
+is better and no extra dependency.
+
 # What is a HAMT?
 
 HAMT stands for Hash Array Mapped Trie. That spells it out clearly right? Ok,
-not so much. A HAMT is a Key/Value storage with some really cool features. The
-first feature is that we implement it as a tree with a reasonably largs and
-fixed branching factor; thereby making it a pretty flat tree. The killer feature
-is that the tree has a maximum depth, resulting in a O(1) Search and Modify
-speeds. That is O(1) with out a giant constant factor.
+not so much. A HAMT is an in-menory Key/Value storage with some really cool
+features. The first feature is that we implement it as a tree with a reasonably
+large and fixed branching factor; thereby making it a pretty flat tree. The
+killer feature is that the tree has a maximum depth, resulting in a O(1) Search
+and Modify speeds. That is O(1) with out a giant constant factor.
 
 HAMT make this happen by first hashing the key into either a 32bit (hamt32) or
 64bit (hamt64) hash value. We then split this hash value up into a fixed number
@@ -33,8 +38,8 @@ randomness and that is all we need from it.
 
 Also we choose to split the 32bit or 64bit hash value into 5bit values. 5bit
 values means the tree will have a branching factor of 32 and a fixed depth
-of 6 for a 32bit hash value (hamt32) and 10 for a 64bit hash value (hamt64).
-You made be noticing that 5 does not go into 32 nor 64 cleanly. That is not
+of 6 for a 32bit hash value (hamt32) and 12 for a 64bit hash value (hamt64).
+You may be noticing that 5 does not go into 32 nor 64 cleanly. That is not
 a problem we fold the extra 2 or 4 bits into the main hash value. Don't worry
 this is a legitimate thing to do. In the (very) rare case of a hash collision
 we use a special leaf value for both colliding key/value pairs.
@@ -46,7 +51,7 @@ hamt32 and hamt64 respectively.
 
 Further we can have the HAMT data structure behave in one of two modes Transient
 or Functional. Tansient means we modify the datastructures in-place. Functional
-means use a copy-on-write strategy (ie. we copy each datastructure and modify
+means use a copy-on-write strategy (ie. we copy each data structure and modify
 the copy). As you can imagine Tansient is faster than Functional. However, you
 cannot easily share Transient datastructures between threads safely; you would
 need to implement a locking strategy. Where with Functional data structures you
