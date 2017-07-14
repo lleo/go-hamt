@@ -5,11 +5,11 @@ import (
 )
 
 type flatLeaf struct {
-	key *Key
+	key *iKey
 	val interface{}
 }
 
-func newFlatLeaf(key *Key, val interface{}) *flatLeaf {
+func newFlatLeaf(key *iKey, val interface{}) *flatLeaf {
 	var fl = new(flatLeaf)
 	fl.key = key
 	fl.val = val
@@ -24,14 +24,14 @@ func (l *flatLeaf) String() string {
 	return fmt.Sprintf("flatLeaf{key: %s, val: %v}", l.key, l.val)
 }
 
-func (l *flatLeaf) get(key *Key) (interface{}, bool) {
+func (l *flatLeaf) get(key *iKey) (interface{}, bool) {
 	if l.key.Equals(key) {
 		return l.val, true
 	}
 	return nil, false
 }
 
-func (l *flatLeaf) put(k *Key, v interface{}) (leafI, bool) {
+func (l *flatLeaf) put(k *iKey, v interface{}) (leafI, bool) {
 	if l.key.Equals(k) {
 		l.val = v
 		return l, false
@@ -40,7 +40,7 @@ func (l *flatLeaf) put(k *Key, v interface{}) (leafI, bool) {
 	return newLeaf, true // key,val was added
 }
 
-func (l *flatLeaf) del(key *Key) (leafI, interface{}, bool) {
+func (l *flatLeaf) del(key *iKey) (leafI, interface{}, bool) {
 	if l.key.Equals(key) {
 		return nil, l.val, true
 	}

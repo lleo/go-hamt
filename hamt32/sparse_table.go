@@ -13,7 +13,7 @@ const sparseTableInitCap int = 2
 //type sparseTable struct {
 //	hashPath hashVal // 4; 8 cuz of alignment
 //	depth    uint    // 8
-//	nodeMap  Bitmap  // 4; 8 cuz of alignment
+//	nodeMap  bitmap  // 4; 8 cuz of alignment
 //	nodes    []nodeI // 24
 //}
 
@@ -21,7 +21,7 @@ const sparseTableInitCap int = 2
 type sparseTable struct {
 	nodes    []nodeI // 24
 	depth    uint    // 8
-	nodeMap  Bitmap  // 4
+	nodeMap  bitmap  // 4
 	hashPath hashVal // 4
 }
 

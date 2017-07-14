@@ -52,7 +52,7 @@ func (h *Common) DeepCopy() Hamt {
 	return nh
 }
 
-func (h *Common) find(k *Key) (tableStack, leafI, uint) {
+func (h *Common) find(k *iKey) (tableStack, leafI, uint) {
 	if h.IsEmpty() {
 		return nil, nil, 0
 	}
@@ -93,7 +93,8 @@ DepthIter:
 }
 
 // This is slower due to extraneous code and allocations in find().
-//func (h *Common) Get(k Key) (interface{}, bool) {
+//func (h *Common) Get(bs []byte) (interface{}, bool) {
+//	var k = newKey(bs)
 //	var _, leaf, _ = h.find(k)
 //
 //	if leaf == nil {

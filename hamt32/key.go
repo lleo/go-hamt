@@ -5,13 +5,16 @@ import (
 	"hash/fnv"
 )
 
-type Key struct {
+// iKey is the internal key structure build from the []byte slice passed to the
+// Get/Put/Del hamt methods.
+type iKey struct {
 	hash hashVal
 	bs   []byte
 }
 
-func newKey(bs []byte) *Key {
-	var k = new(Key)
+// newKey builds a iKey data structure from a []byte slice.
+func newKey(bs []byte) *iKey {
+	var k = new(iKey)
 
 	k.bs = make([]byte, len(bs))
 	copy(k.bs, bs)
@@ -22,11 +25,11 @@ func newKey(bs []byte) *Key {
 }
 
 // Hash return the hashVal of KeyBase
-func (k *Key) Hash() hashVal {
+func (k *iKey) Hash() hashVal {
 	return k.hash
 }
 
-func (k *Key) Equals(k0 *Key) bool {
+func (k *iKey) Equals(k0 *iKey) bool {
 	//return string(k.bs) == string(k0)
 	if len(k.bs) == len(k0.bs) {
 		for i, ke := range k.bs {
@@ -40,8 +43,8 @@ func (k *Key) Equals(k0 *Key) bool {
 }
 
 // String return a human readable representation of KeyBase
-func (k *Key) String() string {
-	return fmt.Sprintf("Key{%s}", k.hash)
+func (k *iKey) String() string {
+	return fmt.Sprintf("iKey{%s}", k.hash)
 }
 
 func hash(bs []byte) uint32 {

@@ -104,8 +104,8 @@ func (hv hashVal) String() string {
 	return hv.HashPathString(DepthLimit)
 }
 
-// ParseHashPath
-func ParseHashPath(s string) hashVal {
+// parseHashPath
+func parseHashPath(s string) hashVal {
 	_ = AssertOn && assertf(strings.HasPrefix(s, "/"),
 		"ParseHashPath: input, %q, does not start with '/'", s)
 

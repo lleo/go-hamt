@@ -13,7 +13,7 @@ const sparseTableInitCap int = 2
 type sparseTable struct {
 	nodes    []nodeI // 24
 	depth    uint    // 8; amd64 cpu
-	nodeMap  Bitmap  // 8; uint32 x 2
+	nodeMap  bitmap  // 8; uint32 x 2
 	hashPath hashVal // 8
 }
 
