@@ -192,8 +192,6 @@ func (h *common) Count() (maxDepth uint, counts *Counts) {
 
 type visitFn func(nodeI, interface{})
 
-//var deepest uint
-
 func count(n nodeI, arg interface{}) {
 	var counts = arg.(*Counts)
 

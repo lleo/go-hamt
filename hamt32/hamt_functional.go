@@ -1,20 +1,20 @@
 package hamt32
 
-// HamtFunctional is the datastructure which the Funcitonal Hamt methods are
-// called upon. In fact it is identical to the HamtTransient datastructure and
-// all the table and leaf datastructures it uses are the same ones used by the
+// HamtFunctional is the data structure which the Funcitonal Hamt methods are
+// called upon. In fact it is identical to the HamtTransient data structure and
+// all the table and leaf data structures it uses are the same ones used by the
 // HamtTransient implementation. It is its own type so that the methods it calls
 // are the functional version of the hamt32.Hamt interface.
 //
 // Basically the functional versions implement a copy-on-write inmplementation
-// of Put() and Del(), to the original HamtFuncitonal isn't modified and Put()
+// of Put() and Del(). The original HamtFuncitonal isn't modified and Put()
 // and Del() return a slightly modified copy of the HamtFunctional
-// datastructure. So sharing this datastructure between threads is safe.
+// data structure. So sharing this data structure between threads is safe.
 type HamtFunctional struct {
 	common
 }
 
-// NewFunctional constructs a new HamtFunctional datastructure based on the opt
+// NewFunctional constructs a new HamtFunctional data structure based on the opt
 // argument.
 func NewFunctional(opt int) *HamtFunctional {
 	var h = new(HamtFunctional)
@@ -30,48 +30,58 @@ func (h *HamtFunctional) IsEmpty() bool {
 }
 
 // Nentries return the number of (key,value) pairs are stored in the
-// HamtFunctional datastructure.
+// HamtFunctional data structure.
 func (h *HamtFunctional) Nentries() uint {
 	return h.common.Nentries()
 }
 
-// ToFunctional does nothing to a HamtFunctional datastructure. This method only
-// returns the HamtFunctional datastructure pointer as a hamt32.Hamt interface.
+// ToFunctional does nothing to a HamtFunctional data structure. This method
+// only returns the HamtFunctional data structure pointer as a hamt32.Hamt
+// interface.
 func (h *HamtFunctional) ToFunctional() Hamt {
 	return h
 }
 
-// ToTransient creates a HamtTransient datastructure and simply copies the
-// values stored in the HamtFunctional datastructure over to the HamtTransient
-// datastructure, then it returns a pointer to the HamtTransient datastructure
-// as a hamt64.Hamt interface.
+// ToTransient creates a HamtTransient data structure and copies the values
+// stored in the HamtFunctional data structure over to the HamtTransient data
+// structure. In the case of the root table it does a deep copy. Finally, it
+// returns a pointer to the HamtTransient data structure as a hamt32.Hamt
+// interface.
 //
-// WARNING: given that ToTransient() just copies pointers to a new
-// HamtFunctional datastructure, ANY modification of the new HamtTransient
-// datastruture will change the previous HamtFunctional and any preceding
-// HamtFunctional datastruture that share some of the same tables.
+// If you are confident that modifications to the new HamtTransient would not
+// impact the original HamtFunctional data structures it was generated from (eg.
+// you no longer used the previous HamtFunctional data structures), then you can
+// simply recast a *HamtFunctional to *HamtTransient.
 //
-// If you use the previous HamtFunctional datastructures IN ANY WAY this
-// convertion is mustly useless.
-//
-// The only way to avoid having the new HamtTransient from modifying the
-// original HamtFunctional is to first perform a DeepCopy()
+// The reason for ToTransient() is to do a deep copy of all the data structures
+// involved in the HamtFunctional. Of course, this can be very expensive.
 func (h *HamtFunctional) ToTransient() Hamt {
-	return &HamtTransient{
-		common{
-			root:       h.root,
-			nentries:   h.nentries,
-			grade:      h.grade,
-			startFixed: h.startFixed,
-		},
-	}
+	var nh = new(HamtTransient)
+	nh.root = h.root.deepCopy()
+	nh.nentries = h.nentries
+	nh.grade = h.grade
+	nh.startFixed = h.startFixed
+	return nh
+	//return &HamtTransient{
+	//	common{
+	//		root:       h.root.deepCopy(),
+	//		nentries:   h.nentries,
+	//		grade:      h.grade,
+	//		startFixed: h.startFixed,
+	//	},
+	//}
 }
 
-// DeepCopy() copies the HamtFunctional datastructure and every table it
-// contains recursively. This is expensive, but usefull, if you want to use
-// ToTransient() and ToFunctional().
+// DeepCopy() copies the HamtFunctional data structure and every table it
+// contains recursively. This method gets more expensive the deeper the Hamt
+// becomes.
 func (h *HamtFunctional) DeepCopy() Hamt {
-	return h.common.DeepCopy()
+	var nh = new(HamtFunctional)
+	nh.root = h.root.deepCopy()
+	nh.nentries = h.nentries
+	nh.grade = h.grade
+	nh.startFixed = h.startFixed
+	return nh
 }
 
 // persist() is ONLY called on a fresh copy of the current Hamt.
@@ -107,16 +117,16 @@ func (h *HamtFunctional) persist(oldTable, newTable tableI, path tableStack) {
 }
 
 // Get retrieves the value related to the key in the HamtFunctional
-// datastructure. It also return a bool to indicate the value was found. This
-// allows you to store nil values in the HamtFunctional datastructure.
+// data structure. It also return a bool to indicate the value was found. This
+// allows you to store nil values in the HamtFunctional data structure.
 func (h *HamtFunctional) Get(bs []byte) (interface{}, bool) {
 	return h.common.Get(bs)
 }
 
-// Put stores a new (key,value) pair in the HamtFunctional datastructure. It
-// returns a bool indicating if a new pair were added or if the value replaced
-// the value in a previously stored (key,value) pair. Either way it returns and
-// new HamtFunctional datastructure containing the modification.
+// Put stores a new (key,value) pair in the HamtFunctional data structure. It
+// returns a bool indicating if a new pair was added (true) or if the value
+// replaced (false). Either way it returns a new HamtFunctional data structure
+// containing the modification.
 func (h *HamtFunctional) Put(bs []byte, v interface{}) (Hamt, bool) {
 	var nh = new(HamtFunctional)
 	*nh = *h
@@ -168,11 +178,14 @@ func (h *HamtFunctional) Put(bs []byte, v interface{}) (Hamt, bool) {
 }
 
 // Del searches the HamtFunctional for the key argument and returns three
-// values: a Hamt datastuture, a value, and a bool. If the key was found then
-// the bool returned is true and the value is the value related to that key and
-// the returned Hamt is a new HamtFunctional datastructure without. If the
-// (key, value) pair. If key was not found, then the bool is false, the value is
-// nil, and the Hamt value is the original HamtFunctional datastructure.
+// values: a Hamt datastuture, a value, and a bool.
+//
+// If the key was found then the bool returned is true and the value is the
+// value related to that key and the returned Hamt is a new HamtFunctional data
+// structure without that (key, value) pair.
+//
+// If key was not found, then the bool is false, the value is nil, and the Hamt
+// value is the original HamtFunctional data structure.
 func (h *HamtFunctional) Del(bs []byte) (Hamt, interface{}, bool) {
 	if h.IsEmpty() {
 		return h, nil, false
@@ -222,7 +235,7 @@ func (h *HamtFunctional) Del(bs []byte) (Hamt, interface{}, bool) {
 }
 
 // String returns a string representation of the HamtFunctional stastructure.
-// Secifically it returns a representation of the datastructure with the
+// Secifically it returns a representation of the data structure with the
 // nentries value of Nentries() and a representation of the root table.
 func (h *HamtFunctional) String() string {
 	return h.common.String()
@@ -234,10 +247,15 @@ func (h *HamtFunctional) LongString(indent string) string {
 	return h.common.LongString(indent)
 }
 
+// Visit walks the Hamt executing the VisitFn then recursing into each of
+// the subtrees in order. It returns the maximum table depth it reached in
+// any branch.
 func (h *HamtFunctional) Visit(fn VisitFn, arg interface{}) uint {
-	return h.common.Visit(fn, arg)
+	return h.common.Visit(fn)
 }
 
+// Count walks the Hamt using Visit and populates a Count data struture which
+// it return.
 func (h *HamtFunctional) Count() (uint, *Counts) {
 	return h.common.Count()
 }

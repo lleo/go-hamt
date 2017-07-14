@@ -34,31 +34,35 @@ func (h *HamtTransient) Nentries() uint {
 	return h.common.Nentries()
 }
 
-// ToFunctional creates a new HamtFunctional datastructure and simply copies the
-// values stored in the HamtTransient datastructure over to the HamtFunctional
-// datastructure, then it returns a pointer to the HamtFunctional datastructure
-// as a hamt64.Hamt interface.
+// ToFunctional creates a HamtFunctional data structure and copies the values
+// stored in the HamtTransient data structure over to the HamtFunctional
+// data structure. In the case of root table it does a deep copy. Finnally, it
+// returns a pointer to the HamtFunctional data structure as a hamt32.Hamt
+// interface.
 //
-// WARNING: given that ToFunctional() returns the same datastructure recast to
-// *HamtTransient datastruture, ANY modification to the original *HamtTransient
-// datastructure will change the new HamtFunctional datastructure (as they
-// share the exact same tables & leafs).
+// If you are confident that modifications to the original HamtTransient would
+// not impact the HamtFunctional data structure (eg. you no longer used the
+// previous HamtTransient data structures), then you can simply recast a
+// *HamtTransient to *HamtFunctional.
 //
-// Modifications to the new HamtFunctional datastructure WILL NOT affect the
-// original HamtTransient datastructure because it does all its modifiation in
-// a copy-on-write manner.
-//
-// The only way to convert a HamtTransient to a HamtFunctional and keep the
-// functionality of both is to first perfom a DeepCopy().
+// The reason for ToFunctional() is to do a deep copy of all the data
+// structures involved in the HamtFunctional. Of course, this can be very
+// expensive.
 func (h *HamtTransient) ToFunctional() Hamt {
-	return &HamtFunctional{
-		common{
-			root:       h.root,
-			nentries:   h.nentries,
-			grade:      h.grade,
-			startFixed: h.startFixed,
-		},
-	}
+	var nh = new(HamtFunctional)
+	nh.root = h.root.deepCopy()
+	nh.nentries = h.nentries
+	nh.grade = h.grade
+	nh.startFixed = h.startFixed
+	return nh
+	//return &HamtFunctional{
+	//	common{
+	//		root:       h.root,
+	//		nentries:   h.nentries,
+	//		grade:      h.grade,
+	//		startFixed: h.startFixed,
+	//	},
+	//}
 }
 
 // ToTransient does nothing to a HamtTransient datastructure. This method only
@@ -71,7 +75,12 @@ func (h *HamtTransient) ToTransient() Hamt {
 // recursively. This is expensive, but usefull, if you want to use ToTransient()
 // and ToFunctional().
 func (h *HamtTransient) DeepCopy() Hamt {
-	return h.common.DeepCopy()
+	var nh = new(HamtTransient)
+	nh.root = h.root.deepCopy()
+	nh.nentries = h.nentries
+	nh.grade = h.grade
+	nh.startFixed = h.startFixed
+	return nh
 }
 
 // Get retrieves the value related to the key in the HamtTransient
@@ -225,10 +234,15 @@ func (h *HamtTransient) LongString(indent string) string {
 	return h.common.LongString(indent)
 }
 
+// Visit walks the Hamt executing the VisitFn then recursing into each of
+// the subtrees in order. It returns the maximum table depth it reached in
+// any branch.
 func (h *HamtTransient) Visit(fn VisitFn, arg interface{}) uint {
 	return h.common.Visit(fn, arg)
 }
 
+// Count walks the Hamt using Visit and populates a Count data struture which
+// it return.
 func (h *HamtTransient) Count() (uint, *Counts) {
 	return h.common.Count()
 }
