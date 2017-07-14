@@ -57,7 +57,7 @@ FixedTables to HybridTables or even SparseTables.
 As a general rule if the number of entry is only in the 100,000s or less, choose
 FixedTables
 
-Transient versus Ffunctional
+Transient versus Functional
 
 Good question!
 
