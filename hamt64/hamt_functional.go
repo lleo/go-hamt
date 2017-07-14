@@ -11,7 +11,7 @@ package hamt64
 // and Del() return a slightly modified copy of the HamtFunctional
 // datastructure. So sharing this datastructure between threads is safe.
 type HamtFunctional struct {
-	Common
+	common
 }
 
 // NewFunctional constructs a new HamtFunctional datastructure based on the opt
@@ -19,20 +19,20 @@ type HamtFunctional struct {
 func NewFunctional(opt int) *HamtFunctional {
 	var h = new(HamtFunctional)
 
-	h.Common.init(opt)
+	h.common.init(opt)
 
 	return h
 }
 
 // IsEmpty simply returns if the HamtFunctional datastucture has no entries.
 func (h *HamtFunctional) IsEmpty() bool {
-	return h.Common.IsEmpty()
+	return h.common.IsEmpty()
 }
 
 // Nentries return the number of (key,value) pairs are stored in the
 // HamtFunctional datastructure.
 func (h *HamtFunctional) Nentries() uint {
-	return h.Common.Nentries()
+	return h.common.Nentries()
 }
 
 // ToFunctional does nothing to a HamtFunctional datastructure. This method only
@@ -58,7 +58,7 @@ func (h *HamtFunctional) ToFunctional() Hamt {
 // original HamtFunctional is to first perform a DeepCopy()
 func (h *HamtFunctional) ToTransient() Hamt {
 	return &HamtTransient{
-		Common{
+		common{
 			root:       h.root,
 			nentries:   h.nentries,
 			grade:      h.grade,
@@ -71,7 +71,7 @@ func (h *HamtFunctional) ToTransient() Hamt {
 // contains recursively. This is expensive, but usefull, if you want to use
 // ToTransient() and ToFunctional().
 func (h *HamtFunctional) DeepCopy() Hamt {
-	return h.Common.DeepCopy()
+	return h.common.DeepCopy()
 }
 
 // persist() is ONLY called on a fresh copy of the current Hamt.
@@ -110,7 +110,7 @@ func (h *HamtFunctional) persist(oldTable, newTable tableI, path tableStack) {
 // datastructure. It also return a bool to indicate the value was found. This
 // allows you to store nil values in the HamtFunctional datastructure.
 func (h *HamtFunctional) Get(bs []byte) (interface{}, bool) {
-	return h.Common.Get(bs)
+	return h.common.Get(bs)
 }
 
 // Put stores a new (key,value) pair in the HamtFunctional datastructure. It
@@ -224,19 +224,19 @@ func (h *HamtFunctional) Del(bs []byte) (Hamt, interface{}, bool) {
 // Secifically it returns a representation of the datastructure with the
 // nentries value of Nentries() and a representation of the root table.
 func (h *HamtFunctional) String() string {
-	return h.Common.String()
+	return h.common.String()
 }
 
 // LongString returns a complete listing of the entire Hamt data structure
 // recursively indented..
 func (h *HamtFunctional) LongString(indent string) string {
-	return h.Common.LongString(indent)
+	return h.common.LongString(indent)
 }
 
 func (h *HamtFunctional) Visit(fn visitFn, arg interface{}) uint {
-	return h.Common.Visit(fn, arg)
+	return h.common.Visit(fn, arg)
 }
 
 func (h *HamtFunctional) Count() (uint, *Counts) {
-	return h.Common.Count()
+	return h.common.Count()
 }
