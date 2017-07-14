@@ -200,7 +200,7 @@ func (h *HamtFunctional) Del(bs []byte) (Hamt, interface{}, bool) {
 	} else { //leaf was a FlatLeaf
 		newTable.remove(idx)
 
-		// Side-Effects of removing a KeyVal from the table
+		// Side-Effects of removing a iKeyVal from the table
 		switch {
 		case newTable.nentries() == 0:
 			newTable = nil

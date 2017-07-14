@@ -4,13 +4,13 @@ import (
 	"fmt"
 )
 
-// KeyVal is a simple struct used to transfer lists ([]KeyVal) from one
+// iKeyVal is a simple struct used to transfer lists ([]iKeyVal) from one
 // function to another.
-type KeyVal struct {
+type iKeyVal struct {
 	Key *iKey
 	Val interface{}
 }
 
-func (kv KeyVal) String() string {
+func (kv iKeyVal) String() string {
 	return fmt.Sprintf("{%s, %v}", kv.Key, kv.Val)
 }

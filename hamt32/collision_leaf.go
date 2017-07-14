@@ -9,10 +9,10 @@ import (
 // implements nodeI
 // implements leafI
 type collisionLeaf struct {
-	kvs []KeyVal
+	kvs []iKeyVal
 }
 
-func newCollisionLeaf(kvs []KeyVal) *collisionLeaf {
+func newCollisionLeaf(kvs []iKeyVal) *collisionLeaf {
 	var leaf = new(collisionLeaf)
 	leaf.kvs = append(leaf.kvs, kvs...)
 
@@ -38,7 +38,7 @@ func (l *collisionLeaf) String() string {
 	}
 	var jkvstr = strings.Join(kvstrs, ",")
 
-	return fmt.Sprintf("collisionLeaf{hash:%s, kvs:[]KeyVal{%s}}",
+	return fmt.Sprintf("collisionLeaf{hash:%s, kvs:[]iKeyVal{%s}}",
 		l.Hash(), jkvstr)
 }
 
@@ -59,10 +59,10 @@ func (l *collisionLeaf) put(k *iKey, v interface{}) (leafI, bool) {
 		}
 	}
 	var nl = new(collisionLeaf)
-	nl.kvs = make([]KeyVal, len(l.kvs)+1)
+	nl.kvs = make([]iKeyVal, len(l.kvs)+1)
 	copy(nl.kvs, l.kvs)
-	nl.kvs[len(l.kvs)] = KeyVal{k, v}
-	//nl.kvs = append(nl.kvs, append(l.kvs, KeyVal{*k, v})...)
+	nl.kvs[len(l.kvs)] = iKeyVal{k, v}
+	//nl.kvs = append(nl.kvs, append(l.kvs, iKeyVal{*k, v})...)
 
 	log.Printf("%s : %d\n", l.Hash(), len(l.kvs)) //staying in cuz its so rare
 
@@ -90,8 +90,8 @@ func (l *collisionLeaf) del(k *iKey) (leafI, interface{}, bool) {
 	return l, nil, false
 }
 
-func (l *collisionLeaf) keyVals() []KeyVal {
-	var r = make([]KeyVal, 0, len(l.kvs))
+func (l *collisionLeaf) keyVals() []iKeyVal {
+	var r = make([]iKeyVal, 0, len(l.kvs))
 	r = append(r, l.kvs...)
 	return r
 	//return l.kvs

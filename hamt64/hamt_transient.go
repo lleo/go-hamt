@@ -186,7 +186,7 @@ func (h *HamtTransient) Del(bs []byte) (Hamt, interface{}, bool) {
 	} else { //leaf was a FlatLeaf
 		curTable.remove(idx)
 
-		// Side-Effects of removing an KeyVal from the table
+		// Side-Effects of removing an iKeyVal from the table
 		switch {
 		// if no entries left in table need to colapse down to parent
 		case curTable != h.root && curTable.nentries() == 1:

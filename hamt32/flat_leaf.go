@@ -36,7 +36,7 @@ func (l *flatLeaf) put(k *iKey, v interface{}) (leafI, bool) {
 		l.val = v
 		return l, false
 	}
-	var newLeaf = newCollisionLeaf([]KeyVal{{l.key, l.val}, {k, v}})
+	var newLeaf = newCollisionLeaf([]iKeyVal{{l.key, l.val}, {k, v}})
 	return newLeaf, true // key,val was added
 }
 
@@ -47,8 +47,8 @@ func (l *flatLeaf) del(key *iKey) (leafI, interface{}, bool) {
 	return l, nil, false
 }
 
-func (l *flatLeaf) keyVals() []KeyVal {
-	return []KeyVal{{l.key, l.val}}
+func (l *flatLeaf) keyVals() []iKeyVal {
+	return []iKeyVal{{l.key, l.val}}
 }
 
 func (l *flatLeaf) visit(fn VisitFn, arg interface{}, depth uint) uint {
