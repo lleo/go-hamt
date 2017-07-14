@@ -5,7 +5,7 @@ import "fmt"
 type nodeI interface {
 	Hash() hashVal
 	String() string
-	visit(fn VisitFn, arg interface{}, depth uint) uint
+	visit(fn visitFn, arg interface{}, depth uint) uint
 }
 
 type leafI interface {

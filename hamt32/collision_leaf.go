@@ -97,7 +97,7 @@ func (l *collisionLeaf) keyVals() []iKeyVal {
 	//return l.kvs
 }
 
-func (l *collisionLeaf) visit(fn VisitFn, arg interface{}, depth uint) uint {
+func (l *collisionLeaf) visit(fn visitFn, arg interface{}, depth uint) uint {
 	fn(l, arg)
 	return depth - 1 //remove cuz this method is called with depth+1
 }

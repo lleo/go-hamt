@@ -179,14 +179,14 @@ func (h *common) LongString(indent string) string {
 	return str
 }
 
-func (h *common) Visit(fn visitFn, arg interface{}) uint {
+func (h *common) visit(fn visitFn, arg interface{}) uint {
 	return h.root.visit(fn, arg, 0)
 }
 
 // Count returns a break down of the number of items in the HAMT.
 func (h *common) Count() (maxDepth uint, counts *Counts) {
 	counts = new(Counts)
-	maxDepth = h.Visit(count, counts)
+	maxDepth = h.visit(count, counts)
 	return maxDepth, counts
 }
 

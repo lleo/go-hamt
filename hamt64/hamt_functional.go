@@ -249,8 +249,8 @@ func (h *HamtFunctional) LongString(indent string) string {
 // Visit walks the Hamt executing the VisitFn then recursing into each of
 // the subtrees in order. It returns the maximum table depth it reached in
 // any branch.
-func (h *HamtFunctional) Visit(fn visitFn, arg interface{}) uint {
-	return h.common.Visit(fn, arg)
+func (h *HamtFunctional) visit(fn visitFn, arg interface{}) uint {
+	return h.common.visit(fn, arg)
 }
 
 // Count walks the Hamt using Visit and populates a Count data struture which
