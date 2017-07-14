@@ -3,7 +3,7 @@ package hamt32
 import "fmt"
 
 type nodeI interface {
-	Hash() HashVal
+	Hash() hashVal
 	String() string
 	visit(fn VisitFn, arg interface{}, depth uint) uint
 }

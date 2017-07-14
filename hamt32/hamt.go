@@ -26,8 +26,8 @@ import (
 	"unsafe"
 )
 
-// HashSize is the size of HashVal in bits.
-const HashSize uint = uint(unsafe.Sizeof(HashVal(0))) * 8
+// HashSize is the size of hashVal in bits.
+const HashSize uint = uint(unsafe.Sizeof(hashVal(0))) * 8
 
 // IndexBits is the fundemental setting along with HashSize for the Key
 // constants. 2..HashSize/2 step 1
@@ -116,7 +116,7 @@ type Hamt interface {
 	Count() (uint, *Counts)
 }
 
-// New() constructs a datastucture that implements the Hamt interface. When the
+// New constructs a datastucture that implements the Hamt interface. When the
 // functional argument is true it implements a HamtFunctional datastructure.
 // When the functional argument is false it implements a HamtTransient
 // datastructure. In either case the opt argument is handed to the to the

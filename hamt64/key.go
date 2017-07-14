@@ -6,7 +6,7 @@ import (
 )
 
 type Key struct {
-	hash HashVal
+	hash hashVal
 	bs   []byte
 }
 
@@ -16,13 +16,13 @@ func newKey(bs []byte) *Key {
 	k.bs = make([]byte, len(bs))
 	copy(k.bs, bs)
 
-	k.hash = HashVal(fold(hash(bs), remainder))
+	k.hash = hashVal(fold(hash(bs), remainder))
 
 	return k
 }
 
-// Hash return the HashVal of KeyBase
-func (k *Key) Hash() HashVal {
+// Hash return the hashVal of KeyBase
+func (k *Key) Hash() hashVal {
 	return k.hash
 }
 

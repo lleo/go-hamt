@@ -27,7 +27,7 @@ func (l *collisionLeaf) copy() *collisionLeaf {
 	return nl
 }
 
-func (l *collisionLeaf) Hash() HashVal {
+func (l *collisionLeaf) Hash() hashVal {
 	return l.kvs[0].Key.Hash()
 }
 

@@ -11,7 +11,7 @@ const sparseTableInitCap int = 2
 
 // OLD sparsTable layout size == 48
 //type sparseTable struct {
-//	hashPath HashVal // 4; 8 cuz of alignment
+//	hashPath hashVal // 4; 8 cuz of alignment
 //	depth    uint    // 8
 //	nodeMap  Bitmap  // 4; 8 cuz of alignment
 //	nodes    []nodeI // 24
@@ -22,7 +22,7 @@ type sparseTable struct {
 	nodes    []nodeI // 24
 	depth    uint    // 8
 	nodeMap  Bitmap  // 4
-	hashPath HashVal // 4
+	hashPath hashVal // 4
 }
 
 func (t *sparseTable) copy() tableI {
@@ -74,13 +74,13 @@ func createSparseTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	_ = AssertOn && assert(depth > 0, "createSparseTable(): depth < 1")
 
 	_ = AssertOn && assertf(
-		leaf1.Hash().HashPath(depth) == leaf2.Hash().HashPath(depth),
+		leaf1.Hash().hashPath(depth) == leaf2.Hash().hashPath(depth),
 		"createSparseTable(): hp1,%s != hp2,%s",
-		leaf1.Hash().HashPath(depth),
-		leaf2.Hash().HashPath(depth))
+		leaf1.Hash().hashPath(depth),
+		leaf2.Hash().hashPath(depth))
 
 	var retTable = new(sparseTable)
-	retTable.hashPath = leaf1.Hash().HashPath(depth)
+	retTable.hashPath = leaf1.Hash().hashPath(depth)
 	retTable.depth = depth
 	//retTable.nodeMap = 0
 	retTable.nodes = make([]nodeI, 0, sparseTableInitCap)
@@ -110,7 +110,7 @@ func createSparseTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 // The ents []tableEntry slice is guaranteed to be in order from lowest idx to
 // highest. tableI.entries() also adhears to this contract.
 func downgradeToSparseTable(
-	hashPath HashVal,
+	hashPath hashVal,
 	depth uint,
 	ents []tableEntry,
 ) *sparseTable {
@@ -130,7 +130,7 @@ func downgradeToSparseTable(
 
 // Hash returns an incomplete Hash of this table. Any levels past it's current
 // depth should be zero.
-func (t *sparseTable) Hash() HashVal {
+func (t *sparseTable) Hash() hashVal {
 	return t.hashPath
 }
 

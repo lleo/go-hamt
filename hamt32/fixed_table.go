@@ -9,7 +9,7 @@ type fixedTable struct {
 	nodes    [IndexLimit]nodeI // 512; 32*16, why 16? typeId + uintptr??
 	depth    uint              // 8; amd64
 	nents    uint              // 8; amd64
-	hashPath HashVal           // 4; 8 alignment
+	hashPath hashVal           // 4; 8 alignment
 }
 
 func (t *fixedTable) copy() tableI {
@@ -54,13 +54,13 @@ func createFixedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	_ = AssertOn && assertf(depth > 0, "createFixedTable(): depth,%d < 1", depth)
 
 	_ = AssertOn && assertf(
-		leaf1.Hash().HashPath(depth) == leaf2.Hash().HashPath(depth),
+		leaf1.Hash().hashPath(depth) == leaf2.Hash().hashPath(depth),
 		"createFixedTable(): hp1,%s != hp2,%s",
-		leaf1.Hash().HashPath(depth),
-		leaf2.Hash().HashPath(depth))
+		leaf1.Hash().hashPath(depth),
+		leaf2.Hash().hashPath(depth))
 
 	var retTable = new(fixedTable)
-	retTable.hashPath = leaf1.Hash().HashPath(depth)
+	retTable.hashPath = leaf1.Hash().hashPath(depth)
 	retTable.depth = depth
 
 	var idx1 = leaf1.Hash().Index(depth)
@@ -82,7 +82,7 @@ func createFixedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 }
 
 func upgradeToFixedTable(
-	hashPath HashVal,
+	hashPath hashVal,
 	depth uint,
 	ents []tableEntry,
 ) *fixedTable {
@@ -100,7 +100,7 @@ func upgradeToFixedTable(
 
 // Hash returns an incomplete Hash of this table. Any levels past it's current
 // depth should be zero.
-func (t *fixedTable) Hash() HashVal {
+func (t *fixedTable) Hash() hashVal {
 	return t.hashPath
 }
 
