@@ -10,7 +10,7 @@ package hamt64
 // in-place. So sharing this datastruture between threads is NOT safe unless
 // you were to implement a locking stategy CORRECTLY.
 type HamtTransient struct {
-	HamtBase
+	hamtBase
 }
 
 // NewTransient constructs a new HamtTransient datastructure based on the opt
@@ -18,20 +18,20 @@ type HamtTransient struct {
 func NewTransient(opt int) *HamtTransient {
 	var h = new(HamtTransient)
 
-	h.HamtBase.init(opt)
+	h.hamtBase.init(opt)
 
 	return h
 }
 
 // IsEmpty simply returns if the HamtTransient datastucture has no entries.
 func (h *HamtTransient) IsEmpty() bool {
-	return h.HamtBase.IsEmpty()
+	return h.hamtBase.IsEmpty()
 }
 
 // Nentries return the number of (key,value) pairs are stored in the
 // HamtTransient datastructure.
 func (h *HamtTransient) Nentries() uint {
-	return h.HamtBase.Nentries()
+	return h.hamtBase.Nentries()
 }
 
 // ToFunctional creates a HamtFunctional data structure and copies the values
@@ -56,7 +56,7 @@ func (h *HamtTransient) ToFunctional() Hamt {
 	nh.startFixed = h.startFixed
 	return nh
 	//return &HamtFunctional{
-	//	HamtBase{
+	//	hamtBase{
 	//		root:       h.root,
 	//		nentries:   h.nentries,
 	//		grade:      h.grade,
@@ -87,7 +87,7 @@ func (h *HamtTransient) DeepCopy() Hamt {
 // datastructure. It also return a bool to indicate the value was found. This
 // allows you to store nil values in the HamtTransient datastructure.
 func (h *HamtTransient) Get(bs []byte) (interface{}, bool) {
-	return h.HamtBase.Get(bs)
+	return h.hamtBase.Get(bs)
 }
 
 // Put stores a new (key,value) pair in the HamtTransient datastructure. It
@@ -227,24 +227,24 @@ func (h *HamtTransient) Del(bs []byte) (Hamt, interface{}, bool) {
 // String returns a simple string representation of the HamtTransient data
 // structure.
 func (h *HamtTransient) String() string {
-	return h.HamtBase.String()
+	return h.hamtBase.String()
 }
 
 // LongString returns a complete recusive listing of the entire HamtTransient
 // data structure.
 func (h *HamtTransient) LongString(indent string) string {
-	return h.HamtBase.LongString(indent)
+	return h.hamtBase.LongString(indent)
 }
 
 // Visit walks the Hamt executing the VisitFn then recursing into each of
 // the subtrees in order. It returns the maximum table depth it reached in
 // any branch.
 func (h *HamtTransient) visit(fn visitFn, arg interface{}) uint {
-	return h.HamtBase.visit(fn, arg)
+	return h.hamtBase.visit(fn, arg)
 }
 
 // Count walks the Hamt using Visit and populates a Count data struture which
 // it return.
 func (h *HamtTransient) Count() (uint, *Counts) {
-	return h.HamtBase.Count()
+	return h.hamtBase.Count()
 }

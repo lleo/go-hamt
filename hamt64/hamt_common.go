@@ -6,14 +6,14 @@ import (
 )
 
 // This is here as the Hamt base data struture.
-type HamtBase struct {
+type hamtBase struct {
 	root       tableI
 	nentries   uint
 	grade      bool
 	startFixed bool
 }
 
-func (h *HamtBase) init(opt int) {
+func (h *hamtBase) init(opt int) {
 	// boolean zero value is false
 	switch opt {
 	case HybridTables:
@@ -29,21 +29,21 @@ func (h *HamtBase) init(opt int) {
 }
 
 // IsEmpty simply returns if the HamtFunctional datastucture has no entries.
-func (h *HamtBase) IsEmpty() bool {
+func (h *hamtBase) IsEmpty() bool {
 	return h.root == nil
 	//return h.nentries == 0
 }
 
 // Nentries return the number of (key,value) pairs are stored in the
 // HamtFunctional datastructure.
-func (h *HamtBase) Nentries() uint {
+func (h *hamtBase) Nentries() uint {
 	return h.nentries
 }
 
 // DeepCopy() copies the HamtFunctional datastructure and every table it
 // contains recursively. This is expensive, but usefull, if you want to use
 // ToTransient() and ToFunctional().
-func (h *HamtBase) DeepCopy() Hamt {
+func (h *hamtBase) DeepCopy() Hamt {
 	var nh = new(HamtFunctional)
 	nh.root = h.root.deepCopy()
 	nh.nentries = h.nentries
@@ -52,7 +52,7 @@ func (h *HamtBase) DeepCopy() Hamt {
 	return nh
 }
 
-func (h *HamtBase) find(k *iKey) (tableStack, leafI, uint) {
+func (h *hamtBase) find(k *iKey) (tableStack, leafI, uint) {
 	if h.IsEmpty() {
 		return nil, nil, 0
 	}
@@ -93,7 +93,7 @@ DepthIter:
 }
 
 // This is slower due to extraneous code and allocations in find().
-//func (h *HamtBase) Get(bs []byte) (interface{}, bool) {
+//func (h *hamtBase) Get(bs []byte) (interface{}, bool) {
 //	var k = newKey(bs)
 //	var _, leaf, _ = h.find(k)
 //
@@ -107,7 +107,7 @@ DepthIter:
 // Get retrieves the value related to the key in the HamtFunctional
 // datastructure. It also return a bool to indicate the value was found. This
 // allows you to store nil values in the HamtFunctional datastructure.
-func (h *HamtBase) Get(bs []byte) (interface{}, bool) {
+func (h *hamtBase) Get(bs []byte) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
 	}
@@ -138,26 +138,26 @@ func (h *HamtBase) Get(bs []byte) (interface{}, bool) {
 	panic("SHOULD NEVER BE REACHED")
 }
 
-func (h *HamtBase) createRootTable(leaf leafI) tableI {
+func (h *hamtBase) createRootTable(leaf leafI) tableI {
 	if h.startFixed {
 		return createRootFixedTable(leaf)
 	}
 	return createRootSparseTable(leaf)
 }
 
-func (h *HamtBase) createTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
+func (h *hamtBase) createTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	if h.startFixed {
 		return createFixedTable(depth, leaf1, leaf2)
 	}
 	return createSparseTable(depth, leaf1, leaf2)
 }
 
-// String returns a string representation of the HamtBase stastructure.
+// String returns a string representation of the hamtBase stastructure.
 // Secifically it returns a representation of the datastructure with the
 // nentries value of Nentries() and a representation of the root table.
-func (h *HamtBase) String() string {
+func (h *hamtBase) String() string {
 	return fmt.Sprintf(
-		"HamtBase{ nentries: %d, root: %s }",
+		"hamtBase{ nentries: %d, root: %s }",
 		h.nentries,
 		h.root.String(),
 	)
@@ -165,26 +165,26 @@ func (h *HamtBase) String() string {
 
 // LongString returns a complete listing of the entire Hamt data structure
 // recursively indented.
-func (h *HamtBase) LongString(indent string) string {
+func (h *hamtBase) LongString(indent string) string {
 	var str string
 	if h.root != nil {
 		str = indent +
-			fmt.Sprintf("HamtBase{ nentries: %d, root:\n", h.nentries)
+			fmt.Sprintf("hamtBase{ nentries: %d, root:\n", h.nentries)
 		str += indent + h.root.LongString(indent, 0)
-		str += indent + "} //HamtBase"
+		str += indent + "} //hamtBase"
 	} else {
 		str = indent +
-			fmt.Sprintf("HamtBase{ nentries: %d, root: nil }", h.nentries)
+			fmt.Sprintf("hamtBase{ nentries: %d, root: nil }", h.nentries)
 	}
 	return str
 }
 
-func (h *HamtBase) visit(fn visitFn, arg interface{}) uint {
+func (h *hamtBase) visit(fn visitFn, arg interface{}) uint {
 	return h.root.visit(fn, arg, 0)
 }
 
 // Count returns a break down of the number of items in the HAMT.
-func (h *HamtBase) Count() (maxDepth uint, counts *Counts) {
+func (h *hamtBase) Count() (maxDepth uint, counts *Counts) {
 	counts = new(Counts)
 	maxDepth = h.visit(count, counts)
 	return maxDepth, counts
