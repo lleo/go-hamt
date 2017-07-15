@@ -107,12 +107,12 @@ DepthIter:
 // Get retrieves the value related to the key in the HamtFunctional
 // datastructure. It also return a bool to indicate the value was found. This
 // allows you to store nil values in the HamtFunctional datastructure.
-func (h *hamtBase) Get(bs []byte) (interface{}, bool) {
+func (h *hamtBase) Get(key []byte) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
 	}
 
-	var k = newKey(bs)
+	var k = newKey(key)
 	var hv = k.Hash()
 
 	var curTable = h.root //ISA tableI
