@@ -112,7 +112,7 @@ type Hamt interface {
 	Del([]byte) (Hamt, interface{}, bool)
 	String() string
 	LongString(string) string
-	visit(visitFn, interface{}) uint
+	visit(visitFn) uint
 	Count() (uint, *Counts)
 }
 

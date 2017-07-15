@@ -51,7 +51,7 @@ func (l *flatLeaf) keyVals() []iKeyVal {
 	return []iKeyVal{{l.key, l.val}}
 }
 
-func (l *flatLeaf) visit(fn visitFn, arg interface{}, depth uint) uint {
-	fn(l, arg)
-	return depth - 1 //remove cuz this method is called with depth+1
+func (l *flatLeaf) visit(fn visitFn, depth uint) uint {
+	fn(l)
+	return depth
 }
