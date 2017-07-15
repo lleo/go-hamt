@@ -178,20 +178,20 @@ func (h *HamtFunctional) Put(bs []byte, v interface{}) (Hamt, bool) {
 }
 
 // Del searches the HamtFunctional for the key argument and returns three
-// values: a Hamt datastuture, a value, and a bool.
+// values: a Hamt interface, a value, and a bool.
 //
 // If the key was found then the bool returned is true and the value is the
-// value related to that key and the returned Hamt is a new HamtFunctional data
-// structure without that (key, value) pair.
+// value related to that key and the returned Hamt is the new HamtFunctional
+// data structure pointer.
 //
 // If key was not found, then the bool is false, the value is nil, and the Hamt
-// value is the original HamtFunctional data structure.
-func (h *HamtFunctional) Del(bs []byte) (Hamt, interface{}, bool) {
+// value is the original HamtFunctional data structure pointer.
+func (h *HamtFunctional) Del(key []byte) (Hamt, interface{}, bool) {
 	if h.IsEmpty() {
 		return h, nil, false
 	}
 
-	var k = newKey(bs)
+	var k = newKey(key)
 	var path, leaf, idx = h.find(k)
 
 	var curTable = path.pop()

@@ -161,11 +161,16 @@ func (h *HamtTransient) Put(key []byte, v interface{}) (Hamt, bool) {
 }
 
 // Del searches the HamtTransient for the key argument and returns three
-// values: a Hamt datastuture, a value, and a bool. If the key was found then
-// the bool returned is true and the value is the value related to that key and
-// the returned Hamt is a new HamtTransient datastructure without. If the
-// (key, value) pair. If key was not found, then the bool is false, the value is
-// nil, and the Hamt value is the original HamtTransient datastructure.
+// values: a Hamt interface, a value, and a bool.
+//
+// If the key was found, then the bool returned is true and the value is the
+// value related to that key.
+//
+// If key was not found, then the bool returned is false and the value is
+// nil.
+//
+// In either case, the Hamt value is the original HamtTransient pointer as a
+// Hamt interface.
 func (h *HamtTransient) Del(key []byte) (Hamt, interface{}, bool) {
 	if h.IsEmpty() {
 		return h, nil, false
