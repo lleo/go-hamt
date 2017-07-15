@@ -59,7 +59,27 @@ FixedTables
 
 Transient versus Functional
 
-Good question!
+The bottom line is that writing to transient data structures in a multiple
+threads is almost guarantees problems unless you implement a locking solution
+(and that can be hard to do in a performant manner).
+
+On the other hand, given that HamtFunctional data structures return a new
+HamtFunctional data structure upon any modification, HamtFunctional data
+structures are inherently thread safe.
+
+On your third hand, the copy-on-write strategy of HamtFunctional is inherently
+slower than modify-in-place strategy of HamtTransient. How much slower? For
+large Hamt data structures (~3 million key/value pairs) the transient Put
+operation takes ~1100ns, where the functional Put op takes ~3200ns. Which
+really isn't that bad because they are within the same order of magnitude and
+it is already blazingly fast (about a million ops/sec).
+
+On the fourth hand, functional copy-on-write strategy puts pressure on the Go
+garbage collector. This is even worse if you use the memory inefficient, but
+faster FixedTables option.
+
+You are going to have to make a per-application determination of which mode
+to use, but at least you have both to choose from :).
 
 IndexBits
 
