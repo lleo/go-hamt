@@ -20,7 +20,7 @@ type tableSlice []tableI
 
 // Constructs an tableSlice impl of the tableStack interface.
 func newTableStack() tableStack {
-	var ts = make(tableSlice, 0, MaxDepth)
+	var ts = make(tableSlice, 0, maxDepth)
 	return &ts
 }
 

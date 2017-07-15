@@ -84,7 +84,7 @@ func createSparseTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 		retTable.insert(idx2, leaf2)
 	} else { //idx1 == idx2
 		var node nodeI
-		if depth == MaxDepth {
+		if depth == maxDepth {
 			node = newCollisionLeaf(append(leaf1.keyVals(), leaf2.keyVals()...))
 		} else {
 			//log.Printf("createSparseTable(depth=%d, ...) recursing\n", depth+1)

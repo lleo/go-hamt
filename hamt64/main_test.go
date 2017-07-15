@@ -100,8 +100,6 @@ func TestMain(m *testing.M) {
 
 	BVS = buildBslVals("TestMain", numBvs)
 
-	log.Printf("TestMain: HashSize=%d\n", hamt64.HashSize)
-	fmt.Printf("TestMain: HashSize=%d\n", hamt64.HashSize)
 	log.Printf("TestMain: IndexBits=%d\n", hamt64.IndexBits)
 	fmt.Printf("TestMain: IndexBits=%d\n", hamt64.IndexBits)
 	log.Printf("TestMain: IndexLimit=%d\n", hamt64.IndexLimit)
@@ -273,9 +271,9 @@ func buildHamt64(
 
 	StartTime[name] = time.Now()
 	var h = hamt64.New(functional, opt)
-	for _, sv := range bvs {
-		var bs = sv.Bsl
-		var v = sv.Val
+	for _, bv := range bvs {
+		var bs = bv.Bsl
+		var v = bv.Val
 
 		var inserted bool
 		h, inserted = h.Put(bs, v)

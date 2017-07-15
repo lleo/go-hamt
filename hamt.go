@@ -101,8 +101,6 @@ import (
 	"github.com/lleo/go-hamt/hamt64"
 )
 
-// WARNING!!! Duplicated code with both hamt32 and hamt64. Must have
-// test to guarantee they stay in lock step.
 const (
 	// FixedTable indicates the structure should use fixedTables ONLY.
 	// This was intended to be for speed, as sparse tables use a software

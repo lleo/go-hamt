@@ -128,7 +128,7 @@ func (h *HamtTransient) Put(key []byte, v interface{}) (Hamt, bool) {
 		added = true
 	} else {
 		// This is the condition that allows collision leafs to exist at a level
-		// less than MaxDepth. I don't know if I want to allow this...
+		// less than maxDepth. I don't know if I want to allow this...
 		if leaf.Hash() == k.Hash() {
 			var newLeaf leafI
 			// There are four possibilities here:

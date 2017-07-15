@@ -18,7 +18,7 @@ func indexMask(depth uint) hashVal {
 // Index returns the IndexBits bit value of the hashVal at 'depth' number of
 // IndexBits number of bits into hashVal.
 func (hv hashVal) Index(depth uint) uint {
-	_ = AssertOn && assert(depth < DepthLimit, "Index: depth > MaxDepth")
+	_ = AssertOn && assert(depth < DepthLimit, "Index: depth > maxDepth")
 
 	var idxMask = indexMask(depth)
 	return uint((hv & idxMask) >> (depth * IndexBits))
@@ -31,9 +31,9 @@ func hashPathMask(depth uint) hashVal {
 // hashPath calculates the path required to read the given depth. In other words
 // it returns a hashVal that preserves the first depth-1 IndexBits index
 // values. For depth=0 it always returns no path (aka a 0 value).
-// For depth=MaxDepth it returns all but the last index value.
+// For depth=maxDepth it returns all but the last index value.
 func (hv hashVal) hashPath(depth uint) hashVal {
-	_ = AssertOn && assert(depth < DepthLimit, "hashPath(): dept > MaxDepth")
+	_ = AssertOn && assert(depth < DepthLimit, "hashPath(): dept > maxDepth")
 
 	if depth == 0 {
 		return 0
@@ -48,7 +48,7 @@ func (hv hashVal) hashPath(depth uint) hashVal {
 // will return hashPath "/11/07/13/23". hashPath is shown here in the string
 // representation, but the real value is hashVal (aka uint32).
 func (hv hashVal) buildHashPath(idx, depth uint) hashVal {
-	_ = AssertOn && assert(idx < DepthLimit, "buildHashPath: idx > MaxIndex")
+	_ = AssertOn && assert(idx < DepthLimit, "buildHashPath: idx > maxIndex")
 
 	hv &= hashPathMask(depth)
 	return hv | hashVal(idx<<(depth*IndexBits))
@@ -56,7 +56,7 @@ func (hv hashVal) buildHashPath(idx, depth uint) hashVal {
 
 // HashPathString returns a string representation of the index path of a
 // hashVal. It will be string of the form "/idx0/idx1/..." where each idxN value
-// will be a zero padded number between 0 and MaxIndex. There will be limit
+// will be a zero padded number between 0 and maxIndex. There will be limit
 // number of such values where limit <= DepthLimit.
 // If the limit parameter is 0 then the method will simply return "/".
 // Warning: It will panic() if limit > DepthLimit.
@@ -87,7 +87,7 @@ func (hv hashVal) bitString() string {
 
 	for d := uint(0); d < DepthLimit; d++ {
 		var fmtStr = fmt.Sprintf("%%0%dd", IndexBits)
-		strs[MaxDepth-d] = fmt.Sprintf(fmtStr, hv.Index(d))
+		strs[maxDepth-d] = fmt.Sprintf(fmtStr, hv.Index(d))
 	}
 
 	var remStr string

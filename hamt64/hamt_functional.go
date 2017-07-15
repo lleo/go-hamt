@@ -111,7 +111,7 @@ func (h *HamtFunctional) persist(oldTable, newTable tableI, path tableStack) {
 		newParent.replace(parentIdx, newTable)
 	}
 
-	h.persist(oldParent, newParent, path) //recurses at most MaxDepth-1 times
+	h.persist(oldParent, newParent, path) //recurses at most maxDepth-1 times
 
 	return
 }

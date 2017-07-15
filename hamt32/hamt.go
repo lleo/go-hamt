@@ -26,27 +26,27 @@ import (
 	"unsafe"
 )
 
-// HashSize is the size of hashVal in bits.
-const HashSize uint = uint(unsafe.Sizeof(hashVal(0))) * 8
+// hashSize is the size of hashVal in bits.
+const hashSize uint = uint(unsafe.Sizeof(hashVal(0))) * 8
 
-// IndexBits is the fundemental setting along with HashSize for the Key
-// constants. 2..HashSize/2 step 1
-const IndexBits uint = 5
+// IndexBits is the fundemental setting along with hashSize for the Key
+// constants. 2..hashSize/2 step 1
+const IndexBits uint = 4
 
 // DepthLimit is the maximum number of levels of the Hamt. It is calculated as
-// DepthLimit = floor(HashSize / IndexBits) or a strict integer division.
-const DepthLimit = HashSize / IndexBits
-const remainder = HashSize - (DepthLimit * IndexBits)
+// DepthLimit = floor(hashSize / IndexBits) or a strict integer division.
+const DepthLimit = hashSize / IndexBits
+const remainder = hashSize - (DepthLimit * IndexBits)
 
 // IndexLimit is the maximum number of entries in the Hamt interior nodes.
 // IndexLimit = 1 << IndexBits
 const IndexLimit = 1 << IndexBits
 
-// MaxDepth is the maximum value of a depth variable. MaxDepth = DepthLimit - 1
-const MaxDepth = DepthLimit - 1
+// maxDepth is the maximum value of a depth variable. maxDepth = DepthLimit - 1
+const maxDepth = DepthLimit - 1
 
-// MaxIndex is the maximum value of a index variable. MaxIndex = IndexLimie - 1
-const MaxIndex = IndexLimit - 1
+// maxIndex is the maximum value of a index variable. maxIndex = IndexLimie - 1
+const maxIndex = IndexLimit - 1
 
 // DowngradeThreshold is the constant that sets the threshold for the size of a
 // table, that when a table decreases to the threshold size, the table is

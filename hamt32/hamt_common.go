@@ -66,7 +66,7 @@ func (h *hamtBase) find(k *iKey) (tableStack, leafI, uint) {
 
 	var depth uint
 DepthIter:
-	for depth = 0; depth <= MaxDepth; depth++ {
+	for depth = 0; depth <= maxDepth; depth++ {
 		path.push(curTable)
 		idx = hv.Index(depth)
 
@@ -79,8 +79,8 @@ DepthIter:
 			leaf = n
 			break DepthIter
 		case tableI:
-			if depth == MaxDepth {
-				log.Panicf("SHOULD NOT BE REACHED; depth,%d == MaxDepth,%d & tableI entry found; %s", depth, MaxDepth, n)
+			if depth == maxDepth {
+				log.Panicf("SHOULD NOT BE REACHED; depth,%d == maxDepth,%d & tableI entry found; %s", depth, maxDepth, n)
 			}
 			curTable = n
 			// exit switch then loop for
@@ -117,7 +117,7 @@ func (h *hamtBase) Get(key []byte) (interface{}, bool) {
 
 	var curTable = h.root //ISA tableI
 
-	for depth := uint(0); depth <= MaxDepth; depth++ {
+	for depth := uint(0); depth <= maxDepth; depth++ {
 		var idx = hv.Index(depth)
 		var curNode = curTable.get(idx) //nodeI
 
@@ -129,7 +129,7 @@ func (h *hamtBase) Get(key []byte) (interface{}, bool) {
 			return leaf.get(k)
 		}
 
-		if depth == MaxDepth {
+		if depth == maxDepth {
 			panic("SHOULD NOT HAPPEN")
 		}
 		curTable = curNode.(tableI)

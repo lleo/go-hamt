@@ -14,17 +14,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-type StrVal struct {
-	Str string
+type BslVal struct {
+	Bsl []byte
 	Val interface{}
 }
 
 // 4 million & change
-var InitHamtNumSvsForPut = 1024 * 1024
-var InitHamtNumSvs = (2 * 1024 * 1024) + InitHamtNumSvsForPut
-var numSvs = InitHamtNumSvs + (4 * 1024)
+var InitHamtNumBvsForPut = 1024 * 1024
+var InitHamtNumBvs = (2 * 1024 * 1024) + InitHamtNumBvsForPut
+var numBvs = InitHamtNumBvs + (4 * 1024)
 var TwoKK = 2 * 1024 * 1024
-var SVS []StrVal
+var BVS []BslVal
 
 var Functional bool
 var TableOption int
@@ -39,7 +39,7 @@ var RunTime = make(map[string]time.Duration)
 func TestMain(m *testing.M) {
 	var fixedonly, sparseonly, hybrid, all bool
 	flag.BoolVar(&fixedonly, "F", false,
-		"Use fixed tables only and exclude C and H Options.")
+		"Use fixed tables only and exclude S and H Options.")
 	flag.BoolVar(&sparseonly, "S", false,
 		"Use sparse tables only and exclude F and H Options.")
 	flag.BoolVar(&hybrid, "H", false,
@@ -98,10 +98,8 @@ func TestMain(m *testing.M) {
 
 	log.Println("TestMain: and so it begins...")
 
-	SVS = buildStrVals("TestMain", numSvs)
+	BVS = buildBslVals("TestMain", numBvs)
 
-	log.Printf("TestMain: HashSize=%d\n", hamt32.HashSize)
-	fmt.Printf("TestMain: HashSize=%d\n", hamt32.HashSize)
 	log.Printf("TestMain: IndexBits=%d\n", hamt32.IndexBits)
 	fmt.Printf("TestMain: IndexBits=%d\n", hamt32.IndexBits)
 	log.Printf("TestMain: IndexLimit=%d\n", hamt32.IndexLimit)
@@ -247,40 +245,40 @@ func executeAll(m *testing.M) int {
 	return xit
 }
 
-func buildStrVals(prefix string, num int) []StrVal {
-	var name = fmt.Sprintf("%s-buildStrVals-%d", prefix, num)
+func buildBslVals(prefix string, num int) []BslVal {
+	var name = fmt.Sprintf("%s-buildBslVals-%d", prefix, num)
 	StartTime[name] = time.Now()
 
-	var svs = make([]StrVal, num)
+	var bvs = make([]BslVal, num)
 	var s = "aaa"
 
 	for i := 0; i < num; i++ {
-		svs[i] = StrVal{s, i}
+		bvs[i] = BslVal{[]byte(s), i}
 		s = Inc(s)
 	}
 
 	RunTime[name] = time.Since(StartTime[name])
-	return svs
+	return bvs
 }
 
 func buildHamt32(
 	prefix string,
-	svs []StrVal,
+	bvs []BslVal,
 	functional bool,
 	opt int,
 ) (hamt32.Hamt, error) {
-	var name = fmt.Sprintf("%s-buildHamt32-%d", prefix, len(svs))
+	var name = fmt.Sprintf("%s-buildHamt32-%d", prefix, len(bvs))
 
 	StartTime[name] = time.Now()
 	var h = hamt32.New(functional, opt)
-	for _, sv := range svs {
-		var s = sv.Str
-		var v = sv.Val
+	for _, bv := range bvs {
+		var bs = bv.Bsl
+		var v = bv.Val
 
 		var inserted bool
-		h, inserted = h.Put([]byte(s), v)
+		h, inserted = h.Put(bs, v)
 		if !inserted {
-			return nil, fmt.Errorf("failed to Put(%q, %v)", s, v)
+			return nil, fmt.Errorf("failed to Put(%q, %v)", string(bs), v)
 		}
 	}
 	RunTime[name] = time.Since(StartTime[name])

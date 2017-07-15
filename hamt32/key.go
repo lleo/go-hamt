@@ -58,5 +58,5 @@ func mask(size uint) uint32 {
 }
 
 func fold(hash uint32, rem uint) uint32 {
-	return (hash >> (HashSize - rem)) ^ (hash & mask(HashSize-rem))
+	return (hash >> (hashSize - rem)) ^ (hash & mask(hashSize-rem))
 }
