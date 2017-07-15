@@ -11,7 +11,7 @@ package hamt32
 // and Del() return a slightly modified copy of the HamtFunctional
 // data structure. So sharing this data structure between threads is safe.
 type HamtFunctional struct {
-	common
+	HamtBase
 }
 
 // NewFunctional constructs a new HamtFunctional data structure based on the opt
@@ -19,20 +19,20 @@ type HamtFunctional struct {
 func NewFunctional(opt int) *HamtFunctional {
 	var h = new(HamtFunctional)
 
-	h.common.init(opt)
+	h.HamtBase.init(opt)
 
 	return h
 }
 
 // IsEmpty simply returns if the HamtFunctional datastucture has no entries.
 func (h *HamtFunctional) IsEmpty() bool {
-	return h.common.IsEmpty()
+	return h.HamtBase.IsEmpty()
 }
 
 // Nentries return the number of (key,value) pairs are stored in the
 // HamtFunctional data structure.
 func (h *HamtFunctional) Nentries() uint {
-	return h.common.Nentries()
+	return h.HamtBase.Nentries()
 }
 
 // ToFunctional does nothing to a HamtFunctional data structure. This method
@@ -63,7 +63,7 @@ func (h *HamtFunctional) ToTransient() Hamt {
 	nh.startFixed = h.startFixed
 	return nh
 	//return &HamtTransient{
-	//	common{
+	//	HamtBase{
 	//		root:       h.root.deepCopy(),
 	//		nentries:   h.nentries,
 	//		grade:      h.grade,
@@ -120,7 +120,7 @@ func (h *HamtFunctional) persist(oldTable, newTable tableI, path tableStack) {
 // data structure. It also return a bool to indicate the value was found. This
 // allows you to store nil values in the HamtFunctional data structure.
 func (h *HamtFunctional) Get(bs []byte) (interface{}, bool) {
-	return h.common.Get(bs)
+	return h.HamtBase.Get(bs)
 }
 
 // Put stores a new (key,value) pair in the HamtFunctional data structure. It
@@ -234,28 +234,27 @@ func (h *HamtFunctional) Del(bs []byte) (Hamt, interface{}, bool) {
 	return nh, val, deleted
 }
 
-// String returns a string representation of the HamtFunctional stastructure.
-// Secifically it returns a representation of the data structure with the
-// nentries value of Nentries() and a representation of the root table.
+// String returns a simple string representation of the HamtFunctional data
+// structure.
 func (h *HamtFunctional) String() string {
-	return h.common.String()
+	return "HamtFunctional{" + h.HamtBase.String() + "}"
 }
 
-// LongString returns a complete listing of the entire Hamt data structure
-// recursively indented..
+// LongString returns a complete recusive listing of the entire HamtFunctional
+// data structure.
 func (h *HamtFunctional) LongString(indent string) string {
-	return h.common.LongString(indent)
+	return "HamtFunctional{\n" + indent + h.HamtBase.LongString(indent) + "\n}"
 }
 
 // Visit walks the Hamt executing the VisitFn then recursing into each of
 // the subtrees in order. It returns the maximum table depth it reached in
 // any branch.
 func (h *HamtFunctional) visit(fn visitFn, arg interface{}) uint {
-	return h.common.visit(fn, arg)
+	return h.HamtBase.visit(fn, arg)
 }
 
 // Count walks the Hamt using Visit and populates a Count data struture which
 // it return.
 func (h *HamtFunctional) Count() (uint, *Counts) {
-	return h.common.Count()
+	return h.HamtBase.Count()
 }
