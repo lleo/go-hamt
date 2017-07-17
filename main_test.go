@@ -65,6 +65,10 @@ func TestMain(m *testing.M) {
 	flag.BoolVar(&both, "b", false,
 		"Run Tests against both transient and functional Hamt types.")
 
+	var logFn string
+	flag.StringVar(&logFn, "l", "test.log",
+		"set the log file name.")
+
 	flag.Parse()
 
 	// If all flag set, ignore fixedonly, sparseonly, and hybrid.
@@ -97,7 +101,7 @@ func TestMain(m *testing.M) {
 
 	log.SetFlags(log.Lshortfile)
 
-	var logfile, err = os.Create("test.log")
+	var logfile, err = os.Create(logFn)
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to os.Create(\"test.log\")"))
 	}
