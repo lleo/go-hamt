@@ -2,12 +2,12 @@ package hamt64
 
 import "fmt"
 
-// The AssertOn constant determines whether or not assert() calls are called.
+// The assertOn constant determines whether or not assert() calls are called.
 // When this constantant is false, statements of the form:
-//     _ = AssertOn && assert(...)
+//     _ = assertOn && assert(...)
 // become noops when compiled.
 // NOTE: This constant SHOULD BE false for production code.
-const AssertOn bool = false
+const assertOn bool = false
 
 // assert() tests if test is false; if it is, it will panic with msg.
 // assert() is the fastest as it is simple enough to be inlined.
@@ -21,7 +21,7 @@ func assert(test bool, msg string) bool {
 // assertf() tests if test is false; if it is, it will panic with a message
 // formatted by msgFmt and msgArgs via fmt.Sprintf().
 // assertf() is much slower as it is not inlined. I am guessing  this is due to
-// the vararg nature of the arguments. However, nooping via the AssertOn trick
+// the vararg nature of the arguments. However, nooping via the assertOn trick
 // still applies.
 func assertf(test bool, msgFmt string, msgArgs ...interface{}) bool {
 	if !test {

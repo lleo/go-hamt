@@ -71,9 +71,9 @@ func createRootSparseTable(lf leafI) tableI {
 }
 
 func createSparseTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
-	_ = AssertOn && assert(depth > 0, "createSparseTable(): depth < 1")
+	_ = assertOn && assert(depth > 0, "createSparseTable(): depth < 1")
 
-	_ = AssertOn && assertf(
+	_ = assertOn && assertf(
 		leaf1.Hash().hashPath(depth) == leaf2.Hash().hashPath(depth),
 		"createSparseTable(): hp1,%s != hp2,%s",
 		leaf1.Hash().hashPath(depth),
@@ -198,7 +198,7 @@ func (t *sparseTable) get(idx uint) nodeI {
 }
 
 func (t *sparseTable) insert(idx uint, n nodeI) {
-	_ = AssertOn && assert(!t.nodeMap.IsSet(idx),
+	_ = assertOn && assert(!t.nodeMap.IsSet(idx),
 		"t.insert(idx, n) where idx slot is NOT empty; this should be a replace")
 
 	var j = t.nodeMap.Count(idx)
@@ -212,7 +212,7 @@ func (t *sparseTable) insert(idx uint, n nodeI) {
 }
 
 func (t *sparseTable) replace(idx uint, n nodeI) {
-	_ = AssertOn && assert(t.nodeMap.IsSet(idx),
+	_ = assertOn && assert(t.nodeMap.IsSet(idx),
 		"t.replace(idx, n) where idx slot is empty; this should be an insert")
 
 	var j = t.nodeMap.Count(idx)
@@ -220,7 +220,7 @@ func (t *sparseTable) replace(idx uint, n nodeI) {
 }
 
 func (t *sparseTable) remove(idx uint) {
-	_ = AssertOn && assert(t.nodeMap.IsSet(idx),
+	_ = assertOn && assert(t.nodeMap.IsSet(idx),
 		"t.remove(idx) where idx slot is already empty")
 
 	var j = t.nodeMap.Count(idx)

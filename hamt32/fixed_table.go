@@ -51,9 +51,9 @@ func createRootFixedTable(lf leafI) tableI {
 }
 
 func createFixedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
-	_ = AssertOn && assertf(depth > 0, "createFixedTable(): depth,%d < 1", depth)
+	_ = assertOn && assertf(depth > 0, "createFixedTable(): depth,%d < 1", depth)
 
-	_ = AssertOn && assertf(
+	_ = assertOn && assertf(
 		leaf1.Hash().hashPath(depth) == leaf2.Hash().hashPath(depth),
 		"createFixedTable(): hp1,%s != hp2,%s",
 		leaf1.Hash().hashPath(depth),
@@ -160,7 +160,7 @@ func (t *fixedTable) get(idx uint) nodeI {
 }
 
 func (t *fixedTable) insert(idx uint, n nodeI) {
-	_ = AssertOn && assert(t.nodes[idx] == nil,
+	_ = assertOn && assert(t.nodes[idx] == nil,
 		"t.insert(idx, n) where idx slot is NOT empty; this should be a replace")
 
 	t.nodes[idx] = n
@@ -168,14 +168,14 @@ func (t *fixedTable) insert(idx uint, n nodeI) {
 }
 
 func (t *fixedTable) replace(idx uint, n nodeI) {
-	_ = AssertOn && assert(t.nodes[idx] != nil,
+	_ = assertOn && assert(t.nodes[idx] != nil,
 		"t.replace(idx, n) where idx slot is empty; this should be an insert")
 
 	t.nodes[idx] = n
 }
 
 func (t *fixedTable) remove(idx uint) {
-	_ = AssertOn && assert(t.nodes[idx] != nil,
+	_ = assertOn && assert(t.nodes[idx] != nil,
 		"t.remove(idx) where idx slot is already empty")
 
 	t.nodes[idx] = nil
