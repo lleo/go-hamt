@@ -1,25 +1,3 @@
-/*
-Package hamt64 defines interface to access a Hamt data structure based on
-64bit hash values. The Hamt data structure is built with interior nodes and leaf
-nodes. The interior nodes are called tables and the leaf nodes are call, well,
-leafs. Further, the tables come is two varieties fixed size tables and a
-compressed form to handle sparse tables. Leafs come in two forms the common flat
-leaf form with a singe key/value pair and the rare form used when two leafs have
-the same hash value called collision leafs.
-
-The Hamt data structure is implemented with two code bases, which both implement
-the hamt64.Hamt interface, the transient replace in place code and the
-functional copy on write code. We define a HamtTransient base data structure and
-a HamtFunctional base data structure. Both of these data structures are
-identical, they only have unique names so we can hang the different code
-implementations off them.
-
-Lastly, the Hamt data structure can be implemented with fixed tables only or
-with sparse tables only or with a hybrid of the two. Thia hybid form is meant
-to allow the denser lower inner nodes to be implemented by the faster fixed
-tables and the much more numerous but sparser higher inner nodes to be
-implemented by the space conscious sparse tables.
-*/
 package hamt64
 
 import (
@@ -29,8 +7,11 @@ import (
 // hashSize is the size of hashVal in bits.
 const hashSize uint = uint(unsafe.Sizeof(hashVal(0))) * 8
 
-// IndexBits is the fundemental setting along with hashSize for the Key
-// constants. 2..hashSize/2 step 1
+// IndexBits is the fundemental setting for the Hamt data structure. Given that
+// we hash every key ([]byte slice) into a hashVal, that hashVal must be split
+// into DepthLimit number of IndexBits wide parts. Each of those parts of the
+// hashVal is used as the index into the given level of the Hamt tree. So
+// IndexBits determines how wide and how deep the Hamt can be.
 const IndexBits uint = 5
 
 // DepthLimit is the maximum number of levels of the Hamt. It is calculated as
@@ -38,8 +19,8 @@ const IndexBits uint = 5
 const DepthLimit = hashSize / IndexBits
 const remainder = hashSize - (DepthLimit * IndexBits)
 
-// IndexLimit is the maximum number of entries in the Hamt interior nodes.
-// IndexLimit = 1 << IndexBits
+// IndexLimit is the maximum number of entries in a Hamt interior node. In other
+// words it is the width of the Hamt data structure.
 const IndexLimit = 1 << IndexBits
 
 // maxDepth is the maximum value of a depth variable. maxDepth = DepthLimit - 1
@@ -49,7 +30,7 @@ const maxDepth = DepthLimit - 1
 const maxIndex = IndexLimit - 1
 
 // DowngradeThreshold is the constant that sets the threshold for the size of a
-// table, that when a table decreases to the threshold size, the table is
+// table, such that when a table decreases to the threshold size, the table is
 // converted from a FixedTable to a SparseTable.
 //
 // This conversion only happens if the Hamt structure has be constructed with
@@ -57,7 +38,7 @@ const maxIndex = IndexLimit - 1
 const DowngradeThreshold uint = IndexLimit * 3 / 8 //12 for IndexBits=5
 
 // UpgradeThreshold is the constant that sets the threshold for the size of a
-// table, that when a table increases to the threshold size, the table is
+// table, such that when a table increases to the threshold size, the table is
 // converted from a SparseTable to a FixedTable.
 //
 // This conversion only happens if the Hamt structure has be constructed with

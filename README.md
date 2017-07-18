@@ -1,4 +1,6 @@
-Note: We have upgraded this package to add in the a functional mode as well.
+# V2 API
+
+We have upgraded this package to add in the a functional mode as well.
 Functional is defined below as immutable & persistent.
 
 This is a merger with github.com/lleo/go-hamt-functional, which it obsoletes.
@@ -17,7 +19,7 @@ slice to Get/Put/Del operations instead of a Key data structure. What happens
 is we use the []byte slice to build a Key data structure to be used internally.
 This results in a simpler API and no external dependency.
 
-# What is a HAMT?
+## What is a HAMT?
 
 HAMT stands for Hash Array Mapped Trie. That spells it out clearly right? Ok,
 not so much. A HAMT is an in-menory Key/Value data structure  with some really
@@ -45,7 +47,7 @@ because we fold the extra 2 or 4 bits into the main hash value. Don't worry this
 is a legitimate thing to do. In the (very) rare case of a hash collision we use
 a special leaf value for both colliding key/value pairs.
 
-# go-hamt
+## go-hamt
 
 We implement HAMT data structure based on either a 32 bit or 64 bit hash value,
 hamt32 and hamt64 respectively.
@@ -63,7 +65,7 @@ However, you cannot easily share transient datastructures between threads
 safely; you would need to implement a locking strategy. Where with functional
 data structures you are guaranteed safty across threads.
 
-## Functional (aka Immutable & Persistent)
+### Functional (aka Immutable & Persistent)
 
 The term Functional really stands for two properties immutable and persistent.
 Immutable means the datastructure is never modified after construction.
