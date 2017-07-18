@@ -110,8 +110,6 @@ func TestMain(m *testing.M) {
 	fmt.Printf("TestMain: SizeofFixedTable=%d\n", hamt64.SizeofFixedTable)
 	log.Printf("TestMain: SizeofSparseTable=%d\n", hamt64.SizeofSparseTable)
 	fmt.Printf("TestMain: SizeofSparseTable=%d\n", hamt64.SizeofSparseTable)
-	log.Printf("TestMain: BitmapSize=%d\n", hamt64.BitmapSize)
-	fmt.Printf("TestMain: BitmapSize=%d\n", hamt64.BitmapSize)
 
 	// execute
 	var xit int

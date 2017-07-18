@@ -8,13 +8,13 @@ import (
 // bitmapShift is 5 because we are using uint32 as the base bitmap type.
 const bitmapShift uint = 5
 
-// BitmapSize is the number of uint32 needed to cover IndexLimit bits.
-const BitmapSize uint = (IndexLimit + (1 << bitmapShift) - 1) / (1 << bitmapShift)
+// bitmapSize is the number of uint32 needed to cover IndexLimit bits.
+const bitmapSize uint = (IndexLimit + (1 << bitmapShift) - 1) / (1 << bitmapShift)
 
-type bitmap [BitmapSize]uint32
+type bitmap [bitmapSize]uint32
 
 func (bm *bitmap) String() string {
-	if BitmapSize == 1 {
+	if bitmapSize == 1 {
 		//only show IndexLimit bits
 		var fmtStr = fmt.Sprintf("%%0%db", IndexLimit)
 		return fmt.Sprintf(fmtStr, bm[0])
@@ -22,9 +22,9 @@ func (bm *bitmap) String() string {
 
 	// Show all bits in bitmap because IndexLimit is a multiple of the
 	// bitmap base type.
-	var strs = make([]string, BitmapSize)
+	var strs = make([]string, bitmapSize)
 	var fmtStr = fmt.Sprintf("%%0%db", 1<<bitmapShift)
-	for i := uint(0); i < BitmapSize; i++ {
+	for i := uint(0); i < bitmapSize; i++ {
 		strs[i] = fmt.Sprintf(fmtStr, bm[i])
 	}
 
