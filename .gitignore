@@ -26,4 +26,4 @@ _testmain.go
 *.json
 
 .vscode
-
+.idea
