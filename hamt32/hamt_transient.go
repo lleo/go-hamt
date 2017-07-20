@@ -50,19 +50,11 @@ func (h *HamtTransient) Nentries() uint {
 // expensive.
 func (h *HamtTransient) ToFunctional() Hamt {
 	var nh = new(HamtFunctional)
-	nh.root = h.root.deepCopy()
+	nh.root = *h.root.deepCopy().(*fixedTable)
 	nh.nentries = h.nentries
 	nh.grade = h.grade
 	nh.startFixed = h.startFixed
 	return nh
-	//return &HamtFunctional{
-	//	hamtBase{
-	//		root:       h.root,
-	//		nentries:   h.nentries,
-	//		grade:      h.grade,
-	//		startFixed: h.startFixed,
-	//	},
-	//}
 }
 
 // ToTransient does nothing to a HamtTransient datastructure. This method only
@@ -76,7 +68,7 @@ func (h *HamtTransient) ToTransient() Hamt {
 // and ToFunctional().
 func (h *HamtTransient) DeepCopy() Hamt {
 	var nh = new(HamtTransient)
-	nh.root = h.root.deepCopy()
+	nh.root = *h.root.deepCopy().(*fixedTable)
 	nh.nentries = h.nentries
 	nh.grade = h.grade
 	nh.startFixed = h.startFixed
@@ -97,12 +89,6 @@ func (h *HamtTransient) Get(bs []byte) (interface{}, bool) {
 func (h *HamtTransient) Put(key []byte, v interface{}) (Hamt, bool) {
 	var k = newKey(key)
 
-	if h.IsEmpty() {
-		h.root = h.createRootTable(newFlatLeaf(k, v))
-		h.nentries++
-		return h, true
-	}
-
 	var path, leaf, idx = h.find(k)
 
 	var curTable = path.pop()
@@ -111,12 +97,11 @@ func (h *HamtTransient) Put(key []byte, v interface{}) (Hamt, bool) {
 
 	if leaf == nil {
 		//check if upgrading allowed & if it is required
-		if h.grade && (curTable.nentries()+1) == UpgradeThreshold {
-			var newTable tableI
-			newTable = upgradeToFixedTable(
+		if h.grade && curTable != &h.root && (curTable.nentries()+1) == UpgradeThreshold {
+			var newTable = upgradeToFixedTable(
 				curTable.Hash(), depth, curTable.entries())
-			if curTable == h.root {
-				h.root = newTable
+			if curTable == &h.root {
+				h.root = *newTable
 			} else {
 				var parentTable = path.peek()
 				var parentIdx = k.Hash().Index(depth - 1)
@@ -201,24 +186,22 @@ func (h *HamtTransient) Del(key []byte) (Hamt, interface{}, bool) {
 		curTable.remove(idx)
 
 		// Side-Effects of removing an iKeyVal from the table
-		switch {
-		// if no entries left in table need to colapse down to parent
-		case curTable != h.root && curTable.nentries() == 1:
-			var lastNode = curTable.entries()[0].node
-			if _, isLeaf := lastNode.(leafI); isLeaf {
-				var parentTable = path.peek()
-				var parentIdx = k.Hash().Index(depth - 1)
-				parentTable.replace(parentIdx, lastNode)
-			}
+		if curTable != &h.root {
+			switch {
+			// if no entries left in table need to colapse down to parent
+			case curTable.nentries() == 1:
+				var lastNode = curTable.entries()[0].node
+				if _, isLeaf := lastNode.(leafI); isLeaf {
+					var parentTable = path.peek()
+					var parentIdx = k.Hash().Index(depth - 1)
+					parentTable.replace(parentIdx, lastNode)
+				}
 
-			// else check if downgrade allowed and required
-		case h.grade && curTable.nentries() == DowngradeThreshold:
-			//when nentries is decr'd it will be <DowngradeThreshold
-			var newTable = downgradeToSparseTable(
-				curTable.Hash(), depth, curTable.entries())
-			if curTable == h.root { //aka path.len() == 0 or path.peek() == nil
-				h.root = newTable
-			} else {
+				// else check if downgrade allowed and required
+			case h.grade && curTable.nentries() == DowngradeThreshold:
+				//when nentries is decr'd it will be <DowngradeThreshold
+				var newTable = downgradeToSparseTable(
+					curTable.Hash(), depth, curTable.entries())
 				var parentTable = path.peek()
 				var parentIdx = k.Hash().Index(depth - 1)
 				parentTable.replace(parentIdx, newTable)

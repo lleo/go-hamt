@@ -57,19 +57,11 @@ func (h *HamtFunctional) ToFunctional() Hamt {
 // involved in the HamtFunctional. Of course, this can be very expensive.
 func (h *HamtFunctional) ToTransient() Hamt {
 	var nh = new(HamtTransient)
-	nh.root = h.root.deepCopy()
+	nh.root = *h.root.deepCopy().(*fixedTable)
 	nh.nentries = h.nentries
 	nh.grade = h.grade
 	nh.startFixed = h.startFixed
 	return nh
-	//return &HamtTransient{
-	//	hamtBase{
-	//		root:       h.root.deepCopy(),
-	//		nentries:   h.nentries,
-	//		grade:      h.grade,
-	//		startFixed: h.startFixed,
-	//	},
-	//}
 }
 
 // DeepCopy() copies the HamtFunctional data structure and every table it
@@ -77,7 +69,7 @@ func (h *HamtFunctional) ToTransient() Hamt {
 // becomes.
 func (h *HamtFunctional) DeepCopy() Hamt {
 	var nh = new(HamtFunctional)
-	nh.root = h.root.deepCopy()
+	nh.root = *h.root.deepCopy().(*fixedTable)
 	nh.nentries = h.nentries
 	nh.grade = h.grade
 	nh.startFixed = h.startFixed
@@ -87,23 +79,31 @@ func (h *HamtFunctional) DeepCopy() Hamt {
 // persist() is ONLY called on a fresh copy of the current Hamt.
 // Hence, modifying it is allowed.
 func (h *HamtFunctional) persist(oldTable, newTable tableI, path tableStack) {
-	if h.IsEmpty() {
-		h.root = newTable
+	// Regardless of the conditionals to shave off recursive calls to persist()
+	// this conditional has to be here in case it is true for the first call to
+	// persist().
+	if path.len() == 0 {
+		var newRootPtr = newTable.(*fixedTable)
+		h.root = *newRootPtr
 		return
 	}
 
-	if oldTable == h.root {
-		h.root = newTable
-		return
-	}
-
-	var depth = uint(path.len())
+	var depth = uint(path.len()) //guaranteed depth > 0
 	var parentDepth = depth - 1
 
 	var parentIdx = oldTable.Hash().Index(parentDepth)
 
 	var oldParent = path.pop()
-	var newParent tableI = oldParent.copy()
+
+	var newParent tableI
+	if path.len() == 0 {
+		// This condition and the last if path.len() > 0; shaves off one call
+		// to persist and one fixed table allocation (via oldParent.copy()).
+		h.root = *oldParent.(*fixedTable)
+		newParent = &h.root
+	} else {
+		newParent = oldParent.copy()
+	}
 
 	if newTable == nil {
 		newParent.remove(parentIdx)
@@ -111,7 +111,9 @@ func (h *HamtFunctional) persist(oldTable, newTable tableI, path tableStack) {
 		newParent.replace(parentIdx, newTable)
 	}
 
-	h.persist(oldParent, newParent, path) //recurses at most maxDepth-1 times
+	if path.len() > 0 {
+		h.persist(oldParent, newParent, path)
+	}
 
 	return
 }
@@ -133,12 +135,6 @@ func (h *HamtFunctional) Put(bs []byte, v interface{}) (Hamt, bool) {
 
 	var k = newKey(bs)
 
-	if nh.IsEmpty() {
-		nh.root = nh.createRootTable(newFlatLeaf(k, v))
-		nh.nentries++
-		return nh, true
-	}
-
 	var path, leaf, idx = nh.find(k)
 
 	var curTable = path.pop()
@@ -147,7 +143,7 @@ func (h *HamtFunctional) Put(bs []byte, v interface{}) (Hamt, bool) {
 
 	var newTable tableI
 	if leaf == nil {
-		if nh.grade && (curTable.nentries()+1) == UpgradeThreshold {
+		if nh.grade && curTable != &h.root && (curTable.nentries()+1) == UpgradeThreshold {
 			newTable = upgradeToFixedTable(
 				curTable.Hash(), depth, curTable.entries())
 		} else {

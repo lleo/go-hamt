@@ -14,10 +14,7 @@ type fixedTable struct {
 
 func (t *fixedTable) copy() tableI {
 	var nt = new(fixedTable)
-	nt.hashPath = t.hashPath
-	nt.depth = t.depth
-	nt.nents = t.nents
-	nt.nodes = t.nodes
+	nt = t
 	return nt
 }
 
@@ -35,20 +32,28 @@ func (t *fixedTable) deepCopy() tableI {
 			nt.nodes[i] = t.nodes[i]
 		}
 	}
+	//for i, n := range t.nodes {
+	//	switch x := n.(type) {
+	//	case tableI:
+	//		nt.nodes[i] = x.deepCopy()
+	//	default:
+	//		nt.nodes[i] = x
+	//	}
+	//}
 	return nt
 }
 
-func createRootFixedTable(lf leafI) tableI {
-	var idx = lf.Hash().Index(0)
-
-	var ft = new(fixedTable)
-	//ft.hashPath = 0
-	//ft.depth = 0
-	//ft.nents = 0
-	ft.insert(idx, lf)
-
-	return ft
-}
+//func createRootFixedTable(lf leafI) tableI {
+//	var idx = lf.Hash().Index(0)
+//
+//	var ft = new(fixedTable)
+//	//ft.hashPath = 0
+//	//ft.depth = 0
+//	//ft.nents = 0
+//	ft.insert(idx, lf)
+//
+//	return ft
+//}
 
 func createFixedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	_ = assertOn && assertf(depth > 0, "createFixedTable(): depth,%d < 1", depth)

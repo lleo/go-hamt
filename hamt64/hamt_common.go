@@ -7,7 +7,7 @@ import (
 
 // This is here as the Hamt base data struture.
 type hamtBase struct {
-	root       tableI
+	root       fixedTable
 	nentries   uint
 	grade      bool
 	startFixed bool
@@ -30,8 +30,8 @@ func (h *hamtBase) init(opt int) {
 
 // IsEmpty simply returns if the HamtFunctional datastucture has no entries.
 func (h *hamtBase) IsEmpty() bool {
-	return h.root == nil
-	//return h.nentries == 0
+	//return h.root == nil
+	return h.nentries == 0
 }
 
 // Nentries return the number of (key,value) pairs are stored in the
@@ -45,7 +45,7 @@ func (h *hamtBase) Nentries() uint {
 // ToTransient() and ToFunctional().
 func (h *hamtBase) DeepCopy() Hamt {
 	var nh = new(HamtFunctional)
-	nh.root = h.root.deepCopy()
+	nh.root = *h.root.deepCopy().(*fixedTable)
 	nh.nentries = h.nentries
 	nh.grade = h.grade
 	nh.startFixed = h.startFixed
@@ -53,12 +53,8 @@ func (h *hamtBase) DeepCopy() Hamt {
 }
 
 func (h *hamtBase) find(k *iKey) (tableStack, leafI, uint) {
-	if h.IsEmpty() {
-		return nil, nil, 0
-	}
-
 	var hv = k.Hash()
-	var curTable = h.root
+	var curTable tableI = &h.root
 
 	var path = newTableStack()
 	var leaf leafI
@@ -115,7 +111,7 @@ func (h *hamtBase) Get(key []byte) (interface{}, bool) {
 	var k = newKey(key)
 	var hv = k.Hash()
 
-	var curTable = h.root //ISA tableI
+	var curTable tableI = &h.root
 
 	for depth := uint(0); depth <= maxDepth; depth++ {
 		var idx = hv.Index(depth)
@@ -136,13 +132,6 @@ func (h *hamtBase) Get(key []byte) (interface{}, bool) {
 	}
 
 	panic("SHOULD NEVER BE REACHED")
-}
-
-func (h *hamtBase) createRootTable(leaf leafI) tableI {
-	if h.startFixed {
-		return createRootFixedTable(leaf)
-	}
-	return createRootSparseTable(leaf)
 }
 
 func (h *hamtBase) createTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
@@ -167,15 +156,12 @@ func (h *hamtBase) String() string {
 // recursively indented.
 func (h *hamtBase) LongString(indent string) string {
 	var str string
-	if h.root != nil {
-		str = indent +
-			fmt.Sprintf("hamtBase{ nentries: %d, root:\n", h.nentries)
-		str += indent + h.root.LongString(indent, 0)
-		str += indent + "} //hamtBase"
-	} else {
-		str = indent +
-			fmt.Sprintf("hamtBase{ nentries: %d, root: nil }", h.nentries)
-	}
+
+	str = indent +
+		fmt.Sprintf("hamtBase{ nentries: %d, root:\n", h.nentries)
+	str += indent + h.root.LongString(indent, 0)
+	str += indent + "} //hamtBase"
+
 	return str
 }
 
