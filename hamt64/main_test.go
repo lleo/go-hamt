@@ -8,6 +8,7 @@ import (
 	"sort"
 	"testing"
 	"time"
+	"unsafe"
 
 	"github.com/lleo/go-hamt/hamt64"
 	"github.com/lleo/stringutil"
@@ -106,6 +107,17 @@ func TestMain(m *testing.M) {
 	fmt.Printf("TestMain: IndexLimit=%d\n", hamt64.IndexLimit)
 	log.Printf("TestMain: DepthLimit=%d\n", hamt64.DepthLimit)
 	fmt.Printf("TestMain: DepthLimit=%d\n", hamt64.DepthLimit)
+
+	log.Printf("TestMain: SizeofHamtTransient=%d\n",
+		unsafe.Sizeof(hamt64.HamtTransient{}))
+	fmt.Printf("TestMain: SizeofHamtTransient=%d\n",
+		unsafe.Sizeof(hamt64.HamtTransient{}))
+	log.Printf("TestMain: SizeofHamtFunctional=%d\n",
+		unsafe.Sizeof(hamt64.HamtFunctional{}))
+	fmt.Printf("TestMain: SizeofHamtFunctional=%d\n",
+		unsafe.Sizeof(hamt64.HamtFunctional{}))
+	log.Printf("TestMain: SizeofHamtBase=%d\n", hamt64.SizeofHamtBase)
+	fmt.Printf("TestMain: SizeofHamtBase=%d\n", hamt64.SizeofHamtBase)
 	log.Printf("TestMain: SizeofFixedTable=%d\n", hamt64.SizeofFixedTable)
 	fmt.Printf("TestMain: SizeofFixedTable=%d\n", hamt64.SizeofFixedTable)
 	log.Printf("TestMain: SizeofSparseTable=%d\n", hamt64.SizeofSparseTable)
