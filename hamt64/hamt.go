@@ -26,7 +26,7 @@ const IndexLimit = 1 << IndexBits
 // maxDepth is the maximum value of a depth variable. maxDepth = DepthLimit - 1
 const maxDepth = DepthLimit - 1
 
-// maxIndex is the maximum value of a index variable. maxIndex = IndexLimie - 1
+// maxIndex is the maximum value of a index variable. maxIndex = IndexLimit - 1
 const maxIndex = IndexLimit - 1
 
 // DowngradeThreshold is the constant that sets the threshold for the size of a
@@ -81,7 +81,7 @@ func init() {
 }
 
 // Hamt defines the interface that both the HamtFunctional and HamtTransient
-// datastructures must (and do) implement.
+// data structures must (and do) implement.
 type Hamt interface {
 	IsEmpty() bool
 	Nentries() uint
@@ -94,13 +94,13 @@ type Hamt interface {
 	String() string
 	LongString(string) string
 	visit(visitFn) uint
-	Count() (uint, *Counts)
+	Stats() *Stats
 }
 
-// New() constructs a datastucture that implements the Hamt interface. When the
-// functional argument is true it implements a HamtFunctional datastructure.
+// New constructs a datastucture that implements the Hamt interface. When the
+// functional argument is true it implements a HamtFunctional data structure.
 // When the functional argument is false it implements a HamtTransient
-// datastructure. In either case the opt argument is handed to the to the
+// data structure. In either case the opt argument is handed to the to the
 // contructore for either NewFunctional(opt) or NewTransient(opt).
 func New(functional bool, opt int) Hamt {
 	if functional {

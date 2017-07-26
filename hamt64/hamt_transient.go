@@ -1,19 +1,19 @@
 package hamt64
 
-// HamtTransient is the datastructure which the Transient Hamt methods are
-// called upon. In fact it is identical to the HamtFunctional datastructure and
-// all the table and leaf datastructures it uses are the same ones used by the
+// HamtTransient is the data structure which the Transient Hamt methods are
+// called upon. In fact it is identical to the HamtFunctional data structure and
+// all the table and leaf data structures it uses are the same ones used by the
 // HamtTransient implementation. It is its own type so that the methods it calls
 // are the transient version of the hamt64.Hamt interface.
 //
-// The Transient version of the Hamt datastructure, does all modifications
+// The Transient version of the Hamt data structure, does all modifications
 // in-place. So sharing this datastruture between threads is NOT safe unless
 // you were to implement a locking stategy CORRECTLY.
 type HamtTransient struct {
 	hamtBase
 }
 
-// NewTransient constructs a new HamtTransient datastructure based on the opt
+// NewTransient constructs a new HamtTransient data structure based on the opt
 // argument.
 func NewTransient(opt int) *HamtTransient {
 	var h = new(HamtTransient)
@@ -29,7 +29,7 @@ func (h *HamtTransient) IsEmpty() bool {
 }
 
 // Nentries return the number of (key,value) pairs are stored in the
-// HamtTransient datastructure.
+// HamtTransient data structure.
 func (h *HamtTransient) Nentries() uint {
 	return h.hamtBase.Nentries()
 }
@@ -57,15 +57,14 @@ func (h *HamtTransient) ToFunctional() Hamt {
 	return nh
 }
 
-// ToTransient does nothing to a HamtTransient datastructure. This method only
-// returns the HamtTransient datastructure pointer as a hamt64.Hamt interface.
+// ToTransient does nothing to a HamtTransient data structure. This method only
+// returns the HamtTransient data structure pointer as a hamt64.Hamt interface.
 func (h *HamtTransient) ToTransient() Hamt {
 	return h
 }
 
-// DeepCopy() copies the HamtTransient datastructure and every table it contains
-// recursively. This is expensive, but usefull, if you want to use ToTransient()
-// and ToFunctional().
+// DeepCopy() copies the HamtTransient data structure and every table it
+// contains recursively.
 func (h *HamtTransient) DeepCopy() Hamt {
 	var nh = new(HamtTransient)
 	nh.root = *h.root.deepCopy().(*fixedTable)
@@ -76,16 +75,16 @@ func (h *HamtTransient) DeepCopy() Hamt {
 }
 
 // Get retrieves the value related to the key in the HamtTransient
-// datastructure. It also return a bool to indicate the value was found. This
-// allows you to store nil values in the HamtTransient datastructure.
+// data structure. It also return a bool to indicate the value was found. This
+// allows you to store nil values in the HamtTransient data structure.
 func (h *HamtTransient) Get(bs []byte) (interface{}, bool) {
 	return h.hamtBase.Get(bs)
 }
 
-// Put stores a new (key,value) pair in the HamtTransient datastructure. It
+// Put stores a new (key,value) pair in the HamtTransient data structure. It
 // returns a bool indicating if a new pair were added or if the value replaced
 // the value in a previously stored (key,value) pair. Either way it returns and
-// new HamtTransient datastructure containing the modification.
+// new HamtTransient data structure containing the modification.
 func (h *HamtTransient) Put(key []byte, v interface{}) (Hamt, bool) {
 	var k = newKey(key)
 
@@ -146,7 +145,7 @@ func (h *HamtTransient) Put(key []byte, v interface{}) (Hamt, bool) {
 }
 
 // Del searches the HamtTransient for the key argument and returns three
-// values: a Hamt datastuture, a value, and a bool.
+// values: a Hamt data structure, a value, and a bool.
 //
 // If the key was found, then the bool returned is true and the value is the
 // value related to that key.
@@ -215,13 +214,13 @@ func (h *HamtTransient) Del(key []byte) (Hamt, interface{}, bool) {
 // String returns a simple string representation of the HamtTransient data
 // structure.
 func (h *HamtTransient) String() string {
-	return h.hamtBase.String()
+	return "HamtTransient{" + h.hamtBase.String() + "}"
 }
 
 // LongString returns a complete recusive listing of the entire HamtTransient
 // data structure.
 func (h *HamtTransient) LongString(indent string) string {
-	return h.hamtBase.LongString(indent)
+	return "HamtTransient{\n" + indent + h.hamtBase.LongString(indent) + "\n}"
 }
 
 // Visit walks the Hamt executing the VisitFn then recursing into each of

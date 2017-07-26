@@ -35,14 +35,14 @@ func (h *hamtBase) IsEmpty() bool {
 }
 
 // Nentries return the number of (key,value) pairs are stored in the
-// HamtFunctional datastructure.
+// HamtFunctional data structure.
 func (h *hamtBase) Nentries() uint {
 	return h.nentries
 }
 
-// DeepCopy() copies the HamtFunctional datastructure and every table it
+// DeepCopy copies the HamtFunctional data structure and every table it
 // contains recursively. This is expensive, but usefull, if you want to use
-// ToTransient() and ToFunctional().
+// ToTransient and ToFunctional.
 func (h *hamtBase) DeepCopy() Hamt {
 	var nh = new(HamtFunctional)
 	nh.root = *h.root.deepCopy().(*fixedTable)
@@ -89,8 +89,8 @@ DepthIter:
 }
 
 // This is slower due to extraneous code and allocations in find().
-//func (h *hamtBase) Get(bs []byte) (interface{}, bool) {
-//	var k = newKey(bs)
+//func (h *hamtBase) Get(key []byte) (interface{}, bool) {
+//	var k = newKey(key)
 //	var _, leaf, _ = h.find(k)
 //
 //	if leaf == nil {
@@ -101,8 +101,8 @@ DepthIter:
 //}
 
 // Get retrieves the value related to the key in the HamtFunctional
-// datastructure. It also return a bool to indicate the value was found. This
-// allows you to store nil values in the HamtFunctional datastructure.
+// data structure. It also return a bool to indicate the value was found. This
+// allows you to store nil values in the HamtFunctional data structure.
 func (h *hamtBase) Get(key []byte) (interface{}, bool) {
 	if h.IsEmpty() {
 		return nil, false
@@ -142,7 +142,7 @@ func (h *hamtBase) createTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI 
 }
 
 // String returns a string representation of the hamtBase stastructure.
-// Secifically it returns a representation of the datastructure with the
+// Secifically it returns a representation of the data structure with the
 // nentries value of Nentries() and a representation of the root table.
 func (h *hamtBase) String() string {
 	return fmt.Sprintf(
@@ -152,8 +152,8 @@ func (h *hamtBase) String() string {
 	)
 }
 
-// LongString returns a complete listing of the entire Hamt data structure
-// recursively indented.
+// LongString returns a complete recusive listing of the entire hamtBase
+// data structure.
 func (h *hamtBase) LongString(indent string) string {
 	var str string
 

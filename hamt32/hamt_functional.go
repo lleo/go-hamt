@@ -24,7 +24,7 @@ func NewFunctional(opt int) *HamtFunctional {
 	return h
 }
 
-// IsEmpty simply returns if the HamtFunctional datastucture has no entries.
+// IsEmpty simply returns if the HamtFunctional data structure has no entries.
 func (h *HamtFunctional) IsEmpty() bool {
 	return h.hamtBase.IsEmpty()
 }
