@@ -79,14 +79,12 @@ func (h *HamtFunctional) DeepCopy() Hamt {
 // persist() is ONLY called on a fresh copy of the current Hamt.
 // Hence, modifying it is allowed.
 func (h *HamtFunctional) persist(oldTable, newTable tableI, path tableStack) {
-	// Regardless of the conditionals to shave off recursive calls to persist()
-	// this conditional has to be here in case it is true for the first call to
-	// persist().
-	if path.len() == 0 {
-		var newRootPtr = newTable.(*fixedTable)
-		h.root = *newRootPtr
-		return
-	}
+	// Removed the case where path.len() == 0 on the first call to nh.perist(),
+	// because that case is handled in Put & Del now. It is handled in Put & Del
+	// because otherwise we were allocating an extraneous fixedTable for the
+	// old h.root.
+	_ = assertOn && assert(path.len() == 0,
+		"This case should be handled directly in Put & Del.")
 
 	var depth = uint(path.len()) //guaranteed depth > 0
 	var parentDepth = depth - 1
@@ -129,46 +127,68 @@ func (h *HamtFunctional) Get(bs []byte) (interface{}, bool) {
 // returns a bool indicating if a new pair was added (true) or if the value
 // replaced (false). Either way it returns a new HamtFunctional data structure
 // containing the modification.
-func (h *HamtFunctional) Put(bs []byte, v interface{}) (Hamt, bool) {
+func (h *HamtFunctional) Put(key []byte, v interface{}) (Hamt, bool) {
 	var nh = new(HamtFunctional)
 	*nh = *h
 
-	var k = newKey(bs)
+	var k = newKey(key)
 
-	var path, leaf, idx = nh.find(k)
+	var path, leaf, idx = h.find(k)
 
 	var curTable = path.pop()
 	var depth = uint(path.len())
+
 	var added bool
 
-	var newTable tableI
-	if leaf == nil {
-		if nh.grade && curTable != &h.root && (curTable.nentries()+1) == UpgradeThreshold {
-			newTable = upgradeToFixedTable(
-				curTable.Hash(), depth, curTable.entries())
+	if curTable == &h.root {
+		//copying all h.root into nh.root already done in *nh = *h
+		if leaf == nil {
+			nh.root.insert(idx, newFlatLeaf(k, v))
+			added = true
+		} else {
+			var node nodeI
+			if leaf.Hash() == k.Hash() {
+				node, added = leaf.put(k, v)
+			} else {
+				node = nh.createTable(depth+1, leaf, newFlatLeaf(k, v))
+				added = true
+			}
+
+			nh.root.replace(idx, node)
+		}
+	} else {
+		var newTable tableI
+
+		if leaf == nil {
+			if nh.grade && (curTable.nentries()+1) == UpgradeThreshold {
+				newTable = upgradeToFixedTable(
+					curTable.Hash(), depth, curTable.entries())
+			} else {
+				newTable = curTable.copy()
+			}
+
+			newTable.insert(idx, newFlatLeaf(k, v))
+			added = true
 		} else {
 			newTable = curTable.copy()
+
+			var node nodeI
+			if leaf.Hash() == k.Hash() {
+				node, added = leaf.put(k, v)
+			} else {
+				node = nh.createTable(depth+1, leaf, newFlatLeaf(k, v))
+				added = true
+			}
+
+			newTable.replace(idx, node)
 		}
-		newTable.insert(idx, newFlatLeaf(k, v))
-		added = true
-	} else {
-		newTable = curTable.copy()
-		if leaf.Hash() == k.Hash() {
-			var newLeaf leafI
-			newLeaf, added = leaf.put(k, v)
-			newTable.replace(idx, newLeaf)
-		} else {
-			var tmpTable = nh.createTable(depth+1, leaf, newFlatLeaf(k, v))
-			newTable.replace(idx, tmpTable)
-			added = true
-		}
+
+		nh.persist(curTable, newTable, path)
 	}
 
 	if added {
 		nh.nentries++
 	}
-
-	nh.persist(curTable, newTable, path)
 
 	return nh, added
 }
@@ -188,10 +208,7 @@ func (h *HamtFunctional) Del(key []byte) (Hamt, interface{}, bool) {
 	}
 
 	var k = newKey(key)
-
 	var path, leaf, idx = h.find(k)
-
-	var curTable = path.pop()
 
 	if leaf == nil {
 		return h, nil, false
@@ -203,29 +220,42 @@ func (h *HamtFunctional) Del(key []byte) (Hamt, interface{}, bool) {
 		return h, nil, false
 	}
 
+	var curTable = path.pop()
 	var depth = uint(path.len())
-	var newTable tableI = curTable.copy()
-	if newLeaf != nil { //leaf was a CollisionLeaf
-		newTable.replace(idx, newLeaf)
-	} else { //leaf was a FlatLeaf
-		newTable.remove(idx)
-
-		// Side-Effects of removing a iKeyVal from the table
-		switch {
-		case newTable.nentries() == 0:
-			newTable = nil
-		case h.grade && newTable.nentries() == DowngradeThreshold:
-			newTable = downgradeToSparseTable(
-				newTable.Hash(), depth, newTable.entries())
-		}
-	}
 
 	var nh = new(HamtFunctional)
 	*nh = *h
 
 	nh.nentries--
 
-	nh.persist(curTable, newTable, path)
+	if curTable == &h.root {
+		//copying all h.root into nh.root already done in *nh = *h
+		if newLeaf == nil { //leaf was a FlatLeaf
+			nh.root.remove(idx)
+		} else { //leaf was a CollisionLeaf
+			nh.root.replace(idx, newLeaf)
+		}
+	} else {
+		var newTable = curTable.copy()
+
+		if newLeaf == nil { //leaf was a FlatLeaf
+			newTable.remove(idx)
+
+			// Side-Effects of removing a iKeyVal from the table
+			var nents = newTable.nentries()
+			switch {
+			case nents == 0:
+				newTable = nil
+			case h.grade && nents == DowngradeThreshold:
+				newTable = downgradeToSparseTable(
+					newTable.Hash(), depth, newTable.entries())
+			}
+		} else { //leaf was a CollisionLeaf
+			newTable.replace(idx, newLeaf)
+		}
+
+		nh.persist(curTable, newTable, path)
+	}
 
 	return nh, val, deleted
 }
