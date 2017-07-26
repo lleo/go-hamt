@@ -196,11 +196,18 @@ func (t *sparseTable) insert(idx uint, n nodeI) {
 	_ = assertOn && assert(!t.nodeMap.IsSet(idx),
 		"t.insert(idx, n) where idx slot is NOT empty; this should be a replace")
 
-	var j = t.nodeMap.Count(idx)
-	if j == uint(len(t.nodes)) {
+	var j = int(t.nodeMap.Count(idx))
+	if j == len(t.nodes) {
 		t.nodes = append(t.nodes, n)
 	} else {
-		t.nodes = append(t.nodes[:j], append([]nodeI{n}, t.nodes[j:]...)...)
+		// 32 transient sparse put  921.3 vs 834.3 ns/op; well outside 2 sigmas
+		// Also I believe the second code is more understandable.
+
+		//t.nodes = append(t.nodes[:j], append([]nodeI{n}, t.nodes[j:]...)...)
+
+		t.nodes = append(t.nodes, nodeI(nil))
+		copy(t.nodes[j+1:], t.nodes[j:])
+		t.nodes[j] = n
 	}
 
 	t.nodeMap.Set(idx)
@@ -218,11 +225,14 @@ func (t *sparseTable) remove(idx uint) {
 	_ = assertOn && assert(t.nodeMap.IsSet(idx),
 		"t.remove(idx) where idx slot is already empty")
 
-	var j = t.nodeMap.Count(idx)
-	if int(j) == len(t.nodes)-1 {
+	var j = int(t.nodeMap.Count(idx))
+	if j == len(t.nodes)-1 {
 		t.nodes = t.nodes[:j]
 	} else {
+		// No obvious performance difference, but append code is more obvious
+		// 32 transient sparse del 855.0 vs 840.6; well within 1 sigma
 		t.nodes = append(t.nodes[:j], t.nodes[j+1:]...)
+		//t.nodes = t.nodes[:j+copy(t.nodes[j:], t.nodes[j+1:])]
 	}
 
 	t.nodeMap.Unset(idx)
