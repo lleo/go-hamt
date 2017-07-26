@@ -67,10 +67,10 @@ func TestHamt32Put(t *testing.T) {
 	}
 	RunTime[name] = time.Since(StartTime[name])
 
-	StartTime["Hamt32.Count()"] = time.Now()
-	var maxDepth, counts = Hamt32.Count()
-	RunTime["Hamt32.Count()"] = time.Since(StartTime["Hamt32.Count()"])
-	log.Printf("%s: maxDepth=%d; counts=%+v;\n", name, maxDepth, counts)
+	StartTime["Hamt32.Stats()"] = time.Now()
+	var stats = Hamt32.Stats()
+	RunTime["Hamt32.Stats()"] = time.Since(StartTime["Hamt32.Stats()"])
+	log.Printf("%s: stats=%+v;\n", name, stats)
 }
 
 func TestHamt32Get(t *testing.T) {
@@ -93,10 +93,10 @@ func TestHamt32Get(t *testing.T) {
 				hamt32.TableOptionName[TableOption], err)
 		}
 
-		StartTime["Hamt32.Count()"] = time.Now()
-		var maxDepth, counts = Hamt32.Count()
-		RunTime["Hamt32.Count()"] = time.Since(StartTime["Hamt32.Count()"])
-		log.Printf("%s: maxDepth=%d; counts=%+v;\n", name, maxDepth, counts)
+		StartTime["Hamt32.Stats()"] = time.Now()
+		var stats = Hamt32.Stats()
+		RunTime["Hamt32.Stats()"] = time.Since(StartTime["Hamt32.Stats()"])
+		log.Printf("%s: stats=%+v;\n", name, stats)
 	}
 
 	StartTime[name] = time.Now()
@@ -138,10 +138,10 @@ func TestHamt32Del(t *testing.T) {
 				hamt32.TableOptionName[TableOption], err)
 		}
 
-		StartTime["Hamt32.Count()"] = time.Now()
-		var maxDepth, counts = Hamt32.Count()
-		RunTime["Hamt32.Count()"] = time.Since(StartTime["Hamt32.Count()"])
-		log.Printf("%s: maxDepth=%d; counts=%+v;\n", name, maxDepth, counts)
+		StartTime["Hamt32.Stats()"] = time.Now()
+		var stats = Hamt32.Stats()
+		RunTime["Hamt32.Stats()"] = time.Since(StartTime["Hamt32.Stats()"])
+		log.Printf("%s: stats=%+v;\n", name, stats)
 	}
 
 	StartTime[name] = time.Now()
