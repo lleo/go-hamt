@@ -32,47 +32,47 @@ func (bm *bitmap) String() string {
 }
 
 // IsSet returns a bool indicating whether the i'th bit is 1(true) or 0(false).
-func (bm *bitmap) IsSet(i uint) bool {
-	var idx = i >> bitmapShift
-	var bit = i & ((1 << bitmapShift) - 1)
+func (bm *bitmap) IsSet(idx uint) bool {
+	var nth = idx >> bitmapShift
+	var bit = idx & ((1 << bitmapShift) - 1)
 
-	return (bm[idx] & (1 << bit)) > 0
+	return (bm[nth] & (1 << bit)) > 0
 }
 
 // Set marks the i'th bit 1.
-func (bm *bitmap) Set(i uint) {
-	var idx = i >> bitmapShift
-	var bit = i & ((1 << bitmapShift) - 1)
+func (bm *bitmap) Set(idx uint) {
+	var nth = idx >> bitmapShift
+	var bit = idx & ((1 << bitmapShift) - 1)
 
-	bm[idx] |= 1 << bit
+	bm[nth] |= 1 << bit
 
 	return
 }
 
 // Unset marks the i'th bit to 0.
-func (bm *bitmap) Unset(i uint) {
-	var idx = i >> bitmapShift
-	var bit = i & ((1 << bitmapShift) - 1)
+func (bm *bitmap) Unset(idx uint) {
+	var nth = idx >> bitmapShift
+	var bit = idx & ((1 << bitmapShift) - 1)
 
-	//if bm[idx]&(1<<bit) > 0 {
-	//	bm[idx] &^= 1 << bit
+	//if bm[nth]&(1<<bit) > 0 {
+	//	bm[nth] &^= 1 << bit
 	//}
-	bm[idx] &^= 1 << bit
+	bm[nth] &^= 1 << bit
 
 	return
 }
 
 // Count returns the numbers of bits set below the i'th bit.
-func (bm *bitmap) Count(i uint) uint {
-	var idx = i >> bitmapShift
-	var bit = i & ((1 << bitmapShift) - 1)
+func (bm *bitmap) Count(idx uint) uint {
+	var nth = idx >> bitmapShift
+	var bit = idx & ((1 << bitmapShift) - 1)
 
 	var count uint
-	for idxN := uint(0); idxN < idx; idxN++ {
-		count += bitCount32(bm[idxN])
+	for i := uint(0); i < nth; i++ {
+		count += bitCount32(bm[i])
 	}
 
-	count += bitCount32(bm[idx] & ((1 << bit) - 1))
+	count += bitCount32(bm[nth] & ((1 << bit) - 1))
 
 	return count
 }
