@@ -171,40 +171,41 @@ func (h *hamtBase) visit(fn visitFn) uint {
 	return h.root.visit(fn, 0)
 }
 
-// Count returns a break down of the number of items in the HAMT.
-func (h *hamtBase) Count() (maxDepth uint, counts *Counts) {
-	counts = new(Counts)
+// Stats returns various measures of the Hamt; for example counts of the numbers
+// of various struct types in the HAMT.
+func (h *hamtBase) Stats() *Stats {
+	var stats = new(Stats)
 
-	// countFn closes over the counts variable
-	var countFn = func(n nodeI) {
+	// statFn closes over the stats variable
+	var statFn = func(n nodeI) {
 		switch x := n.(type) {
 		case nil:
-			counts.Nils++
+			stats.Nils++
 		case *fixedTable:
-			counts.Nodes++
-			counts.Tables++
-			counts.FixedTables++
-			counts.TableCountsByNentries[x.nentries()]++
-			counts.TableCountsByDepth[x.depth]++
+			stats.Nodes++
+			stats.Tables++
+			stats.FixedTables++
+			stats.TableCountsByNentries[x.nentries()]++
+			stats.TableCountsByDepth[x.depth]++
 		case *sparseTable:
-			counts.Nodes++
-			counts.Tables++
-			counts.SparseTables++
-			counts.TableCountsByNentries[x.nentries()]++
-			counts.TableCountsByDepth[x.depth]++
+			stats.Nodes++
+			stats.Tables++
+			stats.SparseTables++
+			stats.TableCountsByNentries[x.nentries()]++
+			stats.TableCountsByDepth[x.depth]++
 		case *flatLeaf:
-			counts.Nodes++
-			counts.Leafs++
-			counts.FlatLeafs++
-			counts.KeyVals += 1
+			stats.Nodes++
+			stats.Leafs++
+			stats.FlatLeafs++
+			stats.KeyVals += 1
 		case *collisionLeaf:
-			counts.Nodes++
-			counts.Leafs++
-			counts.CollisionLeafs++
-			counts.KeyVals += uint(len(x.kvs))
+			stats.Nodes++
+			stats.Leafs++
+			stats.CollisionLeafs++
+			stats.KeyVals += uint(len(x.kvs))
 		}
 	}
 
-	maxDepth = h.visit(countFn)
-	return maxDepth, counts
+	stats.MaxDepth = h.visit(statFn)
+	return stats
 }

@@ -109,7 +109,10 @@ func New(functional bool, opt int) Hamt {
 	return NewTransient(opt)
 }
 
-type Counts struct {
+type Stats struct {
+	// Depth of deepest table
+	MaxDepth uint
+
 	// TableCountsByNentries is a Hash table of the number of tables with each
 	// given number of entries in the tatble. There are slots for
 	// [0..IndexLimit] inclusive (so there are IndexLimit+1 slots). Technically,

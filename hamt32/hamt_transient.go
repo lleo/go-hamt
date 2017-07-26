@@ -231,8 +231,8 @@ func (h *HamtTransient) visit(fn visitFn) uint {
 	return h.hamtBase.visit(fn)
 }
 
-// Count walks the Hamt using Visit and populates a Count data struture which
+// Stats walks the Hamt using Visit and populates a Stats data struture which
 // it return.
-func (h *HamtTransient) Count() (uint, *Counts) {
-	return h.hamtBase.Count()
+func (h *HamtTransient) Stats() *Stats {
+	return h.hamtBase.Stats()
 }
