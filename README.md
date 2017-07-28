@@ -1,10 +1,11 @@
 # V2 API
 
-We have upgraded this package to add in the a functional mode as well.
-Functional is defined below as immutable & persistent.
+This package was transient only, now it has a functional mode as well. Transient
+is the classical style of modifying data structures in place. Functional is
+defined below as immutable & persistent.
 
 This is a merger with github.com/lleo/go-hamt-functional, which it obsoletes.
-The motivation for this was because we was seeing slower performance for
+The motivation for this was because we were seeing slower performance for
 go-hamt-functional Get() operations even though we were certain that the old
 go-hamt and go-hamt-functional were using the same algorithm. This merger
 guarantees that the transient and functional Hamt implementations are using the
