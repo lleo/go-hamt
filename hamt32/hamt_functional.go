@@ -128,7 +128,7 @@ func (h *HamtFunctional) Get(key []byte) (interface{}, bool) {
 // replaced (false). Either way it returns a new HamtFunctional data structure
 // containing the modification.
 func (h *HamtFunctional) Put(key []byte, val interface{}) (Hamt, bool) {
-	//key = copyKey(key)
+	key = copyKey(key)
 
 	var nh = new(HamtFunctional)
 	*nh = *h

@@ -86,7 +86,7 @@ func (h *HamtTransient) Get(key []byte) (interface{}, bool) {
 // the value in a previously stored (key,value) pair. Either way it returns and
 // new HamtTransient data structure containing the modification.
 func (h *HamtTransient) Put(key []byte, val interface{}) (Hamt, bool) {
-	//key = copyKey(key)
+	key = copyKey(key)
 
 	var hv = calcHashVal(key)
 	var path, leaf, idx = h.find(hv)
