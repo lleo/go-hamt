@@ -6,10 +6,10 @@ import (
 )
 
 type fixedTable struct {
-	nodes    [IndexLimit]nodeI // 512; 32*16, why 16? typeId + uintptr??
+	nodes    [IndexLimit]nodeI // 512; 32*16
 	depth    uint              // 8; amd64
 	nents    uint              // 8; amd64
-	hashPath hashVal           // 4; 8 alignment
+	hashPath hashVal           // 8
 }
 
 func (t *fixedTable) copy() tableI {
@@ -76,8 +76,10 @@ func createFixedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	} else { //idx1 == idx2
 		var node nodeI
 		if depth == maxDepth {
-			node = newCollisionLeaf(append(leaf1.keyVals(), leaf2.keyVals()...))
+			node = newCollisionLeaf(leaf1.Hash(),
+				append(leaf1.keyVals(), leaf2.keyVals()...))
 		} else {
+			//log.Printf("createFixedTable(depth=%d, ...) recursing\n", depth+1)
 			node = createFixedTable(depth+1, leaf1, leaf2)
 		}
 		retTable.insert(idx1, node)
@@ -113,7 +115,7 @@ func (t *fixedTable) Hash() hashVal {
 // depth, and number of entries.
 func (t *fixedTable) String() string {
 	return fmt.Sprintf("fixedTable{hashPath=%s, depth=%d, nentries()=%d}",
-		t.hashPath, t.depth, t.nentries())
+		t.hashPath.HashPathString(t.depth), t.depth, t.nentries())
 }
 
 // LongString returns a string representation of this table and all the tables

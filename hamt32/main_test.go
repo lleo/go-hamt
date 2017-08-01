@@ -11,7 +11,6 @@ import (
 	"unsafe"
 
 	"github.com/lleo/go-hamt/hamt32"
-	"github.com/lleo/go-hamt/hamt64"
 	"github.com/lleo/stringutil"
 	"github.com/pkg/errors"
 )
@@ -110,19 +109,30 @@ func TestMain(m *testing.M) {
 	fmt.Printf("TestMain: DepthLimit=%d\n", hamt32.DepthLimit)
 
 	log.Printf("TestMain: SizeofHamtTransient=%d\n",
-		unsafe.Sizeof(hamt64.HamtTransient{}))
+		unsafe.Sizeof(hamt32.HamtTransient{}))
 	fmt.Printf("TestMain: SizeofHamtTransient=%d\n",
-		unsafe.Sizeof(hamt64.HamtTransient{}))
+		unsafe.Sizeof(hamt32.HamtTransient{}))
 	log.Printf("TestMain: SizeofHamtFunctional=%d\n",
-		unsafe.Sizeof(hamt64.HamtFunctional{}))
+		unsafe.Sizeof(hamt32.HamtFunctional{}))
 	fmt.Printf("TestMain: SizeofHamtFunctional=%d\n",
-		unsafe.Sizeof(hamt64.HamtFunctional{}))
-	log.Printf("TestMain: SizeofHamtBase=%d\n", hamt64.SizeofHamtBase)
-	fmt.Printf("TestMain: SizeofHamtBase=%d\n", hamt64.SizeofHamtBase)
+		unsafe.Sizeof(hamt32.HamtFunctional{}))
+	log.Printf("TestMain: SizeofHamtBase=%d\n", hamt32.SizeofHamtBase)
+	fmt.Printf("TestMain: SizeofHamtBase=%d\n", hamt32.SizeofHamtBase)
 	log.Printf("TestMain: SizeofFixedTable=%d\n", hamt32.SizeofFixedTable)
 	fmt.Printf("TestMain: SizeofFixedTable=%d\n", hamt32.SizeofFixedTable)
 	log.Printf("TestMain: SizeofSparseTable=%d\n", hamt32.SizeofSparseTable)
 	fmt.Printf("TestMain: SizeofSparseTable=%d\n", hamt32.SizeofSparseTable)
+
+	// // This is an attempt to make the first benchmarks faster. My theory is
+	// // that we needed to build up the heap. This worked a little bit, I don't
+	// // know if it is really worth it or should I do more.
+	// StartTime["fat throw away"] = time.Now()
+	// foo, _ := buildHamt32("foo", BVS, true, hamt32.FixedTables)
+	// _, found := foo.Get([]byte("aaa"))
+	// if !found {
+	// 	panic("foo failed to find \"aaa\"")
+	// }
+	// RunTime["fat throw away"] = time.Since(StartTime["fat throw away"])
 
 	// execute
 	var xit int

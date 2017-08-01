@@ -76,7 +76,8 @@ func createFixedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	} else { //idx1 == idx2
 		var node nodeI
 		if depth == maxDepth {
-			node = newCollisionLeaf(append(leaf1.keyVals(), leaf2.keyVals()...))
+			node = newCollisionLeaf(leaf1.Hash(),
+				append(leaf1.keyVals(), leaf2.keyVals()...))
 		} else {
 			//log.Printf("createFixedTable(depth=%d, ...) recursing\n", depth+1)
 			node = createFixedTable(depth+1, leaf1, leaf2)
@@ -114,7 +115,7 @@ func (t *fixedTable) Hash() hashVal {
 // depth, and number of entries.
 func (t *fixedTable) String() string {
 	return fmt.Sprintf("fixedTable{hashPath=%s, depth=%d, nentries()=%d}",
-		t.hashPath, t.depth, t.nentries())
+		t.hashPath.HashPathString(t.depth), t.depth, t.nentries())
 }
 
 // LongString returns a string representation of this table and all the tables

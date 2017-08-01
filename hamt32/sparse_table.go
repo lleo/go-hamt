@@ -9,20 +9,12 @@ import (
 // sparseTable.
 const sparseTableInitCap int = 2
 
-// OLD sparsTable layout size == 48
-//type sparseTable struct {
-//	hashPath hashVal // 4; 8 cuz of alignment
-//	depth    uint    // 8
-//	nodeMap  bitmap  // 4; 8 cuz of alignment
-//	nodes    []nodeI // 24
-//}
-
-// NEW sparseTable layout size == 40
+// New sparseTable layout size == 40
 type sparseTable struct {
 	nodes    []nodeI // 24
-	depth    uint    // 8
-	nodeMap  bitmap  // 4
+	depth    uint    // 8; amd64 cpu
 	hashPath hashVal // 4
+	nodeMap  bitmap  // 4
 }
 
 func (t *sparseTable) copy() tableI {
@@ -88,8 +80,10 @@ func createSparseTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	} else { //idx1 == idx2
 		var node nodeI
 		if depth == maxDepth {
-			node = newCollisionLeaf(append(leaf1.keyVals(), leaf2.keyVals()...))
+			node = newCollisionLeaf(leaf1.Hash(),
+				append(leaf1.keyVals(), leaf2.keyVals()...))
 		} else {
+			//log.Printf("createSparseTable(depth=%d, ...) recursing\n", depth+1)
 			node = createSparseTable(depth+1, leaf1, leaf2)
 		}
 		retTable.insert(idx1, node)
@@ -133,7 +127,7 @@ func (t *sparseTable) Hash() hashVal {
 // depth, and number of entries.
 func (t *sparseTable) String() string {
 	return fmt.Sprintf("sparseTable{hashPath:%s, depth=%d, nentries()=%d}",
-		t.hashPath, t.depth, t.nentries())
+		t.hashPath.HashPathString(t.depth), t.depth, t.nentries())
 }
 
 // LongString returns a string representation of this table and all the tables
@@ -200,7 +194,7 @@ func (t *sparseTable) insert(idx uint, n nodeI) {
 	if j == len(t.nodes) {
 		t.nodes = append(t.nodes, n)
 	} else {
-		// 32 transient sparse put  921.3 vs 834.3 ns/op; well outside 2 sigmas
+		// Second code is significantly faster
 		// Also I believe the second code is more understandable.
 
 		//t.nodes = append(t.nodes[:j], append([]nodeI{n}, t.nodes[j:]...)...)
@@ -230,7 +224,6 @@ func (t *sparseTable) remove(idx uint) {
 		t.nodes = t.nodes[:j]
 	} else {
 		// No obvious performance difference, but append code is more obvious
-		// 32 transient sparse del 855.0 vs 840.6; well within 1 sigma
 		t.nodes = append(t.nodes[:j], t.nodes[j+1:]...)
 		//t.nodes = t.nodes[:j+copy(t.nodes[j:], t.nodes[j+1:])]
 	}

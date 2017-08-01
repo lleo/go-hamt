@@ -119,21 +119,23 @@ func (h *HamtFunctional) persist(oldTable, newTable tableI, path tableStack) {
 // Get retrieves the value related to the key in the HamtFunctional
 // data structure. It also return a bool to indicate the value was found. This
 // allows you to store nil values in the HamtFunctional data structure.
-func (h *HamtFunctional) Get(bs []byte) (interface{}, bool) {
-	return h.hamtBase.Get(bs)
+func (h *HamtFunctional) Get(key []byte) (interface{}, bool) {
+	return h.hamtBase.Get(key)
 }
 
 // Put stores a new (key,value) pair in the HamtFunctional data structure. It
 // returns a bool indicating if a new pair was added (true) or if the value
 // replaced (false). Either way it returns a new HamtFunctional data structure
 // containing the modification.
-func (h *HamtFunctional) Put(key []byte, v interface{}) (Hamt, bool) {
+func (h *HamtFunctional) Put(key []byte, val interface{}) (Hamt, bool) {
+	//key = copyKey(key)
+
 	var nh = new(HamtFunctional)
 	*nh = *h
 
-	var k = newKey(key)
+	var hv = calcHashVal(key)
 
-	var path, leaf, idx = h.find(k)
+	var path, leaf, idx = h.find(hv)
 
 	var curTable = path.pop()
 	var depth = uint(path.len())
@@ -143,14 +145,14 @@ func (h *HamtFunctional) Put(key []byte, v interface{}) (Hamt, bool) {
 	if curTable == &h.root {
 		//copying all h.root into nh.root already done in *nh = *h
 		if leaf == nil {
-			nh.root.insert(idx, newFlatLeaf(k, v))
+			nh.root.insert(idx, newFlatLeaf(hv, key, val))
 			added = true
 		} else {
 			var node nodeI
-			if leaf.Hash() == k.Hash() {
-				node, added = leaf.put(k, v)
+			if leaf.Hash() == hv {
+				node, added = leaf.put(key, val)
 			} else {
-				node = nh.createTable(depth+1, leaf, newFlatLeaf(k, v))
+				node = nh.createTable(depth+1, leaf, newFlatLeaf(hv, key, val))
 				added = true
 			}
 
@@ -167,16 +169,16 @@ func (h *HamtFunctional) Put(key []byte, v interface{}) (Hamt, bool) {
 				newTable = curTable.copy()
 			}
 
-			newTable.insert(idx, newFlatLeaf(k, v))
+			newTable.insert(idx, newFlatLeaf(hv, key, val))
 			added = true
 		} else {
 			newTable = curTable.copy()
 
 			var node nodeI
-			if leaf.Hash() == k.Hash() {
-				node, added = leaf.put(k, v)
+			if leaf.Hash() == hv {
+				node, added = leaf.put(key, val)
 			} else {
-				node = nh.createTable(depth+1, leaf, newFlatLeaf(k, v))
+				node = nh.createTable(depth+1, leaf, newFlatLeaf(hv, key, val))
 				added = true
 			}
 
@@ -207,14 +209,16 @@ func (h *HamtFunctional) Del(key []byte) (Hamt, interface{}, bool) {
 		return h, nil, false
 	}
 
-	var k = newKey(key)
-	var path, leaf, idx = h.find(k)
+	//key = copyKey(key)
+
+	var hv = calcHashVal(key)
+	var path, leaf, idx = h.find(hv)
 
 	if leaf == nil {
 		return h, nil, false
 	}
 
-	var newLeaf, val, deleted = leaf.del(k)
+	var newLeaf, val, deleted = leaf.del(key)
 
 	if !deleted {
 		return h, nil, false
@@ -241,7 +245,7 @@ func (h *HamtFunctional) Del(key []byte) (Hamt, interface{}, bool) {
 		if newLeaf == nil { //leaf was a FlatLeaf
 			newTable.remove(idx)
 
-			// Side-Effects of removing a iKeyVal from the table
+			// Side-Effects of removing a KeyVal from the table
 			var nents = newTable.nentries()
 			switch {
 			case nents == 0:

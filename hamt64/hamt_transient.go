@@ -77,18 +77,19 @@ func (h *HamtTransient) DeepCopy() Hamt {
 // Get retrieves the value related to the key in the HamtTransient
 // data structure. It also return a bool to indicate the value was found. This
 // allows you to store nil values in the HamtTransient data structure.
-func (h *HamtTransient) Get(bs []byte) (interface{}, bool) {
-	return h.hamtBase.Get(bs)
+func (h *HamtTransient) Get(key []byte) (interface{}, bool) {
+	return h.hamtBase.Get(key)
 }
 
 // Put stores a new (key,value) pair in the HamtTransient data structure. It
 // returns a bool indicating if a new pair were added or if the value replaced
 // the value in a previously stored (key,value) pair. Either way it returns and
 // new HamtTransient data structure containing the modification.
-func (h *HamtTransient) Put(key []byte, v interface{}) (Hamt, bool) {
-	var k = newKey(key)
+func (h *HamtTransient) Put(key []byte, val interface{}) (Hamt, bool) {
+	//key = copyKey(key)
 
-	var path, leaf, idx = h.find(k)
+	var hv = calcHashVal(key)
+	var path, leaf, idx = h.find(hv)
 
 	var curTable = path.pop()
 	var depth = uint(path.len())
@@ -96,43 +97,31 @@ func (h *HamtTransient) Put(key []byte, v interface{}) (Hamt, bool) {
 
 	if leaf == nil {
 		//check if upgrading allowed & if it is required
-		if h.grade && curTable != &h.root && (curTable.nentries()+1) == UpgradeThreshold {
+		if h.grade && curTable != &h.root &&
+			(curTable.nentries()+1) == UpgradeThreshold {
 			var newTable = upgradeToFixedTable(
 				curTable.Hash(), depth, curTable.entries())
 			if curTable == &h.root {
 				h.root = *newTable
 			} else {
 				var parentTable = path.peek()
-				var parentIdx = k.Hash().Index(depth - 1)
+				var parentIdx = hv.Index(depth - 1)
 				parentTable.replace(parentIdx, newTable)
 			}
 			curTable = newTable
 		}
-		curTable.insert(idx, newFlatLeaf(k, v))
+		curTable.insert(idx, newFlatLeaf(hv, key, val))
 		added = true
 	} else {
 		// This is the condition that allows collision leafs to exist at a level
 		// less than maxDepth. I don't know if I want to allow this...
-		if leaf.Hash() == k.Hash() {
+		if leaf.Hash() == hv {
 			var newLeaf leafI
-			// There are four possibilities here:
-			// if leaf isa collision leaf
-			//   k is identical to one of the kv pairs in collision leaf; hence
-			//     we replace that ones value and added = false
-			//   k is unique in the collision leaf and the kv pair is added;
-			//     this is very rare; the underlying key basis is different but
-			//     the Hash is identical.
-			// if leaf isa flat leaf
-			//   k is identical to the flat leaf's key; hence the value is
-			//     replaced and added == false
-			//   k is not identical to the flat leaf's key; and a collision leaf
-			//     is created and added == true; again this is very rare; the
-			//     underlying key basis is different but the Hash is identical
-			newLeaf, added = leaf.put(k, v)
+			newLeaf, added = leaf.put(key, val)
 			curTable.replace(idx, newLeaf)
 		} else {
-			var tmpTable = h.createTable(depth+1, leaf, newFlatLeaf(k, v))
-			curTable.replace(idx, tmpTable)
+			var t = h.createTable(depth+1, leaf, newFlatLeaf(hv, key, val))
+			curTable.replace(idx, t)
 			added = true
 		}
 	}
@@ -160,9 +149,10 @@ func (h *HamtTransient) Del(key []byte) (Hamt, interface{}, bool) {
 		return h, nil, false
 	}
 
-	var k = newKey(key)
+	//key = copyKey(key)
 
-	var path, leaf, idx = h.find(k)
+	var hv = calcHashVal(key)
+	var path, leaf, idx = h.find(hv)
 
 	var curTable = path.pop()
 	var depth = uint(path.len())
@@ -171,7 +161,7 @@ func (h *HamtTransient) Del(key []byte) (Hamt, interface{}, bool) {
 		return h, nil, false
 	}
 
-	var newLeaf, val, deleted = leaf.del(k)
+	var newLeaf, val, deleted = leaf.del(key)
 
 	if !deleted {
 		return h, nil, false
@@ -184,7 +174,7 @@ func (h *HamtTransient) Del(key []byte) (Hamt, interface{}, bool) {
 	} else { //leaf was a FlatLeaf
 		curTable.remove(idx)
 
-		// Side-Effects of removing an iKeyVal from the table
+		// Side-Effects of removing an KeyVal from the table
 		if curTable != &h.root {
 			switch {
 			// if no entries left in table need to colapse down to parent
@@ -192,7 +182,7 @@ func (h *HamtTransient) Del(key []byte) (Hamt, interface{}, bool) {
 				var lastNode = curTable.entries()[0].node
 				if _, isLeaf := lastNode.(leafI); isLeaf {
 					var parentTable = path.peek()
-					var parentIdx = k.Hash().Index(depth - 1)
+					var parentIdx = hv.Index(depth - 1)
 					parentTable.replace(parentIdx, lastNode)
 				}
 
@@ -202,7 +192,7 @@ func (h *HamtTransient) Del(key []byte) (Hamt, interface{}, bool) {
 				var newTable = downgradeToSparseTable(
 					curTable.Hash(), depth, curTable.entries())
 				var parentTable = path.peek()
-				var parentIdx = k.Hash().Index(depth - 1)
+				var parentIdx = hv.Index(depth - 1)
 				parentTable.replace(parentIdx, newTable)
 			}
 		}

@@ -2,7 +2,6 @@ package hamt64
 
 import (
 	"fmt"
-	"log"
 )
 
 // This is here as the Hamt base data struture.
@@ -52,21 +51,31 @@ func (h *hamtBase) DeepCopy() Hamt {
 	return nh
 }
 
-func (h *hamtBase) find(k *iKey) (tableStack, leafI, uint) {
-	var hv = k.Hash()
+// copyKey is meant to guard against the data of the slice being modified
+// during two periods it may be modified outside the call to Get, Put, and/or
+// Del. First the lookup from the call site to the match for the op. Second,
+// during the storage as the key in the leaf which is a much longer time.
+// The First applies to Get, Put, and Del, the second applies only to Put.
+// We hope this function is inlined.
+func copyKey(key []byte) []byte {
+	var k = make([]byte, len(key))
+	copy(k, key)
+	return k
+}
+
+func (h *hamtBase) find(hv hashVal) (tableStack, leafI, uint) {
 	var curTable tableI = &h.root
 
 	var path = newTableStack()
 	var leaf leafI
 	var idx uint
 
-	var depth uint
 DepthIter:
-	for depth = 0; depth <= maxDepth; depth++ {
+	for depth := uint(0); depth <= maxDepth; depth++ {
 		path.push(curTable)
 		idx = hv.Index(depth)
-
 		var curNode = curTable.get(idx)
+
 		switch n := curNode.(type) {
 		case nil:
 			leaf = nil
@@ -75,13 +84,11 @@ DepthIter:
 			leaf = n
 			break DepthIter
 		case tableI:
-			if depth == maxDepth {
-				log.Panicf("SHOULD NOT BE REACHED; depth,%d == maxDepth,%d & tableI entry found; %s", depth, maxDepth, n)
-			}
+			_ = assertOn && assert(depth != maxDepth,
+				"Invalid Hamt: TableI found at maxDepth.")
 			curTable = n
-			// exit switch then loop for
 		default:
-			log.Panicf("SHOULD NOT BE REACHED: depth=%d; curNode unknown type=%T;", depth, curNode)
+			panic("Invalid Hamt: curNode != nil || LeafI || TableI")
 		}
 	}
 
@@ -90,14 +97,15 @@ DepthIter:
 
 // This is slower due to extraneous code and allocations in find().
 //func (h *hamtBase) Get(key []byte) (interface{}, bool) {
-//	var k = newKey(key)
-//	var _, leaf, _ = h.find(k)
+//	key = copyKey(key)
+//	var hv = calcHashVal(key)
+//	var _, leaf, _ = h.find(hv)
 //
 //	if leaf == nil {
 //		return nil, false
 //	}
 //
-//	return leaf.get(k)
+//	return leaf.get(key)
 //}
 
 // Get retrieves the value related to the key in the HamtFunctional
@@ -108,37 +116,43 @@ func (h *hamtBase) Get(key []byte) (interface{}, bool) {
 		return nil, false
 	}
 
-	var k = newKey(key)
-	var hv = k.Hash()
+	//key = copyKey(key)
 
+	var hv = calcHashVal(key)
 	var curTable tableI = &h.root
 
+	var val interface{}
+	var found bool
+
+DepthIter:
 	for depth := uint(0); depth <= maxDepth; depth++ {
 		var idx = hv.Index(depth)
 		var curNode = curTable.get(idx) //nodeI
 
-		if curNode == nil {
-			return nil, false
+		switch n := curNode.(type) {
+		case nil:
+			val, found = nil, false
+			break DepthIter
+		case leafI:
+			val, found = n.get(key)
+			break DepthIter
+		case tableI:
+			_ = assertOn && assert(depth != maxDepth,
+				"Invalid Hamt: TableI found at maxDepth.")
+			curTable = n
+		default:
+			panic("Invalid Hamt: curNode != nil || LeafI || TableI")
 		}
-
-		if leaf, isLeaf := curNode.(leafI); isLeaf {
-			return leaf.get(k)
-		}
-
-		if depth == maxDepth {
-			panic("SHOULD NOT HAPPEN")
-		}
-		curTable = curNode.(tableI)
 	}
 
-	panic("SHOULD NEVER BE REACHED")
+	return val, found
 }
 
-func (h *hamtBase) createTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
+func (h *hamtBase) createTable(depth uint, l1 leafI, l2 *flatLeaf) tableI {
 	if h.startFixed {
-		return createFixedTable(depth, leaf1, leaf2)
+		return createFixedTable(depth, l1, l2)
 	}
-	return createSparseTable(depth, leaf1, leaf2)
+	return createSparseTable(depth, l1, l2)
 }
 
 // String returns a string representation of the hamtBase stastructure.

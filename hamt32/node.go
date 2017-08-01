@@ -11,10 +11,10 @@ type nodeI interface {
 type leafI interface {
 	nodeI
 
-	get(key *iKey) (interface{}, bool)
-	put(key *iKey, val interface{}) (leafI, bool)
-	del(key *iKey) (leafI, interface{}, bool)
-	keyVals() []iKeyVal
+	get(key []byte) (interface{}, bool)
+	put(key []byte, val interface{}) (leafI, bool)
+	del(key []byte) (leafI, interface{}, bool)
+	keyVals() []KeyVal
 }
 
 type tableI interface {

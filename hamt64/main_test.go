@@ -123,6 +123,17 @@ func TestMain(m *testing.M) {
 	log.Printf("TestMain: SizeofSparseTable=%d\n", hamt64.SizeofSparseTable)
 	fmt.Printf("TestMain: SizeofSparseTable=%d\n", hamt64.SizeofSparseTable)
 
+	// // This is an attempt to make the first benchmarks faster. My theory is
+	// // that we needed to build up the heap. This worked a little bit, I don't
+	// // know if it is really worth it or should I do more.
+	// StartTime["fat throw away"] = time.Now()
+	// foo, _ := buildHamt64("foo", BVS, true, hamt64.FixedTables)
+	// _, found := foo.Get([]byte("aaa"))
+	// if !found {
+	// 	panic("foo failed to find \"aaa\"")
+	// }
+	// RunTime["fat throw away"] = time.Since(StartTime["fat throw away"])
+
 	// execute
 	var xit int
 	if all {

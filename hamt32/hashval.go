@@ -2,6 +2,7 @@ package hamt32
 
 import (
 	"fmt"
+	"hash/fnv"
 	"log"
 	"strconv"
 	"strings"
@@ -10,6 +11,25 @@ import (
 // hashVal sets the numberer of bits of the hash value by being an alias to
 // uint32 and establishes a type we can hang methods, like Index(), off of.
 type hashVal uint32
+
+// Calculate the hashVal of a given byte slice.
+func calcHashVal(bs []byte) hashVal {
+	return hashVal(fold(hash(bs), remainder))
+}
+
+func hash(bs []byte) uint32 {
+	var h = fnv.New32()
+	h.Write(bs)
+	return h.Sum32()
+}
+
+func mask(size uint) uint32 {
+	return uint32(1<<size) - 1
+}
+
+func fold(hash uint32, rem uint) uint32 {
+	return (hash >> (hashSize - rem)) ^ (hash & mask(hashSize-rem))
+}
 
 func indexMask(depth uint) hashVal {
 	return hashVal((1<<IndexBits)-1) << (depth * IndexBits)
