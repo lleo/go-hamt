@@ -8,7 +8,7 @@ type tableStack interface {
 	push(tableI) tableStack
 	//shift() tableI
 	//unshift(tableI) tableStack
-	isEmpty() bool
+	//isEmpty() bool
 	len() int
 }
 
@@ -19,7 +19,7 @@ type tableStack interface {
 type tableSlice []tableI
 
 // Constructs an tableSlice impl of the tableStack interface.
-func newTableStack() tableStack {
+func newTableSlice() *tableSlice {
 	var ts = make(tableSlice, 0, maxDepth)
 	return &ts
 }
@@ -63,11 +63,11 @@ func (path *tableSlice) pop() tableI {
 //	return path
 //}
 
-// path.isEmpty() returns true if there are no entries in the path object,
-// otherwise it returns false.
-func (path *tableSlice) isEmpty() bool {
-	return len(*path) == 0
-}
+//// path.isEmpty() returns true if there are no entries in the path object,
+//// otherwise it returns false.
+//func (path *tableSlice) isEmpty() bool {
+//	return len(*path) == 0
+//}
 
 func (path *tableSlice) len() int {
 	return len(*path)

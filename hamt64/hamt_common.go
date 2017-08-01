@@ -66,7 +66,7 @@ func copyKey(key []byte) []byte {
 func (h *hamtBase) find(hv hashVal) (tableStack, leafI, uint) {
 	var curTable tableI = &h.root
 
-	var path = newTableStack()
+	var path = newTableSlice() //conforms to tableStack interface
 	var leaf leafI
 	var idx uint
 
