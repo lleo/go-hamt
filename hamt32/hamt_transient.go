@@ -101,13 +101,11 @@ func (h *HamtTransient) Put(key []byte, val interface{}) (Hamt, bool) {
 			(curTable.nentries()+1) == UpgradeThreshold {
 			var newTable = upgradeToFixedTable(
 				curTable.Hash(), depth, curTable.entries())
-			if curTable == &h.root {
-				h.root = *newTable
-			} else {
-				var parentTable = path.peek()
-				var parentIdx = hv.Index(depth - 1)
-				parentTable.replace(parentIdx, newTable)
-			}
+
+			var parentTable = path.peek()
+			var parentIdx = hv.Index(depth - 1)
+			parentTable.replace(parentIdx, newTable)
+
 			curTable = newTable
 		}
 		curTable.insert(idx, newFlatLeaf(hv, key, val))
