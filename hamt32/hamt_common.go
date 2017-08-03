@@ -88,6 +88,9 @@ DepthIter:
 				"Invalid Hamt: TableI found at maxDepth.")
 			curTable = n
 		default:
+			// If golang had a more comprehensive type system and type switch
+			// the compiler would be able to prove that this condition can not
+			// exist. Rest assured that this case CAN NOT occur.
 			panic("Invalid Hamt: curNode != nil || LeafI || TableI")
 		}
 	}
@@ -137,10 +140,15 @@ DepthIter:
 			val, found = n.get(key)
 			break DepthIter
 		case tableI:
+			// This assert should never happen in a properly build and
+			// maintained Hamt structure.
 			_ = assertOn && assert(depth != maxDepth,
 				"Invalid Hamt: TableI found at maxDepth.")
 			curTable = n
 		default:
+			// If golang had a more comprehensive type system and type switch
+			// the compiler would be able to prove that this condition can not
+			// exist. Rest assured that this case CAN NOT occur.
 			panic("Invalid Hamt: curNode != nil || LeafI || TableI")
 		}
 	}
