@@ -3,9 +3,10 @@ package hamt32
 import (
 	"fmt"
 	"hash/fnv"
-	"log"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // hashVal sets the numberer of bits of the hash value by being an alias to
@@ -79,7 +80,6 @@ func (hv hashVal) buildHashPath(idx, depth uint) hashVal {
 // will be a zero padded number between 0 and maxIndex. There will be limit
 // number of such values where limit <= DepthLimit.
 // If the limit parameter is 0 then the method will simply return "/".
-// Warning: It will panic() if limit > DepthLimit.
 // Example: "/00/24/46/17" for limit=4 of a IndexBits=5 hash value
 // represented by "/00/24/46/17/34/08".
 func (hv hashVal) HashPathString(limit uint) string {
@@ -125,17 +125,19 @@ func (hv hashVal) String() string {
 }
 
 // parseHashPath
-func parseHashPath(s string) hashVal {
-	_ = assertOn && assertf(strings.HasPrefix(s, "/"),
-		"ParseHashPath: input, %q, does not start with '/'", s)
-
-	if len(s) == 1 { // s="/"
-		return 0
+func parseHashPath(s string) (hashVal, error) {
+	if !strings.HasPrefix(s, "/") {
+		return 0, errors.Errorf(
+			"parseHashPath: input, %q, does not start with '/'", s)
 	}
 
-	_ = assertOn && assertf(!strings.HasSuffix(s, "/"),
-		"ParseHashPath: input, %q, ends with '/'", s)
+	if len(s) == 1 { // s="/"
+		return 0, nil
+	}
 
+	if strings.HasSuffix(s, "/") {
+		return 0, errors.Errorf("parseHashPath: input, %q, ends with '/'", s)
+	}
 	var s0 = s[1:] //take the leading '/' off
 	var idxStrs = strings.Split(s0, "/")
 
@@ -143,12 +145,13 @@ func parseHashPath(s string) hashVal {
 	for i, idxStr := range idxStrs {
 		var idx, err = strconv.ParseUint(idxStr, 10, int(IndexBits))
 		if err != nil {
-			log.Panicf("ParseHashPath: the %d'th index string failed to parse. err=%s", i, err)
+			return 0, errors.Wrapf(err,
+				"parseHashPath: the %d'th index string failed to parse.", i)
 		}
 
 		//hv |= hashVal(idx << (uint(i) * IndexBits))
 		hv = hv.buildHashPath(uint(idx), uint(i))
 	}
 
-	return hv
+	return hv, nil
 }
