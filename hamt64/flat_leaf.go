@@ -14,6 +14,14 @@ type flatLeaf struct {
 func newFlatLeaf(hv hashVal, key []byte, val interface{}) *flatLeaf {
 	var fl = new(flatLeaf)
 	fl.hash = hv
+	fl.key = copyKey(key) //guarantee internal keys are not externally modifiable
+	fl.val = val
+	return fl
+}
+
+func newFlatLeafNoCopy(hv hashVal, key []byte, val interface{}) *flatLeaf {
+	var fl = new(flatLeaf)
+	fl.hash = hv
 	fl.key = key
 	fl.val = val
 	return fl
@@ -41,11 +49,14 @@ func (l *flatLeaf) get(key []byte) (interface{}, bool) {
 // allocated and returned).
 func (l *flatLeaf) put(key []byte, val interface{}) (leafI, bool) {
 	var nl leafI
+
 	if bytes.Equal(l.key, key) {
 		// maintain functional behavior of flatLeaf
-		nl = newFlatLeaf(l.hash, l.key, val)
+		nl = newFlatLeafNoCopy(l.hash, l.key, val)
 		return nl, false //replaced
 	}
+
+	key = copyKey(key) //guarantee internal keys are not externally modifiable
 	nl = newCollisionLeaf(l.hash, []KeyVal{{l.key, l.val}, {key, val}})
 	return nl, true // key,val was added
 }
