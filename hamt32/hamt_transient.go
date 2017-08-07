@@ -4,7 +4,7 @@ package hamt32
 // called upon. In fact it is identical to the HamtFunctional data structure and
 // all the table and leaf data structures it uses are the same ones used by the
 // HamtTransient implementation. It is its own type so that the methods it calls
-// are the transient version of the hamt32.Hamt interface.
+// are the transient version of the Hamt interface.
 //
 // The Transient version of the Hamt data structure, does all modifications
 // in-place. So sharing this datastruture between threads is NOT safe unless
@@ -37,8 +37,7 @@ func (h *HamtTransient) Nentries() uint {
 // ToFunctional creates a HamtFunctional data structure and copies the values
 // stored in the HamtTransient data structure over to the HamtFunctional
 // data structure. In the case of root table it does a deep copy. Finnally, it
-// returns a pointer to the HamtFunctional data structure as a hamt32.Hamt
-// interface.
+// returns a pointer to the HamtFunctional data structure as a Hamt interface.
 //
 // If you are confident that modifications to the original HamtTransient would
 // not impact the HamtFunctional data structure (eg. you no longer used the
@@ -58,7 +57,7 @@ func (h *HamtTransient) ToFunctional() Hamt {
 }
 
 // ToTransient does nothing to a HamtTransient data structure. This method only
-// returns the HamtTransient data structure pointer as a hamt32.Hamt interface.
+// returns the HamtTransient data structure pointer as a Hamt interface.
 func (h *HamtTransient) ToTransient() Hamt {
 	return h
 }
@@ -223,4 +222,18 @@ func (h *HamtTransient) visit(fn visitFn) uint {
 // it return.
 func (h *HamtTransient) Stats() *Stats {
 	return h.hamtBase.Stats()
+}
+
+// Iter returns an IterFunc to be called repeatedly to iterat over the Hamt.
+// No modifications should happend during the lifetime of the iterator. For
+// HamtFunctional this is not a problem, but for HamtTransient this constaint
+// is up to the Library user.
+//
+//    var next = h.Iter()
+//    for kv, ok:= next(); ok; kv, ok = next() {
+//        doSomething(kv)
+//    }
+//
+func (h *HamtTransient) Iter() IterFunc {
+	return h.hamtBase.Iter()
 }

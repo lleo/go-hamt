@@ -88,10 +88,9 @@ DepthIter:
 				"Invalid Hamt: TableI found at maxDepth.")
 			curTable = n
 		default:
-			// If golang had a more comprehensive type system and type switch
-			// the compiler would be able to prove that this condition can not
-			// exist. Rest assured that this case CAN NOT occur.
-			panic("Invalid Hamt: curNode != nil || LeafI || TableI")
+			// Can not happend. Just here becuase I am paranoid.
+			_ = assertOn && assert(false,
+				"Invalid Hamt: curNode != nil || LeafI || TableI")
 		}
 	}
 
@@ -140,16 +139,13 @@ DepthIter:
 			val, found = n.get(key)
 			break DepthIter
 		case tableI:
-			// This assert should never happen in a properly build and
-			// maintained Hamt structure.
 			_ = assertOn && assert(depth != maxDepth,
 				"Invalid Hamt: TableI found at maxDepth.")
 			curTable = n
 		default:
-			// If golang had a more comprehensive type system and type switch
-			// the compiler would be able to prove that this condition can not
-			// exist. Rest assured that this case CAN NOT occur.
-			panic("Invalid Hamt: curNode != nil || LeafI || TableI")
+			// Can not happend. Just here becuase I am paranoid.
+			_ = assertOn && assert(false,
+				"Invalid Hamt: curNode != nil || LeafI || TableI")
 		}
 	}
 
@@ -230,4 +226,152 @@ func (h *hamtBase) Stats() *Stats {
 
 	stats.MaxDepth = h.visit(statFn)
 	return stats
+}
+
+// IterFunc is the function to call repeatedly to iterate over the Hamt.
+type IterFunc func() (KeyVal, bool)
+
+// Iter returns an IterFunc to be called repeatedly to iterat over the Hamt.
+// No modifications should happend during the lifetime of the iterator. For
+// HamtFunctional this is not a problem, but for HamtTransient this constaint
+// is up to the Library user.
+//
+//    var next = h.Iter()
+//    for kv, ok:= next(); ok; kv, ok = next() {
+//        doSomething(kv)
+//    }
+//
+func (h *hamtBase) Iter() IterFunc {
+	if h.IsEmpty() {
+		return func() (KeyVal, bool) {
+			return KeyVal{nil, nil}, false
+		}
+	}
+
+	//Closure variables
+	var itStk *iterStack
+	var curTable tableI
+	var idx uint
+	var colLeaf *collisionLeaf
+	var colLeafIdx uint
+
+	var leaf leafI //not a closure variable
+	itStk, leaf = h.findFirstLeaf()
+
+	if cl, ok := leaf.(*collisionLeaf); ok {
+		colLeaf = cl
+		colLeafIdx = 0
+	}
+
+	curTable, idx = itStk.pop() //curTable != nil cuz !h.IsEmpty()
+
+	return func() (KeyVal, bool) {
+		if colLeaf != nil {
+			var kv = colLeaf.kvs[colLeafIdx]
+			var copiedKey = copyKey(kv.Key)
+			colLeafIdx++
+			if colLeafIdx >= uint(len(colLeaf.kvs)) {
+				colLeaf = nil
+				colLeafIdx = 0
+			}
+			return KeyVal{copiedKey, kv.Val}, true
+		}
+
+		// Find Next Leaf
+		var leaf leafI
+	DepthLoop:
+		for uint(itStk.len()) < DepthLimit {
+		IndexIter:
+			for ; idx < IndexLimit; idx++ {
+				var curNode = curTable.get(idx)
+				switch x := curNode.(type) {
+				case nil:
+					// do nothing
+				case leafI:
+					leaf = x
+					idx++
+					break DepthLoop
+				case tableI:
+					_ = assertOn && assert(uint(itStk.len()) != maxDepth,
+						"Invalid Hamt: TableI found at maxDepth.")
+
+					itStk.push(curTable, idx)
+					curTable = x
+					idx = 0
+					break IndexIter
+				default:
+					// Can not happend. Just here becuase I am paranoid.
+					_ = assertOn && assert(false,
+						"Invalid Hamt: curNode != nil || LeafI || TableI")
+				} //switch
+			} //IndexIter
+
+			if itStk.len() == 0 && idx == IndexLimit {
+				//THE END
+				break DepthLoop
+			}
+
+			if idx == IndexLimit { //implicit itstk.len() > 0
+				curTable, idx = itStk.pop()
+				idx++
+			}
+		} //DepthLoop
+
+		var retKV KeyVal
+		switch x := leaf.(type) {
+		case nil:
+			// Is this the END? AKA found no leaf
+			// If so, I expect itStk.len()==0 && idx==IndexLimit
+			return KeyVal{nil, nil}, false
+		case *flatLeaf:
+			retKV = KeyVal{copyKey(x.key), x.val}
+		case *collisionLeaf:
+			// This is the first time I've visited this colLeaf, the rest of the
+			// colLeaf.kvs will be dealt with at the beginning of this func.
+			colLeaf = x
+			colLeafIdx = 0
+			var kv = x.kvs[colLeafIdx]
+			retKV = KeyVal{copyKey(kv.Key), kv.Val}
+		default:
+			panic("WTF! leaf isa leafI but not *flatLeaf nor *collisionLeaf")
+		}
+		return retKV, true
+	}
+}
+
+func (h *hamtBase) findFirstLeaf() (*iterStack, leafI) {
+	var itStk = newIterStack()
+
+	var curTable tableI = &h.root
+	var idx uint
+	var leaf leafI
+
+DepthLoop:
+	for uint(itStk.len()) < DepthLimit {
+	IndexIter:
+		for idx = 0; idx < IndexLimit; idx++ {
+			var curNode = curTable.get(idx)
+			switch x := curNode.(type) {
+			case nil:
+				// implicit break; my C-trained brain rebels from go-switch
+			case leafI:
+				itStk.push(curTable, idx)
+				leaf = x
+				break DepthLoop
+			case tableI:
+				_ = assertOn && assert(uint(itStk.len()) != maxDepth,
+					"Invalid Hamt: TableI found at maxDepth.")
+
+				itStk.push(curTable, idx)
+				curTable = x
+				break IndexIter
+			default:
+				// Can not happend. Just here becuase I am paranoid.
+				_ = assertOn && assert(false,
+					"Invalid Hamt: curNode != nil || LeafI || TableI")
+			} //switch
+		} //IndexIter
+	} //DepthLoop
+
+	return itStk, leaf
 }

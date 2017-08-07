@@ -4,7 +4,7 @@ package hamt32
 // called upon. In fact it is identical to the HamtTransient data structure and
 // all the table and leaf data structures it uses are the same ones used by the
 // HamtTransient implementation. It is its own type so that the methods it calls
-// are the functional version of the hamt32.Hamt interface.
+// are the functional version of the Hamt interface.
 //
 // Basically the functional versions implement a copy-on-write inmplementation
 // of Put() and Del(). The original HamtFuncitonal isn't modified and Put()
@@ -36,8 +36,7 @@ func (h *HamtFunctional) Nentries() uint {
 }
 
 // ToFunctional does nothing to a HamtFunctional data structure. This method
-// only returns the HamtFunctional data structure pointer as a hamt32.Hamt
-// interface.
+// only returns the HamtFunctional data structure pointer as a Hamt interface.
 func (h *HamtFunctional) ToFunctional() Hamt {
 	return h
 }
@@ -45,8 +44,7 @@ func (h *HamtFunctional) ToFunctional() Hamt {
 // ToTransient creates a HamtTransient data structure and copies the values
 // stored in the HamtFunctional data structure over to the HamtTransient data
 // structure. In the case of the root table it does a deep copy. Finally, it
-// returns a pointer to the HamtTransient data structure as a hamt32.Hamt
-// interface.
+// returns a pointer to the HamtTransient data structure as a Hamt interface.
 //
 // If you are confident that modifications to the new HamtTransient would not
 // impact the original HamtFunctional data structures it was generated from (eg.
@@ -288,4 +286,18 @@ func (h *HamtFunctional) visit(fn visitFn) uint {
 // it return.
 func (h *HamtFunctional) Stats() *Stats {
 	return h.hamtBase.Stats()
+}
+
+// Iter returns an IterFunc to be called repeatedly to iterat over the Hamt.
+// No modifications should happend during the lifetime of the iterator. For
+// HamtFunctional this is not a problem, but for HamtTransient this constaint
+// is up to the Library user.
+//
+//    var next = h.Iter()
+//    for kv, ok:= next(); ok; kv, ok = next() {
+//        doSomething(kv)
+//    }
+//
+func (h *HamtFunctional) Iter() IterFunc {
+	return h.hamtBase.Iter()
 }

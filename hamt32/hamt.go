@@ -95,6 +95,7 @@ type Hamt interface {
 	LongString(string) string
 	visit(visitFn) uint
 	Stats() *Stats
+	Iter() IterFunc
 }
 
 // New constructs a datastucture that implements the Hamt interface. When the
