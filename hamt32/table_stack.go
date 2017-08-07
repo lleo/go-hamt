@@ -35,7 +35,6 @@ func (path *tableSlice) peek() tableI {
 // Put a new tableI in the path object.
 // You should never push nil, but we are not checking to prevent this.
 func (path *tableSlice) push(tab tableI) tableStack {
-	//_ = ASSERT && Assert(tab != nil, "tableSlice.push(nil) not allowed")
 	*path = append(*path, tab)
 	return path
 }
