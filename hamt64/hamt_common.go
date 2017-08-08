@@ -231,6 +231,20 @@ func (h *hamtBase) Stats() *Stats {
 // IterFunc is the function to call repeatedly to iterate over the Hamt.
 type IterFunc func() (KeyVal, bool)
 
+type iterState struct {
+	locStack   iterLocStack
+	curTable   tableI
+	idx        uint
+	colLeaf    *collisionLeaf
+	colLeafIdx uint
+}
+
+func newIterState() *iterState {
+	var state = new(iterState)
+	state.locStack = make([]iterLocation, 0, DepthLimit)
+	return state
+}
+
 // Iter returns an IterFunc to be called repeatedly to iterat over the Hamt.
 // No modifications should happend during the lifetime of the iterator. For
 // HamtFunctional this is not a problem, but for HamtTransient this constaint
@@ -248,90 +262,59 @@ func (h *hamtBase) Iter() IterFunc {
 		}
 	}
 
-	//Closure variables
-	var itStk *iterStack
-	var curTable tableI
-	var idx uint
-	var colLeaf *collisionLeaf
-	var colLeafIdx uint
-
+	//Closure variable
+	var state *iterState
 	var leaf leafI //not a closure variable
-	itStk, leaf = h.findFirstLeaf()
+
+	state, leaf = findFirstLeaf(&h.root)
 
 	if cl, ok := leaf.(*collisionLeaf); ok {
-		colLeaf = cl
-		colLeafIdx = 0
+		state.colLeaf = cl
+		state.colLeafIdx = 0
 	}
 
-	curTable, idx = itStk.pop() //curTable != nil cuz !h.IsEmpty()
+	state.curTable, state.idx = state.locStack.pop()
+	//state.curTable != nil cuz !h.IsEmpty()
 
 	return func() (KeyVal, bool) {
-		if colLeaf != nil {
-			var kv = colLeaf.kvs[colLeafIdx]
-			var copiedKey = copyKey(kv.Key)
-			colLeafIdx++
-			if colLeafIdx >= uint(len(colLeaf.kvs)) {
-				colLeaf = nil
-				colLeafIdx = 0
+		if state.colLeaf != nil {
+			var kv = state.colLeaf.kvs[state.colLeafIdx]
+			state.colLeafIdx++
+
+			if state.colLeafIdx >= uint(len(state.colLeaf.kvs)) {
+				state.colLeaf = nil
+				state.colLeafIdx = 0
 			}
-			return KeyVal{copiedKey, kv.Val}, true
+
+			return KeyVal{copyKey(kv.Key), kv.Val}, true
 		}
 
-		// Find Next Leaf
-		var leaf leafI
-	DepthLoop:
-		for uint(itStk.len()) < DepthLimit {
-		IndexIter:
-			for ; idx < IndexLimit; idx++ {
-				var curNode = curTable.get(idx)
-				switch x := curNode.(type) {
-				case nil:
-					// do nothing
-				case leafI:
-					leaf = x
-					idx++
-					break DepthLoop
-				case tableI:
-					_ = assertOn && assert(uint(itStk.len()) != maxDepth,
-						"Invalid Hamt: TableI found at maxDepth.")
-
-					itStk.push(curTable, idx)
-					curTable = x
-					idx = 0
-					break IndexIter
-				default:
-					// Can not happend. Just here becuase I am paranoid.
-					_ = assertOn && assert(false,
-						"Invalid Hamt: curNode != nil || LeafI || TableI")
-				} //switch
-			} //IndexIter
-
-			if itStk.len() == 0 && idx == IndexLimit {
-				//THE END
-				break DepthLoop
-			}
-
-			if idx == IndexLimit { //implicit itstk.len() > 0
-				curTable, idx = itStk.pop()
-				idx++
-			}
-		} //DepthLoop
+		var leaf = findNextLeaf(state)
 
 		var retKV KeyVal
 		switch x := leaf.(type) {
 		case nil:
 			// Is this the END? AKA found no leaf
-			// If so, I expect itStk.len()==0 && idx==IndexLimit
+			// If so, I expect state.locStack.len()==0 && state.idx==IndexLimit
+			_ = assertOn && assertf(state.locStack.len() == 0,
+				"leaf=nil && state.locStack.len(),%d != 0", state.locStack.len())
+			_ = assertOn && assertf(state.idx == IndexLimit,
+				"leaf=nil && state.idx,%d != IndexLimit,%d",
+				state.idx, IndexLimit)
+
 			return KeyVal{nil, nil}, false
 		case *flatLeaf:
 			retKV = KeyVal{copyKey(x.key), x.val}
 		case *collisionLeaf:
 			// This is the first time I've visited this colLeaf, the rest of the
 			// colLeaf.kvs will be dealt with at the beginning of this func.
-			colLeaf = x
-			colLeafIdx = 0
-			var kv = x.kvs[colLeafIdx]
+			state.colLeaf = x
+			state.colLeafIdx = 0
+
+			var kv = state.colLeaf.kvs[state.colLeafIdx]
 			retKV = KeyVal{copyKey(kv.Key), kv.Val}
+
+			state.colLeafIdx++
 		default:
 			panic("WTF! leaf isa leafI but not *flatLeaf nor *collisionLeaf")
 		}
@@ -339,15 +322,15 @@ func (h *hamtBase) Iter() IterFunc {
 	}
 }
 
-func (h *hamtBase) findFirstLeaf() (*iterStack, leafI) {
-	var itStk = newIterStack()
+func findFirstLeaf(root tableI) (*iterState, leafI) {
+	var state = newIterState()
 
-	var curTable tableI = &h.root
+	var curTable = root
 	var idx uint
 	var leaf leafI
 
 DepthLoop:
-	for uint(itStk.len()) < DepthLimit {
+	for uint(state.locStack.len()) < DepthLimit {
 	IndexIter:
 		for idx = 0; idx < IndexLimit; idx++ {
 			var curNode = curTable.get(idx)
@@ -355,14 +338,14 @@ DepthLoop:
 			case nil:
 				// implicit break; my C-trained brain rebels from go-switch
 			case leafI:
-				itStk.push(curTable, idx)
+				state.locStack.push(curTable, idx)
 				leaf = x
 				break DepthLoop
 			case tableI:
-				_ = assertOn && assert(uint(itStk.len()) != maxDepth,
+				_ = assertOn && assert(uint(state.locStack.len()) != maxDepth,
 					"Invalid Hamt: TableI found at maxDepth.")
 
-				itStk.push(curTable, idx)
+				state.locStack.push(curTable, idx)
 				curTable = x
 				break IndexIter
 			default:
@@ -373,5 +356,50 @@ DepthLoop:
 		} //IndexIter
 	} //DepthLoop
 
-	return itStk, leaf
+	return state, leaf
+}
+
+func findNextLeaf(state *iterState) leafI {
+	var leaf leafI
+
+DepthLoop:
+	for uint(state.locStack.len()) < DepthLimit {
+	IndexIter:
+		for ; state.idx < IndexLimit; state.idx++ {
+			var curNode = state.curTable.get(state.idx)
+			switch x := curNode.(type) {
+			case nil:
+				// do nothing
+			case leafI:
+				leaf = x
+				state.idx++
+				break DepthLoop
+			case tableI:
+				_ = assertOn && assert(uint(state.locStack.len()) != maxDepth,
+					"Invalid Hamt: TableI found at maxDepth.")
+
+				state.locStack.push(state.curTable, state.idx)
+				state.curTable = x
+				state.idx = 0
+				break IndexIter
+			default:
+				// Can not happend. Just here becuase I am paranoid.
+				_ = assertOn && assert(false,
+					"Invalid Hamt: curNode != nil || LeafI || TableI")
+			} //switch
+		} //IndexIter
+
+		if state.locStack.len() == 0 && state.idx == IndexLimit {
+			//THE END
+			//leaf = nil
+			break DepthLoop
+		}
+
+		if state.idx == IndexLimit { //implicit state.itstk.len() > 0
+			state.curTable, state.idx = state.locStack.pop()
+			state.idx++
+		}
+	} //DepthLoop
+
+	return leaf
 }
