@@ -81,8 +81,8 @@ func (h *HamtFunctional) persist(oldTable, newTable tableI, path tableStack) {
 	// because that case is handled in Put & Del now. It is handled in Put & Del
 	// because otherwise we were allocating an extraneous fixedTable for the
 	// old h.root.
-	_ = assertOn && assert(path.len() == 0,
-		"This case should be handled directly in Put & Del.")
+	_ = assertOn && assert(path.len() != 0,
+		"path.len()==0; This case should be handled directly in Put & Del.")
 
 	var depth = uint(path.len()) //guaranteed depth > 0
 	var parentDepth = depth - 1
