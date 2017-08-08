@@ -73,6 +73,56 @@ func TestHamt64Put(t *testing.T) {
 	log.Printf("%s: stats=%+v;\n", name, stats)
 }
 
+func TestHamt64Iter(t *testing.T) {
+	var name = "TestHamt64Iter"
+	if Functional {
+		name += ":functional:" + hamt64.TableOptionName[TableOption]
+	} else {
+		name += ":transient:" + hamt64.TableOptionName[TableOption]
+	}
+
+	if Hamt64 == nil {
+		var err error
+		Hamt64, err = buildHamt64(name, BVS, Functional, TableOption)
+		if err != nil {
+			log.Printf("%s: failed buildHamt64(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), Functional,
+				hamt64.TableOptionName[TableOption], err)
+			t.Fatalf("%s: failed buildHamt64(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), Functional,
+				hamt64.TableOptionName[TableOption], err)
+		}
+
+		StartTime["Hamt64.Stats()"] = time.Now()
+		var stats = Hamt64.Stats()
+		RunTime["Hamt64.Stats()"] = time.Since(StartTime["Hamt64.Stats()"])
+		log.Printf("%s: stats=%+v;\n", name, stats)
+	}
+
+	StartTime[name] = time.Now()
+
+	var i int
+	var next = Hamt64.Iter()
+	for kv, ok := next(); ok; kv, ok = next() {
+		var val, ok = Hamt64.Get(kv.Key)
+		if !ok {
+			t.Fatalf("failed to lookup %s in Hamt64", kv.Key)
+		}
+
+		if val != kv.Val {
+			t.Fatalf("val,%v != kv.Val,%v\n", val, kv.Val)
+		}
+
+		i++
+	}
+
+	if len(BVS) != i {
+		t.Fatalf("Expected len(BVS),%d go i,%d", len(BVS), i)
+	}
+
+	RunTime[name] = time.Since(StartTime[name])
+}
+
 func TestHamt64Get(t *testing.T) {
 	var name = "TestHamt64Get"
 	if Functional {
