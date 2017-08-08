@@ -296,11 +296,14 @@ func (h *hamtBase) Iter() IterFunc {
 		case nil:
 			// Is this the END? AKA found no leaf
 			// If so, I expect state.locStack.len()==0 && state.idx==IndexLimit
-			_ = assertOn && assertf(state.locStack.len() == 0,
-				"leaf=nil && state.locStack.len(),%d != 0", state.locStack.len())
-			_ = assertOn && assertf(state.idx == IndexLimit,
-				"leaf=nil && state.idx,%d != IndexLimit,%d",
-				state.idx, IndexLimit)
+			if assertOn {
+				assertf(state.locStack.len() == 0,
+					"leaf=nil && state.locStack.len(),%d != 0",
+					state.locStack.len())
+				assertf(state.idx == IndexLimit,
+					"leaf=nil && state.idx,%d != IndexLimit,%d",
+					state.idx, IndexLimit)
+			}
 
 			return KeyVal{nil, nil}, false
 		case *flatLeaf:
@@ -390,7 +393,7 @@ DepthLoop:
 		} //IndexIter
 
 		if state.locStack.len() == 0 && state.idx == IndexLimit {
-			//THE END
+			//The end of iteration
 			//leaf = nil
 			break DepthLoop
 		}
