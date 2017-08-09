@@ -1,6 +1,9 @@
 package hamt64
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // HamtFunctional is the data structure which the Funcitonal Hamt methods are
 // called upon. In fact it is identical to the HamtTransient data structure and
@@ -37,30 +40,20 @@ func (h *HamtFunctional) Nentries() uint {
 	return h.hamtBase.Nentries()
 }
 
-// ToFunctional does nothing to a HamtFunctional data structure. This method
-// only returns the HamtFunctional data structure pointer as a Hamt interface.
+// ToFunctional does nothing to a HamtFunctional pointer. This method
+// only here for conformance with the Hamt interface.
 func (h *HamtFunctional) ToFunctional() Hamt {
 	return h
 }
 
-// ToTransient creates a HamtTransient data structure and copies the values
-// stored in the HamtFunctional data structure over to the HamtTransient data
-// structure. In the case of the root table it does a deep copy. Finally, it
-// returns a pointer to the HamtTransient data structure as a Hamt interface.
+// ToTransient just recasts the HamtFunctional pointer to a HamtTransient
+// underneath the Hamt interface.
 //
-// If you are confident that modifications to the new HamtTransient would not
-// impact the original HamtFunctional data structures it was generated from (eg.
-// you no longer used the previous HamtFunctional data structures), then you can
-// simply recast a *HamtFunctional to *HamtTransient.
-//
-// The reason for ToTransient() is to do a deep copy of all the data structures
-// involved in the HamtFunctional. Of course, this can be very expensive.
+// If you want a copy of the HamtFunctional data structure over to a completely
+// independent HamtTransient data structure, you should first do a DeepCopy
+// followed by a ToTransient call.
 func (h *HamtFunctional) ToTransient() Hamt {
-	var nh = new(HamtTransient)
-	nh.root = *h.root.deepCopy().(*fixedTable)
-	nh.nentries = h.nentries
-	nh.grade = h.grade
-	nh.startFixed = h.startFixed
+	var nh = (*HamtTransient)(h)
 	return nh
 }
 
@@ -174,6 +167,9 @@ func (h *HamtFunctional) Put(key []byte, val interface{}) (Hamt, bool) {
 			added = true
 		} else {
 			newTable = curTable.copy()
+
+			fmt.Printf("curTable=%p\n", curTable)
+			fmt.Printf("newTable=%p\n", newTable)
 
 			var node nodeI
 			if leaf.Hash() == hv {

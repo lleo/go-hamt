@@ -36,30 +36,19 @@ func (h *HamtTransient) Nentries() uint {
 	return h.hamtBase.Nentries()
 }
 
-// ToFunctional creates a HamtFunctional data structure and copies the values
-// stored in the HamtTransient data structure over to the HamtFunctional
-// data structure. In the case of root table it does a deep copy. Finnally, it
-// returns a pointer to the HamtFunctional data structure as a Hamt interface.
+// ToFunctional just recasts the HamtFunctional pointer to a HamtFunctional
+// underneath the Hamt interface.
 //
-// If you are confident that modifications to the original HamtTransient would
-// not impact the HamtFunctional data structure (eg. you no longer used the
-// previous HamtTransient data structures), then you can simply recast a
-// *HamtTransient to *HamtFunctional.
-//
-// The reason for ToFunctional() is to do a deep copy of all the data
-// structures involved in the HamtFunctional. Of course, this can be very
-// expensive.
+// If you want a copy of the HamtTransient data structure over to a completely
+// independent HamtFunctional data structure, you should first do a DeepCopy
+// followed by a ToFunctional call.
 func (h *HamtTransient) ToFunctional() Hamt {
-	var nh = new(HamtFunctional)
-	nh.root = *h.root.deepCopy().(*fixedTable)
-	nh.nentries = h.nentries
-	nh.grade = h.grade
-	nh.startFixed = h.startFixed
+	var nh = (*HamtFunctional)(h)
 	return nh
 }
 
-// ToTransient does nothing to a HamtTransient data structure. This method only
-// returns the HamtTransient data structure pointer as a Hamt interface.
+// ToTransient does nothing to a HamtTransient pointer. This method
+// only here for conformance with the Hamt interface.
 func (h *HamtTransient) ToTransient() Hamt {
 	return h
 }
