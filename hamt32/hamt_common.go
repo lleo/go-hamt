@@ -85,13 +85,7 @@ DepthIter:
 			leaf = n
 			break DepthIter
 		case tableI:
-			_ = assertOn && assert(depth != maxDepth,
-				"Invalid Hamt: TableI found at maxDepth.")
 			curTable = n
-		default:
-			// Can not happend. Just here becuase I am paranoid.
-			_ = assertOn && assert(false,
-				"Invalid Hamt: curNode != nil || LeafI || TableI")
 		}
 	}
 
@@ -140,13 +134,7 @@ DepthIter:
 			val, found = n.get(key)
 			break DepthIter
 		case tableI:
-			_ = assertOn && assert(depth != maxDepth,
-				"Invalid Hamt: TableI found at maxDepth.")
 			curTable = n
-		default:
-			// Can not happend. Just here becuase I am paranoid.
-			_ = assertOn && assert(false,
-				"Invalid Hamt: curNode != nil || LeafI || TableI")
 		}
 	}
 
@@ -319,8 +307,6 @@ func (h *hamtBase) Iter() IterFunc {
 			retKV = KeyVal{copyKey(kv.Key), kv.Val}
 
 			state.colLeafIdx++
-		default:
-			panic("WTF! leaf isa leafI but not *flatLeaf nor *collisionLeaf")
 		}
 		return retKV, true
 	}
@@ -346,16 +332,9 @@ DepthLoop:
 				leaf = x
 				break DepthLoop
 			case tableI:
-				_ = assertOn && assert(uint(state.locStack.len()) != maxDepth,
-					"Invalid Hamt: TableI found at maxDepth.")
-
 				state.locStack.push(curTable, idx)
 				curTable = x
 				break IndexIter
-			default:
-				// Can not happend. Just here becuase I am paranoid.
-				_ = assertOn && assert(false,
-					"Invalid Hamt: curNode != nil || LeafI || TableI")
 			} //switch
 		} //IndexIter
 	} //DepthLoop
@@ -379,17 +358,10 @@ DepthLoop:
 				state.idx++
 				break DepthLoop
 			case tableI:
-				_ = assertOn && assert(uint(state.locStack.len()) != maxDepth,
-					"Invalid Hamt: TableI found at maxDepth.")
-
 				state.locStack.push(state.curTable, state.idx)
 				state.curTable = x
 				state.idx = 0
 				break IndexIter
-			default:
-				// Can not happend. Just here becuase I am paranoid.
-				_ = assertOn && assert(false,
-					"Invalid Hamt: curNode != nil || LeafI || TableI")
 			} //switch
 		} //IndexIter
 
