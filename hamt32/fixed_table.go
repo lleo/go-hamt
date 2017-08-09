@@ -14,7 +14,7 @@ type fixedTable struct {
 
 func (t *fixedTable) copy() tableI {
 	var nt = new(fixedTable)
-	nt = t
+	*nt = *t
 	return nt
 }
 
