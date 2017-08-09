@@ -7,7 +7,7 @@ import "fmt"
 //     _ = assertOn && assert(...)
 // become noops when compiled.
 // NOTE: This constant SHOULD BE false for production code.
-const assertOn bool = false
+const assertOn bool = true
 
 // assert() tests if test is false; if it is, it will panic with msg.
 // assert() is the fastest as it is simple enough to be inlined.
