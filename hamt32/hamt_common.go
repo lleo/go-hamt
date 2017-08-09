@@ -1,6 +1,7 @@
 package hamt32
 
 import (
+	"context"
 	"fmt"
 )
 
@@ -241,11 +242,11 @@ type iterState struct {
 
 func newIterState() *iterState {
 	var state = new(iterState)
-	state.locStack = make([]iterLocation, 0, DepthLimit)
+	state.locStack = newIterLocStack()
 	return state
 }
 
-// Iter returns an IterFunc to be called repeatedly to iterat over the Hamt.
+// Iter returns an IterFunc to be called repeatedly to iterate over the Hamt.
 // No modifications should happend during the lifetime of the iterator. For
 // HamtFunctional this is not a problem, but for HamtTransient this constaint
 // is up to the Library user.
@@ -405,4 +406,131 @@ DepthLoop:
 	} //DepthLoop
 
 	return leaf
+}
+
+func (h *hamtBase) IterChan(chanBufLen int) <-chan KeyVal {
+	var iterCh = make(chan KeyVal, chanBufLen)
+
+	go func() {
+		if h.IsEmpty() {
+			close(iterCh)
+			return
+		}
+
+		var locStack = newIterLocStack()
+		var curTable tableI = &h.root
+		var idx uint
+
+	DepthLoop:
+		for uint(locStack.len()) < DepthLimit {
+		IndexIter:
+			for ; idx < IndexLimit; idx++ {
+				var curNode = curTable.get(idx)
+
+				switch x := curNode.(type) {
+				case nil:
+					// implicit break; my C-trained brain rebels from go-switch
+				case leafI:
+					switch leaf := x.(type) {
+					case *flatLeaf:
+						iterCh <- KeyVal{copyKey(leaf.key), leaf.val}
+					case *collisionLeaf:
+						for _, kv := range leaf.kvs {
+							iterCh <- KeyVal{copyKey(kv.Key), kv.Val}
+						}
+					}
+				case tableI:
+					_ = assertOn && assert(uint(locStack.len()) != maxDepth,
+						"Invalid Hamt: TableI found at maxDepth.")
+
+					locStack.push(curTable, idx)
+					curTable = x
+					idx = 0
+					break IndexIter
+				} //type switch
+			} // IndexIter
+
+			if idx == IndexLimit {
+				if locStack.len() == 0 {
+					break DepthLoop
+				}
+				curTable, idx = locStack.pop()
+				idx++
+			}
+		} // DepthLoop
+
+		close(iterCh)
+
+		return
+	}()
+
+	return iterCh
+}
+
+func (h *hamtBase) IterChanWithCancel(chanBufLen int) (<-chan KeyVal, context.CancelFunc) {
+	var iterCh = make(chan KeyVal, chanBufLen)
+	var ctx, cancel = context.WithCancel(context.Background())
+
+	go func() {
+		if h.IsEmpty() {
+			close(iterCh)
+			return
+		}
+
+		var locStack = newIterLocStack()
+		var curTable tableI = &h.root
+		var idx uint
+
+	DepthLoop:
+		for uint(locStack.len()) < DepthLimit {
+		IndexIter:
+			for ; idx < IndexLimit; idx++ {
+				var curNode = curTable.get(idx)
+
+				switch x := curNode.(type) {
+				case nil:
+					// implicit break; my C-trained brain rebels from go-switch
+				case leafI:
+					switch leaf := x.(type) {
+					case *flatLeaf:
+						select {
+						case <-ctx.Done():
+							break DepthLoop
+						case iterCh <- KeyVal{copyKey(leaf.key), leaf.val}:
+						}
+					case *collisionLeaf:
+						for _, kv := range leaf.kvs {
+							select {
+							case <-ctx.Done():
+								break DepthLoop
+							case iterCh <- KeyVal{copyKey(kv.Key), kv.Val}:
+							}
+						}
+					}
+				case tableI:
+					_ = assertOn && assert(uint(locStack.len()) != maxDepth,
+						"Invalid Hamt: TableI found at maxDepth.")
+
+					locStack.push(curTable, idx)
+					curTable = x
+					idx = 0
+					break IndexIter
+				} //type switch
+			} // IndexIter
+
+			if idx == IndexLimit {
+				if locStack.len() == 0 {
+					break DepthLoop
+				}
+				curTable, idx = locStack.pop()
+				idx++
+			}
+		} // DepthLoop
+
+		close(iterCh)
+
+		return
+	}()
+
+	return iterCh, cancel
 }

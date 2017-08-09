@@ -1,6 +1,7 @@
 package hamt_test
 
 import (
+	"bytes"
 	"log"
 	"testing"
 	"time"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestBuild64(t *testing.T) {
-	var name = "TestBuild"
+	var name = "TestBuild64"
 	if Functional {
 		name += ":functional:" + hamt64.TableOptionName[TableOption]
 	} else {
@@ -73,8 +74,8 @@ func TestHamt64Put(t *testing.T) {
 	log.Printf("%s: stats=%+v;\n", name, stats)
 }
 
-func TestHamt64Iter(t *testing.T) {
-	var name = "TestHamt64Iter"
+func TestHamt64IterFunc(t *testing.T) {
+	var name = "TestHamt64IterFunc"
 	if Functional {
 		name += ":functional:" + hamt64.TableOptionName[TableOption]
 	} else {
@@ -117,8 +118,112 @@ func TestHamt64Iter(t *testing.T) {
 	}
 
 	if len(BVS) != i {
+		t.Fatalf("Expected len(BVS),%d go i,%d; Hamt64.Nentries()=%d;",
+			len(BVS), i, Hamt64.Nentries())
+	}
+
+	RunTime[name] = time.Since(StartTime[name])
+}
+
+func TestHamt64IterChan(t *testing.T) {
+	var name = "TestHamt64IterChan"
+	if Functional {
+		name += ":functional:" + hamt64.TableOptionName[TableOption]
+	} else {
+		name += ":transient:" + hamt64.TableOptionName[TableOption]
+	}
+
+	if Hamt64 == nil {
+		var err error
+		Hamt64, err = buildHamt64(name, BVS, Functional, TableOption)
+		if err != nil {
+			log.Printf("%s: failed buildHamt64(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), Functional,
+				hamt64.TableOptionName[TableOption], err)
+			t.Fatalf("%s: failed buildHamt64(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), Functional,
+				hamt64.TableOptionName[TableOption], err)
+		}
+
+		StartTime["Hamt64.Stats()"] = time.Now()
+		var stats = Hamt64.Stats()
+		RunTime["Hamt64.Stats()"] = time.Since(StartTime["Hamt64.Stats()"])
+		log.Printf("%s: stats=%+v;\n", name, stats)
+	}
+
+	StartTime[name] = time.Now()
+
+	var i int
+	for kv := range Hamt64.IterChan(0) {
+		var val, ok = Hamt64.Get(kv.Key)
+		if !ok {
+			t.Fatalf("failed to lookup %s in Hamt64", kv.Key)
+		}
+
+		if val != kv.Val {
+			t.Fatalf("val,%v != kv.Val,%v\n", val, kv.Val)
+		}
+
+		i++
+	}
+
+	if len(BVS) != i {
 		t.Fatalf("Expected len(BVS),%d go i,%d", len(BVS), i)
 	}
+
+	RunTime[name] = time.Since(StartTime[name])
+}
+
+func TestHamt64IterChanCancel(t *testing.T) {
+	var name = "TestHamt64IterChanCancel"
+	if Functional {
+		name += ":functional:" + hamt64.TableOptionName[TableOption]
+	} else {
+		name += ":transient:" + hamt64.TableOptionName[TableOption]
+	}
+
+	if Hamt64 == nil {
+		var err error
+		Hamt64, err = buildHamt64(name, BVS, Functional, TableOption)
+		if err != nil {
+			log.Printf("%s: failed buildHamt64(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), Functional,
+				hamt64.TableOptionName[TableOption], err)
+			t.Fatalf("%s: failed buildHamt64(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), Functional,
+				hamt64.TableOptionName[TableOption], err)
+		}
+
+		StartTime["Hamt64.Stats()"] = time.Now()
+		var stats = Hamt64.Stats()
+		RunTime["Hamt64.Stats()"] = time.Since(StartTime["Hamt64.Stats()"])
+		log.Printf("%s: stats=%+v;\n", name, stats)
+	}
+
+	StartTime[name] = time.Now()
+
+	var i int
+	var stopKey = BVS[0].Bsl // "aaa" but key from iter are random
+	var iterChan, iterChanCancel = Hamt64.IterChanWithCancel(0)
+	for kv := range iterChan {
+		var val, ok = Hamt64.Get(kv.Key)
+		if !ok {
+			t.Fatalf("failed to lookup %s in Hamt64", kv.Key)
+		}
+
+		if val != kv.Val {
+			t.Fatalf("val,%v != kv.Val,%v\n", val, kv.Val)
+		}
+
+		i++
+
+		if bytes.Equal(kv.Key, stopKey) {
+			iterChanCancel()
+			break
+		}
+	}
+
+	log.Printf("%s: stopped after %d iterations", name, i)
 
 	RunTime[name] = time.Since(StartTime[name])
 }
@@ -457,5 +562,92 @@ func BenchmarkHamt64Del(b *testing.B) {
 			log.Printf("%s: failed val,%d != v,%d", name, val, v)
 			b.Fatalf("%s: failed val,%d != v,%d", name, val, v)
 		}
+	}
+}
+
+func BenchmarkHamt64IterFunc(b *testing.B) {
+	var name = "BenchmarkHamt64Iter"
+	if Functional {
+		name += ":functional:" + hamt64.TableOptionName[TableOption]
+	} else {
+		name += ":transient:" + hamt64.TableOptionName[TableOption]
+	}
+
+	// We will reuse the BenchHamtGet tree for iterator benchmarking.
+	if BenchHamt64Get == nil || BenchHamt64Get_Functional != Functional {
+		BenchHamt64Get_Functional = Functional
+
+		var err error
+		BenchHamt64Get, err = buildHamt64(name, BVS, Functional, TableOption)
+		if err != nil {
+			log.Printf("%s: failed buildHamt64(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), false, hamt64.TableOptionName[TableOption], err)
+			b.Fatalf("%s: failed buildHamt64(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), false, hamt64.TableOptionName[TableOption], err)
+		}
+	}
+
+	log.Printf("%s: b.N=%d", name, b.N)
+	b.ResetTimer()
+
+	var i int
+	var next = BenchHamt64Get.Iter()
+	for kv, ok := next(); ok; kv, ok = next() {
+		if len(kv.Key) < 0 {
+			b.Fatal("stupid test to touch the kv")
+		}
+
+		if i >= b.N {
+			break
+		}
+		i++
+	}
+
+	if i != b.N {
+		b.Fatalf("Failed to run b.N,%d iterations; only ran %d.", b.N, i)
+	}
+}
+
+func BenchmarkHamt64IterChan(b *testing.B) {
+	var name = "BenchmarkHamt64Iter"
+	if Functional {
+		name += ":functional:" + hamt64.TableOptionName[TableOption]
+	} else {
+		name += ":transient:" + hamt64.TableOptionName[TableOption]
+	}
+
+	// We will reuse the BenchHamtGet tree for iterator benchmarking.
+	if BenchHamt64Get == nil || BenchHamt64Get_Functional != Functional {
+		BenchHamt64Get_Functional = Functional
+
+		var err error
+		BenchHamt64Get, err = buildHamt64(name, BVS, Functional, TableOption)
+		if err != nil {
+			log.Printf("%s: failed buildHamt64(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), false, hamt64.TableOptionName[TableOption], err)
+			b.Fatalf("%s: failed buildHamt64(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), false, hamt64.TableOptionName[TableOption], err)
+		}
+	}
+
+	log.Printf("%s: b.N=%d", name, b.N)
+	b.ResetTimer()
+
+	var i int
+	var iterChan, iterChanCancel = BenchHamt64Get.IterChanWithCancel(0)
+	for kv := range iterChan {
+		if len(kv.Key) < 0 {
+			b.Fatal("stupid test to touch the kv")
+		}
+
+		if i >= b.N {
+			iterChanCancel()
+			break
+		}
+		i++
+	}
+
+	if i != b.N {
+		b.Fatalf("Failed to run b.N,%d iterations; only ran %d.", b.N, i)
 	}
 }

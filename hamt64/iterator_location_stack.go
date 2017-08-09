@@ -12,6 +12,11 @@ type iterLocation struct {
 
 type iterLocStack []iterLocation
 
+func newIterLocStack() iterLocStack {
+	var stack iterLocStack = make([]iterLocation, 0, DepthLimit)
+	return stack
+}
+
 func (is *iterLocStack) len() int {
 	return len(*is)
 }

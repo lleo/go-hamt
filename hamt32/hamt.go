@@ -1,6 +1,7 @@
 package hamt32
 
 import (
+	"context"
 	"unsafe"
 )
 
@@ -96,6 +97,8 @@ type Hamt interface {
 	visit(visitFn) uint
 	Stats() *Stats
 	Iter() IterFunc
+	IterChan(chanBufLen int) <-chan KeyVal
+	IterChanWithCancel(chanBufLen int) (<-chan KeyVal, context.CancelFunc)
 }
 
 // New constructs a datastucture that implements the Hamt interface. When the

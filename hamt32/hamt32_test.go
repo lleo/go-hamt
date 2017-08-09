@@ -1,6 +1,7 @@
 package hamt32_test
 
 import (
+	"bytes"
 	"log"
 	"testing"
 	"time"
@@ -73,53 +74,8 @@ func TestHamt32Put(t *testing.T) {
 	log.Printf("%s: stats=%+v;\n", name, stats)
 }
 
-func TestHamt32Get(t *testing.T) {
-	var name = "TestHamt32Get"
-	if Functional {
-		name += ":functional:" + hamt32.TableOptionName[TableOption]
-	} else {
-		name += ":transient:" + hamt32.TableOptionName[TableOption]
-	}
-
-	if Hamt32 == nil {
-		var err error
-		Hamt32, err = buildHamt32(name, BVS, Functional, TableOption)
-		if err != nil {
-			log.Printf("%s: failed buildHamt32(%q, BVS#%d, %t, %s) => %s", name,
-				name, len(BVS), Functional,
-				hamt32.TableOptionName[TableOption], err)
-			t.Fatalf("%s: failed buildHamt32(%q, BVS#%d, %t, %s) => %s", name,
-				name, len(BVS), Functional,
-				hamt32.TableOptionName[TableOption], err)
-		}
-
-		StartTime["Hamt32.Stats()"] = time.Now()
-		var stats = Hamt32.Stats()
-		RunTime["Hamt32.Stats()"] = time.Since(StartTime["Hamt32.Stats()"])
-		log.Printf("%s: stats=%+v;\n", name, stats)
-	}
-
-	StartTime[name] = time.Now()
-	for _, sv := range BVS {
-		var bs = sv.Bsl
-		var v = sv.Val
-
-		var val, found = Hamt32.Get(bs)
-		if !found {
-			log.Printf("%s: Failed to Hamt32.Get(%q)", name, string(bs))
-			log.Print(Hamt32.LongString(""))
-			t.Fatalf("%s: Failed to Hamt32.Get(%q)", name, string(bs))
-		}
-		if val != v {
-			log.Printf("%s: retrieved val,%d != expected v,%d for s=%q", name, val, v, string(bs))
-			t.Fatalf("%s: retrieved val,%d != expected v,%d for s=%q", name, val, v, string(bs))
-		}
-	}
-	RunTime[name] = time.Since(StartTime[name])
-}
-
-func TestHamt32Iter(t *testing.T) {
-	var name = "TestHamt32Iter"
+func TestHamt32IterFunc(t *testing.T) {
+	var name = "TestHamt32IterFunc"
 	if Functional {
 		name += ":functional:" + hamt32.TableOptionName[TableOption]
 	} else {
@@ -162,10 +118,158 @@ func TestHamt32Iter(t *testing.T) {
 	}
 
 	if len(BVS) != i {
-		t.Fatalf("Expected len(BVS),%d got i,%d; Hamt32.Nentries()=%d",
+		t.Fatalf("Expected len(BVS),%d got i,%d; Hamt32.Nentries()=%d;",
 			len(BVS), i, Hamt32.Nentries())
 	}
 
+	RunTime[name] = time.Since(StartTime[name])
+}
+
+func TestHamt32IterChan(t *testing.T) {
+	var name = "TestHamt32IterChan"
+	if Functional {
+		name += ":functional:" + hamt32.TableOptionName[TableOption]
+	} else {
+		name += ":transient:" + hamt32.TableOptionName[TableOption]
+	}
+
+	if Hamt32 == nil {
+		var err error
+		Hamt32, err = buildHamt32(name, BVS, Functional, TableOption)
+		if err != nil {
+			log.Printf("%s: failed buildHamt32(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), Functional,
+				hamt32.TableOptionName[TableOption], err)
+			t.Fatalf("%s: failed buildHamt32(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), Functional,
+				hamt32.TableOptionName[TableOption], err)
+		}
+
+		StartTime["Hamt32.Stats()"] = time.Now()
+		var stats = Hamt32.Stats()
+		RunTime["Hamt32.Stats()"] = time.Since(StartTime["Hamt32.Stats()"])
+		log.Printf("%s: stats=%+v;\n", name, stats)
+	}
+
+	StartTime[name] = time.Now()
+
+	var i int
+	for kv := range Hamt32.IterChan(0) {
+		var val, ok = Hamt32.Get(kv.Key)
+		if !ok {
+			t.Fatalf("failed to lookup %s in Hamt32", kv.Key)
+		}
+
+		if val != kv.Val {
+			t.Fatalf("val,%v != kv.Val,%v\n", val, kv.Val)
+		}
+
+		i++
+	}
+
+	if len(BVS) != i {
+		t.Fatalf("Expected len(BVS),%d go i,%d", len(BVS), i)
+	}
+
+	RunTime[name] = time.Since(StartTime[name])
+}
+
+func TestHamt32IterChanCancel(t *testing.T) {
+	var name = "TestHamt32IterChanCancel"
+	if Functional {
+		name += ":functional:" + hamt32.TableOptionName[TableOption]
+	} else {
+		name += ":transient:" + hamt32.TableOptionName[TableOption]
+	}
+
+	if Hamt32 == nil {
+		var err error
+		Hamt32, err = buildHamt32(name, BVS, Functional, TableOption)
+		if err != nil {
+			log.Printf("%s: failed buildHamt32(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), Functional,
+				hamt32.TableOptionName[TableOption], err)
+			t.Fatalf("%s: failed buildHamt32(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), Functional,
+				hamt32.TableOptionName[TableOption], err)
+		}
+
+		StartTime["Hamt32.Stats()"] = time.Now()
+		var stats = Hamt32.Stats()
+		RunTime["Hamt32.Stats()"] = time.Since(StartTime["Hamt32.Stats()"])
+		log.Printf("%s: stats=%+v;\n", name, stats)
+	}
+
+	StartTime[name] = time.Now()
+
+	var i int
+	var stopKey = BVS[0].Bsl // "aaa" but key from iter are random
+	var iterChan, iterChanCancel = Hamt32.IterChanWithCancel(0)
+	for kv := range iterChan {
+		var val, ok = Hamt32.Get(kv.Key)
+		if !ok {
+			t.Fatalf("failed to lookup %s in Hamt32", kv.Key)
+		}
+
+		if val != kv.Val {
+			t.Fatalf("val,%v != kv.Val,%v\n", val, kv.Val)
+		}
+
+		i++
+
+		if bytes.Equal(kv.Key, stopKey) {
+			iterChanCancel()
+			break
+		}
+	}
+
+	log.Printf("%s: stopped after %d iterations", name, i)
+
+	RunTime[name] = time.Since(StartTime[name])
+}
+
+func TestHamt32Get(t *testing.T) {
+	var name = "TestHamt32Get"
+	if Functional {
+		name += ":functional:" + hamt32.TableOptionName[TableOption]
+	} else {
+		name += ":transient:" + hamt32.TableOptionName[TableOption]
+	}
+
+	if Hamt32 == nil {
+		var err error
+		Hamt32, err = buildHamt32(name, BVS, Functional, TableOption)
+		if err != nil {
+			log.Printf("%s: failed buildHamt32(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), Functional,
+				hamt32.TableOptionName[TableOption], err)
+			t.Fatalf("%s: failed buildHamt32(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), Functional,
+				hamt32.TableOptionName[TableOption], err)
+		}
+
+		StartTime["Hamt32.Stats()"] = time.Now()
+		var stats = Hamt32.Stats()
+		RunTime["Hamt32.Stats()"] = time.Since(StartTime["Hamt32.Stats()"])
+		log.Printf("%s: stats=%+v;\n", name, stats)
+	}
+
+	StartTime[name] = time.Now()
+	for _, sv := range BVS {
+		var bs = sv.Bsl
+		var v = sv.Val
+
+		var val, found = Hamt32.Get(bs)
+		if !found {
+			log.Printf("%s: Failed to Hamt32.Get(%q)", name, string(bs))
+			log.Print(Hamt32.LongString(""))
+			t.Fatalf("%s: Failed to Hamt32.Get(%q)", name, string(bs))
+		}
+		if val != v {
+			log.Printf("%s: retrieved val,%d != expected v,%d for s=%q", name, val, v, string(bs))
+			t.Fatalf("%s: retrieved val,%d != expected v,%d for s=%q", name, val, v, string(bs))
+		}
+	}
 	RunTime[name] = time.Since(StartTime[name])
 }
 
@@ -458,5 +562,92 @@ func BenchmarkHamt32Del(b *testing.B) {
 			log.Printf("%s: failed val,%d != v,%d", name, val, v)
 			b.Fatalf("%s: failed val,%d != v,%d", name, val, v)
 		}
+	}
+}
+
+func BenchmarkHamt32IterFunc(b *testing.B) {
+	var name = "BenchmarkHamt32Iter"
+	if Functional {
+		name += ":functional:" + hamt32.TableOptionName[TableOption]
+	} else {
+		name += ":transient:" + hamt32.TableOptionName[TableOption]
+	}
+
+	// We will reuse the BenchHamtGet tree for iterator benchmarking.
+	if BenchHamt32Get == nil || BenchHamt32Get_Functional != Functional {
+		BenchHamt32Get_Functional = Functional
+
+		var err error
+		BenchHamt32Get, err = buildHamt32(name, BVS, Functional, TableOption)
+		if err != nil {
+			log.Printf("%s: failed buildHamt32(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), false, hamt32.TableOptionName[TableOption], err)
+			b.Fatalf("%s: failed buildHamt32(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), false, hamt32.TableOptionName[TableOption], err)
+		}
+	}
+
+	log.Printf("%s: b.N=%d", name, b.N)
+	b.ResetTimer()
+
+	var i int
+	var next = BenchHamt32Get.Iter()
+	for kv, ok := next(); ok; kv, ok = next() {
+		if len(kv.Key) < 0 {
+			b.Fatal("stupid test to touch the kv")
+		}
+
+		if i >= b.N {
+			break
+		}
+		i++
+	}
+
+	if i != b.N {
+		b.Fatalf("Failed to run b.N,%d iterations; only ran %d.", b.N, i)
+	}
+}
+
+func BenchmarkHamt32IterChan(b *testing.B) {
+	var name = "BenchmarkHamt32Iter"
+	if Functional {
+		name += ":functional:" + hamt32.TableOptionName[TableOption]
+	} else {
+		name += ":transient:" + hamt32.TableOptionName[TableOption]
+	}
+
+	// We will reuse the BenchHamtGet tree for iterator benchmarking.
+	if BenchHamt32Get == nil || BenchHamt32Get_Functional != Functional {
+		BenchHamt32Get_Functional = Functional
+
+		var err error
+		BenchHamt32Get, err = buildHamt32(name, BVS, Functional, TableOption)
+		if err != nil {
+			log.Printf("%s: failed buildHamt32(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), false, hamt32.TableOptionName[TableOption], err)
+			b.Fatalf("%s: failed buildHamt32(%q, BVS#%d, %t, %s) => %s", name,
+				name, len(BVS), false, hamt32.TableOptionName[TableOption], err)
+		}
+	}
+
+	log.Printf("%s: b.N=%d", name, b.N)
+	b.ResetTimer()
+
+	var i int
+	var iterChan, iterChanCancel = BenchHamt32Get.IterChanWithCancel(0)
+	for kv := range iterChan {
+		if len(kv.Key) < 0 {
+			b.Fatal("stupid test to touch the kv")
+		}
+
+		if i >= b.N {
+			iterChanCancel()
+			break
+		}
+		i++
+	}
+
+	if i != b.N {
+		b.Fatalf("Failed to run b.N,%d iterations; only ran %d.", b.N, i)
 	}
 }

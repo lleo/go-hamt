@@ -1,5 +1,7 @@
 package hamt64
 
+import "context"
+
 // HamtFunctional is the data structure which the Funcitonal Hamt methods are
 // called upon. In fact it is identical to the HamtTransient data structure and
 // all the table and leaf data structures it uses are the same ones used by the
@@ -300,4 +302,33 @@ func (h *HamtFunctional) Stats() *Stats {
 //
 func (h *HamtFunctional) Iter() IterFunc {
 	return h.hamtBase.Iter()
+}
+
+// IterChan return a readable channel and spawns a goroutine which iterates over
+// the hamt data structure. You must read from the chan to completion to allow
+// the goroutine to complete and exit, otherwise you will leak goroutines. The
+// chanBufLen argument allows you to set the size of the channel's buffer for
+// faster iteration.
+//
+//    for kv := range h.IterChan(20) {
+//         doSomething(kv)
+//    }
+//
+func (h *HamtFunctional) IterChan(chanBufLen int) <-chan KeyVal {
+	return h.hamtBase.IterChan(chanBufLen)
+}
+
+// IterChanWithCancel returns both a readable channel and a context.CancelFunc.
+// The chanBufLen argument allows you to set the size of the channel's buffer
+// for faster iteration.
+//
+//    var iterChan, iterChanCancel = h.IterChanWithCancel(20)
+//    for kv := range iterChan {
+//        if shouldStop(kv) {
+//            iterChanCancel()
+//            break
+//        }
+//    }
+func (h *HamtFunctional) IterChanWithCancel(chanBufLen int) (<-chan KeyVal, context.CancelFunc) {
+	return h.hamtBase.IterChanWithCancel(chanBufLen)
 }
