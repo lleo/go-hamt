@@ -2,7 +2,6 @@ package hamt64
 
 import (
 	"context"
-	"fmt"
 )
 
 // HamtFunctional is the data structure which the Funcitonal Hamt methods are
@@ -167,9 +166,6 @@ func (h *HamtFunctional) Put(key []byte, val interface{}) (Hamt, bool) {
 			added = true
 		} else {
 			newTable = curTable.copy()
-
-			fmt.Printf("curTable=%p\n", curTable)
-			fmt.Printf("newTable=%p\n", newTable)
 
 			var node nodeI
 			if leaf.Hash() == hv {
