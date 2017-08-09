@@ -12,5 +12,5 @@ type KeyVal struct {
 }
 
 func (kv KeyVal) String() string {
-	return fmt.Sprintf("{%s, %v}", kv.Key, kv.Val)
+	return fmt.Sprintf("{%q, %v}", kv.Key, kv.Val)
 }

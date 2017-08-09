@@ -58,13 +58,13 @@ func (t *sparseTable) deepCopy() tableI {
 }
 
 func createSparseTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
-	_ = assertOn && assert(depth > 0, "createSparseTable(): depth < 1")
-
-	_ = assertOn && assertf(
-		leaf1.Hash().hashPath(depth) == leaf2.Hash().hashPath(depth),
-		"createSparseTable(): hp1,%s != hp2,%s",
-		leaf1.Hash().hashPath(depth),
-		leaf2.Hash().hashPath(depth))
+	if assertOn {
+		assert(depth > 0, "createSparseTable(): depth < 1")
+		assertf(leaf1.Hash().hashPath(depth) == leaf2.Hash().hashPath(depth),
+			"createSparseTable(): hp1,%s != hp2,%s",
+			leaf1.Hash().hashPath(depth),
+			leaf2.Hash().hashPath(depth))
+	}
 
 	var retTable = new(sparseTable)
 	retTable.hashPath = leaf1.Hash().hashPath(depth)
@@ -83,7 +83,6 @@ func createSparseTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 			node = newCollisionLeaf(leaf1.Hash(),
 				append(leaf1.keyVals(), leaf2.keyVals()...))
 		} else {
-			//log.Printf("createSparseTable(depth=%d, ...) recursing\n", depth+1)
 			node = createSparseTable(depth+1, leaf1, leaf2)
 		}
 		retTable.insert(idx1, node)

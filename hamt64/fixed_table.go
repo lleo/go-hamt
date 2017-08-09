@@ -56,13 +56,13 @@ func (t *fixedTable) deepCopy() tableI {
 //}
 
 func createFixedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
-	_ = assertOn && assertf(depth > 0, "createFixedTable(): depth,%d < 1", depth)
-
-	_ = assertOn && assertf(
-		leaf1.Hash().hashPath(depth) == leaf2.Hash().hashPath(depth),
-		"createFixedTable(): hp1,%s != hp2,%s",
-		leaf1.Hash().hashPath(depth),
-		leaf2.Hash().hashPath(depth))
+	if assertOn {
+		assertf(depth > 0, "createFixedTable(): depth,%d < 1", depth)
+		assertf(leaf1.Hash().hashPath(depth) == leaf2.Hash().hashPath(depth),
+			"createFixedTable(): hp1,%s != hp2,%s",
+			leaf1.Hash().hashPath(depth),
+			leaf2.Hash().hashPath(depth))
+	}
 
 	var retTable = new(fixedTable)
 	retTable.hashPath = leaf1.Hash().hashPath(depth)
@@ -79,7 +79,6 @@ func createFixedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 			node = newCollisionLeaf(leaf1.Hash(),
 				append(leaf1.keyVals(), leaf2.keyVals()...))
 		} else {
-			//log.Printf("createFixedTable(depth=%d, ...) recursing\n", depth+1)
 			node = createFixedTable(depth+1, leaf1, leaf2)
 		}
 		retTable.insert(idx1, node)
