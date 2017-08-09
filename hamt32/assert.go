@@ -15,7 +15,7 @@ func assert(test bool, msg string) bool {
 	if !test {
 		panic(msg)
 	}
-	return false
+	return true
 }
 
 // assertf() tests if test is false; if it is, it will panic with a message
@@ -28,5 +28,5 @@ func assertf(test bool, msgFmt string, msgArgs ...interface{}) bool {
 		var msg = fmt.Sprintf(msgFmt, msgArgs...)
 		panic(msg)
 	}
-	return false
+	return true
 }
