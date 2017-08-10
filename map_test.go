@@ -109,3 +109,27 @@ func BenchmarkMapDel(b *testing.B) {
 		b.Fatal("len(deleteMap) != 0")
 	}
 }
+
+func BenchmarkMapIter(b *testing.B) {
+	var name = fmt.Sprintf("BenchmarkMapIter:%d", b.N)
+	log.Printf("BenchmarkMapIter: b.N=%d", b.N)
+
+	var iterMap = buildMap(name, b.N)
+
+	var keyStrings = make([]string, b.N)
+	var i int
+	for k := range iterMap {
+		keyStrings[i] = k
+		i++
+	}
+
+	b.ResetTimer()
+
+	i = 0
+	for k := range iterMap {
+		if len(k) < 1 {
+			b.Fatal("len(k) == 0")
+		}
+		i++
+	}
+}
