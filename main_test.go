@@ -21,17 +21,17 @@ type StrVal struct {
 	Val interface{}
 }
 
-type BslVal struct {
-	Bsl []byte
+type KeyVal struct {
+	Key []byte
 	Val interface{}
 }
 
 // 1 million & change
-var InitHamtNumBvsForPut = 1024 * 1024
-var InitHamtNumBvs = InitHamtNumBvsForPut + (2 * 1024 * 1024)
-var numBvs = InitHamtNumBvs + (4 * 1024)
+var InitHamtNumKvsForPut = 1024 * 1024
+var InitHamtNumKvs = InitHamtNumKvsForPut + (2 * 1024 * 1024)
+var numKvs = InitHamtNumKvs + (4 * 1024)
 var TwoKK = 2 * 1024 * 1024
-var BVS []BslVal
+var KVS []KeyVal
 
 //var SVS []StrVal
 
@@ -111,7 +111,7 @@ func TestMain(m *testing.M) {
 
 	log.Println("TestMain: and so it begins...")
 
-	BVS = buildBslVals("TestMain", numBvs)
+	KVS = buildKeyVals("TestMain", numKvs)
 
 	// execute
 	var xit int
@@ -249,20 +249,20 @@ func executeAll(m *testing.M) int {
 	return xit
 }
 
-func buildBslVals(prefix string, num int) []BslVal {
-	var name = fmt.Sprintf("%s-buildBslVals-%d", prefix, num)
+func buildKeyVals(prefix string, num int) []KeyVal {
+	var name = fmt.Sprintf("%s-buildKeyVals-%d", prefix, num)
 	StartTime[name] = time.Now()
 
-	var bvs = make([]BslVal, num)
+	var kvs = make([]KeyVal, num)
 	var s = "aaa"
 
 	for i := 0; i < num; i++ {
-		bvs[i] = BslVal{[]byte(s), i}
+		kvs[i] = KeyVal{[]byte(s), i}
 		s = Inc(s)
 	}
 
 	RunTime[name] = time.Since(StartTime[name])
-	return bvs
+	return kvs
 }
 
 func buildStrVals(prefix string, num int) []StrVal {
@@ -283,16 +283,16 @@ func buildStrVals(prefix string, num int) []StrVal {
 
 func buildHamt32(
 	prefix string,
-	bvs []BslVal,
+	kvs []KeyVal,
 	functional bool,
 	opt int,
 ) (hamt32.Hamt, error) {
-	var name = fmt.Sprintf("%s-buildHamt32-%d", prefix, len(bvs))
+	var name = fmt.Sprintf("%s-buildHamt32-%d", prefix, len(kvs))
 
 	StartTime[name] = time.Now()
 	var h = hamt32.New(functional, opt)
-	for _, sv := range bvs {
-		var b = sv.Bsl
+	for _, sv := range kvs {
+		var b = sv.Key
 		var v = sv.Val
 
 		var inserted bool
@@ -308,16 +308,16 @@ func buildHamt32(
 
 func buildHamt64(
 	prefix string,
-	bvs []BslVal,
+	kvs []KeyVal,
 	functional bool,
 	opt int,
 ) (hamt64.Hamt, error) {
-	var name = fmt.Sprintf("%s-buildHamt64-%d", prefix, len(bvs))
+	var name = fmt.Sprintf("%s-buildHamt64-%d", prefix, len(kvs))
 
 	StartTime[name] = time.Now()
 	var h = hamt64.New(functional, opt)
-	for _, sv := range bvs {
-		var b = sv.Bsl
+	for _, sv := range kvs {
+		var b = sv.Key
 		var v = sv.Val
 
 		var inserted bool
