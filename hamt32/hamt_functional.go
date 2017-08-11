@@ -1,6 +1,8 @@
 package hamt32
 
-import "context"
+import (
+	"context"
+)
 
 // HamtFunctional is the data structure which the Funcitonal Hamt methods are
 // called upon. In fact it is identical to the HamtTransient data structure and

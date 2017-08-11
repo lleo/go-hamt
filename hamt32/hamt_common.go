@@ -480,9 +480,6 @@ func (h *hamtBase) IterChanWithCancel(chanBufLen int) (<-chan KeyVal, context.Ca
 						}
 					}
 				case tableI:
-					_ = assertOn && assert(uint(locStack.len()) != maxDepth,
-						"Invalid Hamt: TableI found at maxDepth.")
-
 					locStack.push(curTable, idx)
 					curTable = x
 					idx = 0

@@ -9,11 +9,11 @@ import (
 // sparseTable.
 const sparseTableInitCap int = 2
 
-// New sparseTable layout size == 40
+// New sparseTable layout size == 44
 type sparseTable struct {
 	nodes    []nodeI // 24
-	depth    uint    // 8; amd64 cpu
-	hashPath hashVal // 4
+	depth    uint    // 8; amd32 cpu
+	hashPath hashVal // 8
 	nodeMap  bitmap  // 4
 }
 

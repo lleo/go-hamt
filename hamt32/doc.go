@@ -1,7 +1,7 @@
 /*
 Package hamt32 defines interface to access a Hamt data structure based on
 32bit hash values. The Hamt data structure is built with interior nodes and leaf
-nodes. The interior nodes are called tables and the leaf nodes are called, well,
+nodes. The interior nodes are called tables and the leaf nodes are call, well,
 leafs. Further, the tables come is two varieties fixed size tables and a
 compressed form to handle sparse tables. Leafs come in two forms the common flat
 leaf form with a singe key/value pair and the rare form used when two leafs have

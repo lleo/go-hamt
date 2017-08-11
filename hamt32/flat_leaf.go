@@ -14,7 +14,7 @@ type flatLeaf struct {
 func newFlatLeaf(hv hashVal, key []byte, val interface{}) *flatLeaf {
 	var fl = new(flatLeaf)
 	fl.hash = hv
-	fl.key = copyKey(key)
+	fl.key = copyKey(key) //guarantee internal keys are not externally modifiable
 	fl.val = val
 	return fl
 }
@@ -56,7 +56,7 @@ func (l *flatLeaf) put(key []byte, val interface{}) (leafI, bool) {
 		return nl, false //replaced
 	}
 
-	key = copyKey(key)
+	key = copyKey(key) //guarantee internal keys are not externally modifiable
 	nl = newCollisionLeaf(l.hash, []KeyVal{{l.key, l.val}, {key, val}})
 	return nl, true // key,val was added
 }

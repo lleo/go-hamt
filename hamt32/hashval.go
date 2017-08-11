@@ -33,24 +33,24 @@ func fold(hash uint32, rem uint) uint32 {
 }
 
 func indexMask(depth uint) hashVal {
-	return hashVal((1<<IndexBits)-1) << (depth * IndexBits)
+	return hashVal((1<<NumIndexBits)-1) << (depth * NumIndexBits)
 }
 
-// Index returns the IndexBits bit value of the hashVal at 'depth' number of
-// IndexBits number of bits into hashVal.
+// Index returns the NumIndexBits bit value of the hashVal at 'depth' number of
+// NumIndexBits number of bits into hashVal.
 func (hv hashVal) Index(depth uint) uint {
 	_ = assertOn && assert(depth < DepthLimit, "Index: depth > maxDepth")
 
 	var idxMask = indexMask(depth)
-	return uint((hv & idxMask) >> (depth * IndexBits))
+	return uint((hv & idxMask) >> (depth * NumIndexBits))
 }
 
 func hashPathMask(depth uint) hashVal {
-	return hashVal(1<<((depth)*IndexBits)) - 1
+	return hashVal(1<<((depth)*NumIndexBits)) - 1
 }
 
 // hashPath calculates the path required to read the given depth. In other words
-// it returns a hashVal that preserves the first depth-1 IndexBits index
+// it returns a hashVal that preserves the first depth-1 NumIndexBits index
 // values. For depth=0 it always returns no path (aka a 0 value).
 // For depth=maxDepth it returns all but the last index value.
 func (hv hashVal) hashPath(depth uint) hashVal {
@@ -72,7 +72,7 @@ func (hv hashVal) buildHashPath(idx, depth uint) hashVal {
 	_ = assertOn && assert(idx < DepthLimit, "buildHashPath: idx > maxIndex")
 
 	hv &= hashPathMask(depth)
-	return hv | hashVal(idx<<(depth*IndexBits))
+	return hv | hashVal(idx<<(depth*NumIndexBits))
 }
 
 // HashPathString returns a string representation of the index path of a
@@ -80,7 +80,7 @@ func (hv hashVal) buildHashPath(idx, depth uint) hashVal {
 // will be a zero padded number between 0 and maxIndex. There will be limit
 // number of such values where limit <= DepthLimit.
 // If the limit parameter is 0 then the method will simply return "/".
-// Example: "/00/24/46/17" for limit=4 of a IndexBits=5 hash value
+// Example: "/00/24/46/17" for limit=4 of a NumIndexBits=5 hash value
 // represented by "/00/24/46/17/34/08".
 func (hv hashVal) HashPathString(limit uint) string {
 	_ = assertOn && assertf(limit <= DepthLimit,
@@ -101,12 +101,12 @@ func (hv hashVal) HashPathString(limit uint) string {
 }
 
 // bitString returns a hashVal as a string of bits separated into groups of
-// IndexBits bits.
+// NumIndexBits bits.
 func (hv hashVal) bitString() string {
 	var strs = make([]string, DepthLimit)
 
 	for d := uint(0); d < DepthLimit; d++ {
-		var fmtStr = fmt.Sprintf("%%0%dd", IndexBits)
+		var fmtStr = fmt.Sprintf("%%0%dd", NumIndexBits)
 		strs[maxDepth-d] = fmt.Sprintf(fmtStr, hv.Index(d))
 	}
 
@@ -143,13 +143,13 @@ func parseHashPath(s string) (hashVal, error) {
 
 	var hv hashVal
 	for i, idxStr := range idxStrs {
-		var idx, err = strconv.ParseUint(idxStr, 10, int(IndexBits))
+		var idx, err = strconv.ParseUint(idxStr, 10, int(NumIndexBits))
 		if err != nil {
 			return 0, errors.Wrapf(err,
 				"parseHashPath: the %d'th index string failed to parse.", i)
 		}
 
-		//hv |= hashVal(idx << (uint(i) * IndexBits))
+		//hv |= hashVal(idx << (uint(i) * NumIndexBits))
 		hv = hv.buildHashPath(uint(idx), uint(i))
 	}
 

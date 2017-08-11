@@ -8,21 +8,21 @@ import (
 // hashSize is the size of hashVal in bits.
 const hashSize uint = uint(unsafe.Sizeof(hashVal(0))) * 8
 
-// IndexBits is the fundemental setting for the Hamt data structure. Given that
-// we hash every key ([]byte slice) into a hashVal, that hashVal must be split
-// into DepthLimit number of IndexBits wide parts. Each of those parts of the
-// hashVal is used as the index into the given level of the Hamt tree. So
-// IndexBits determines how wide and how deep the Hamt can be.
-const IndexBits uint = 5
+// NumIndexBits is the fundemental setting for the Hamt data structure. Given
+// that we hash every key ([]byte slice) into a hashVal, that hashVal must be
+// split into DepthLimit number of NumIndexBits wide parts. Each of those parts
+// of the hashVal is used as the index into the given level of the Hamt tree.
+// So NumIndexBits determines how wide and how deep the Hamt can be.
+const NumIndexBits uint = 5
 
 // DepthLimit is the maximum number of levels of the Hamt. It is calculated as
-// DepthLimit = floor(hashSize / IndexBits) or a strict integer division.
-const DepthLimit = hashSize / IndexBits
-const remainder = hashSize - (DepthLimit * IndexBits)
+// DepthLimit = floor(hashSize / NumIndexBits) or a strict integer division.
+const DepthLimit = hashSize / NumIndexBits
+const remainder = hashSize - (DepthLimit * NumIndexBits)
 
 // IndexLimit is the maximum number of entries in a Hamt interior node. In other
 // words it is the width of the Hamt data structure.
-const IndexLimit = 1 << IndexBits
+const IndexLimit = 1 << NumIndexBits
 
 // maxDepth is the maximum value of a depth variable. maxDepth = DepthLimit - 1
 const maxDepth = DepthLimit - 1
@@ -36,7 +36,7 @@ const maxIndex = IndexLimit - 1
 //
 // This conversion only happens if the Hamt structure has be constructed with
 // the HybridTables option.
-const DowngradeThreshold uint = IndexLimit * 3 / 8 //12 for IndexBits=5
+const DowngradeThreshold uint = IndexLimit * 3 / 8 //12 for NumIndexBits=5
 
 // UpgradeThreshold is the constant that sets the threshold for the size of a
 // table, such that when a table increases to the threshold size, the table is
@@ -44,7 +44,7 @@ const DowngradeThreshold uint = IndexLimit * 3 / 8 //12 for IndexBits=5
 //
 // This conversion only happens if the Hamt structure has be constructed with
 // the HybridTables option.
-const UpgradeThreshold uint = IndexLimit / 2 //16 for IndexBits=5
+const UpgradeThreshold uint = IndexLimit / 2 //16 for NumIndexBits=5
 
 // Configuration contants to be passed to `hamt32.New(int) *Hamt`.
 const (
