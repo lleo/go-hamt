@@ -88,7 +88,7 @@ func TestMain(m *testing.M) {
 
 	log.SetFlags(log.Lshortfile)
 
-	var logfn = fmt.Sprintf("test-%d.log", hamt64.IndexBits)
+	var logfn = fmt.Sprintf("test-%d.log", hamt64.NumIndexBits)
 	var logfile, err = os.Create(logfn)
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to os.Create(\"test.log\")"))
@@ -101,8 +101,8 @@ func TestMain(m *testing.M) {
 
 	KVS = buildKeyVals("TestMain", numKvs)
 
-	log.Printf("TestMain: IndexBits=%d\n", hamt64.IndexBits)
-	fmt.Printf("TestMain: IndexBits=%d\n", hamt64.IndexBits)
+	log.Printf("TestMain: NumIndexBits=%d\n", hamt64.NumIndexBits)
+	fmt.Printf("TestMain: NumIndexBits=%d\n", hamt64.NumIndexBits)
 	log.Printf("TestMain: IndexLimit=%d\n", hamt64.IndexLimit)
 	fmt.Printf("TestMain: IndexLimit=%d\n", hamt64.IndexLimit)
 	log.Printf("TestMain: DepthLimit=%d\n", hamt64.DepthLimit)
