@@ -15,17 +15,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-type BslVal struct {
-	Bsl []byte
+type KeyVal struct {
+	Key []byte
 	Val interface{}
 }
 
 // 4 million & change
-var InitHamtNumBvsForPut = 1024 * 1024
-var InitHamtNumBvs = (2 * 1024 * 1024) + InitHamtNumBvsForPut
-var numBvs = InitHamtNumBvs + (4 * 1024)
+var InitHamtNumKvsForPut = 1024 * 1024
+var InitHamtNumKvs = (2 * 1024 * 1024) + InitHamtNumKvsForPut
+var numKvs = InitHamtNumKvs + (4 * 1024)
 var TwoKK = 2 * 1024 * 1024
-var BVS []BslVal
+var KVS []KeyVal
 
 var Functional bool
 var TableOption int
@@ -99,7 +99,7 @@ func TestMain(m *testing.M) {
 
 	log.Println("TestMain: and so it begins...")
 
-	BVS = buildBslVals("TestMain", numBvs)
+	KVS = buildKeyVals("TestMain", numKvs)
 
 	log.Printf("TestMain: IndexBits=%d\n", hamt64.IndexBits)
 	fmt.Printf("TestMain: IndexBits=%d\n", hamt64.IndexBits)
@@ -127,7 +127,7 @@ func TestMain(m *testing.M) {
 	// // that we needed to build up the heap. This worked a little bit, I don't
 	// // know if it is really worth it or should I do more.
 	// StartTime["fat throw away"] = time.Now()
-	// foo, _ := buildHamt64("foo", BVS, true, hamt64.FixedTables)
+	// foo, _ := buildHamt64("foo", KVS, true, hamt64.FixedTables)
 	// _, found := foo.Get([]byte("aaa"))
 	// if !found {
 	// 	panic("foo failed to find \"aaa\"")
@@ -266,34 +266,34 @@ func executeAll(m *testing.M) int {
 	return xit
 }
 
-func buildBslVals(prefix string, num int) []BslVal {
-	var name = fmt.Sprintf("%s-buildBslVals-%d", prefix, num)
+func buildKeyVals(prefix string, num int) []KeyVal {
+	var name = fmt.Sprintf("%s-buildKeyVals-%d", prefix, num)
 	StartTime[name] = time.Now()
 
-	var bvs = make([]BslVal, num)
+	var kvs = make([]KeyVal, num)
 	var s = "aaa"
 
 	for i := 0; i < num; i++ {
-		bvs[i] = BslVal{[]byte(s), i}
+		kvs[i] = KeyVal{[]byte(s), i}
 		s = Inc(s)
 	}
 
 	RunTime[name] = time.Since(StartTime[name])
-	return bvs
+	return kvs
 }
 
 func buildHamt64(
 	prefix string,
-	bvs []BslVal,
+	kvs []KeyVal,
 	functional bool,
 	opt int,
 ) (hamt64.Hamt, error) {
-	var name = fmt.Sprintf("%s-buildHamt64-%d", prefix, len(bvs))
+	var name = fmt.Sprintf("%s-buildHamt64-%d", prefix, len(kvs))
 
 	StartTime[name] = time.Now()
 	var h = hamt64.New(functional, opt)
-	for _, bv := range bvs {
-		var bs = bv.Bsl
+	for _, bv := range kvs {
+		var bs = bv.Key
 		var v = bv.Val
 
 		var inserted bool
