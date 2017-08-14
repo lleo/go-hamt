@@ -98,7 +98,7 @@ type Hamt interface {
 	Stats() *Stats
 	Iter() IterFunc
 	IterChan(chanBufLen int) <-chan KeyVal
-	IterChanWithCancel(chanBufLen int) (<-chan KeyVal, context.CancelFunc)
+	IterChanWithContext(chanBufLen int, ctx context.Context) <-chan KeyVal
 }
 
 // New constructs a datastucture that implements the Hamt interface. When the

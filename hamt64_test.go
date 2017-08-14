@@ -2,6 +2,7 @@ package hamt_test
 
 import (
 	"bytes"
+	"context"
 	"log"
 	"testing"
 	"time"
@@ -201,17 +202,17 @@ func runTestHamt64IterChan(
 	RunTime[name] = time.Since(StartTime[name])
 }
 
-func TestHamt64IterChanCancel(t *testing.T) {
-	runTestHamt64IterChanCancel(t, KVS, Functional, TableOption)
+func TestHamt64IterChanContext(t *testing.T) {
+	runTestHamt64IterChanContext(t, KVS, Functional, TableOption)
 }
 
-func runTestHamt64IterChanCancel(
+func runTestHamt64IterChanContext(
 	t *testing.T,
 	kvs []KeyVal,
 	functional bool,
 	opt int,
 ) {
-	var name = "TestHamt64IterChanCancel"
+	var name = "TestHamt64IterChanContext"
 	if functional {
 		name += ":functional:" + hamt64.TableOptionName[TableOption]
 	} else {
@@ -240,7 +241,9 @@ func runTestHamt64IterChanCancel(
 
 	var i int
 	var stopKey = kvs[0].Key // "aaa" but key from iter are random
-	var iterChan, iterChanCancel = Hamt64.IterChanWithCancel(0)
+	var ctx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+	var iterChan = Hamt64.IterChanWithContext(0, ctx)
 	for kv := range iterChan {
 		var val, ok = Hamt64.Get(kv.Key)
 		if !ok {
@@ -254,7 +257,6 @@ func runTestHamt64IterChanCancel(
 		i++
 
 		if bytes.Equal(kv.Key, stopKey) {
-			iterChanCancel()
 			break
 		}
 	}
@@ -529,7 +531,7 @@ func runBenchmarkHamt64Del(
 }
 
 func BenchmarkHamt64IterFunc(b *testing.B) {
-	runBenchmarkHamt64IterChan(b, KVS, Functional, TableOption)
+	runBenchmarkHamt64IterFunc(b, KVS, Functional, TableOption)
 }
 
 func runBenchmarkHamt64IterFunc(
@@ -562,9 +564,9 @@ func runBenchmarkHamt64IterFunc(
 	log.Printf("%s: b.N=%d", name, b.N)
 	b.ResetTimer()
 
-	var i int
 	var next = BenchHamt64Get.Iter()
-	for kv, ok := next(); ok; kv, ok = next() {
+	var kv, ok = next()
+	for i := 0; i < b.N; i++ {
 		if len(kv.Key) < 0 {
 			b.Fatal("stupid test to touch the kv")
 		}
@@ -572,12 +574,15 @@ func runBenchmarkHamt64IterFunc(
 		if i >= b.N {
 			break
 		}
-		i++
+
+		kv, ok = next()
+		if !ok {
+			next = BenchHamt64Get.Iter()
+			kv, ok = next()
+		}
 	}
 
-	if i != b.N {
-		b.Fatalf("Failed to run b.N,%d iterations; only ran %d.", b.N, i)
-	}
+	next = nil //allow GC; this really doesn't matter.
 }
 
 func BenchmarkHamt64IterChan(b *testing.B) {
@@ -614,21 +619,45 @@ func runBenchmarkHamt64IterChan(
 	log.Printf("%s: b.N=%d", name, b.N)
 	b.ResetTimer()
 
-	var i int
-	var iterChan, iterChanCancel = BenchHamt64Get.IterChanWithCancel(0)
-	for kv := range iterChan {
+	var nents = BenchHamt64Get.Nentries()
+	var ctx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+	var iterChan = BenchHamt64Get.IterChanWithContext(30, ctx)
+ForLoop:
+	for i := 0; i < b.N; i++ {
+		//// This code is ~100ns slower than the code after this select
+		//select {
+		//case <-ctx.Done():
+		//	break ForLoop
+		//case kv, ok := <-iterChan:
+		//	if !ok {
+		//		// iterChan closed
+		//		break ForLoop
+		//	}
+		//
+		//	if len(kv.Key) < 0 {
+		//		b.Fatal("stupid test to touch the kv")
+		//	}
+		//
+		//	if uint(i) == nents {
+		//		cancel()
+		//		ctx, cancel = context.WithCancel(context.Background())
+		//		defer cancel()
+		//		iterChan = BenchHamt64Get.IterChanWithContext(20, ctx)
+		//	}
+		//}
+		var kv = <-iterChan
+
 		if len(kv.Key) < 0 {
 			b.Fatal("stupid test to touch the kv")
+			break ForLoop //meaningless...just to use the ForLoop label
 		}
 
-		if i >= b.N {
-			iterChanCancel()
-			break
+		if uint(i) == nents {
+			cancel()
+			ctx, cancel = context.WithCancel(context.Background())
+			defer cancel()
+			iterChan = BenchHamt64Get.IterChanWithContext(30, ctx)
 		}
-		i++
-	}
-
-	if i != b.N {
-		b.Fatalf("Failed to run b.N,%d iterations; only ran %d.", b.N, i)
 	}
 }

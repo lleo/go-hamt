@@ -439,9 +439,21 @@ func (h *hamtBase) IterChan(chanBufLen int) <-chan KeyVal {
 	return iterCh
 }
 
-func (h *hamtBase) IterChanWithCancel(chanBufLen int) (<-chan KeyVal, context.CancelFunc) {
+// IterChanWithContext returns both a readable channel.
+// The chanBufLen argument allows you to set the size of the channel's buffer
+// for faster iteration.
+//
+//    var ctx, cancel = context.WithCancel(context.Background())
+//    defer cancel()
+//    var iterChan = h.IterChanWithContext(20, ctx)
+//    for kv := range iterChan {
+//        if shouldStop(kv) {
+//            break
+//        }
+//    }
+//
+func (h *hamtBase) IterChanWithContext(chanBufLen int, ctx context.Context) <-chan KeyVal {
 	var iterCh = make(chan KeyVal, chanBufLen)
-	var ctx, cancel = context.WithCancel(context.Background())
 
 	go func() {
 		if h.IsEmpty() {
@@ -501,5 +513,5 @@ func (h *hamtBase) IterChanWithCancel(chanBufLen int) (<-chan KeyVal, context.Ca
 		return
 	}()
 
-	return iterCh, cancel
+	return iterCh
 }
