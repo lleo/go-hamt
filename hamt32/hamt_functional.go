@@ -296,36 +296,29 @@ func (h *HamtFunctional) Iter() IterFunc {
 	return h.hamtBase.Iter()
 }
 
-// IterChan return a readable channel and spawns a goroutine which iterates over
-// the hamt data structure. You must read from the chan to completion to allow
-// the goroutine to complete and exit, otherwise you will leak goroutines. The
-// chanBufLen argument allows you to set the size of the channel's buffer for
-// faster iteration.
-//
-//    for kv := range h.IterChan(20) {
-//         doSomething(kv)
-//    }
-//
-func (h *HamtFunctional) IterChan(chanBufLen int) <-chan KeyVal {
-	return h.hamtBase.IterChan(chanBufLen)
-}
-
-// IterChanWithContext returns a readable channel. The underlying goroutine
-// can be killed off by either reading the iterator channel till it is
-// exhausted, or by canceling the given context.
+// IterChan returns a readable channel. Calls to this method spawn an
+// underlying goroutine that feeds the returned channel.
 //
 // The chanBufLen argument allows you to set the size of the channel's buffer
 // for faster iteration.
 //
+// The context argument is allowed to be nil.
+//
+// The underlying goroutine is leaked if the iterator channel is not read till
+// it is exhausted and the context is not canceled.
+//
 //    var ctx, cancel = context.WithCancel(context.Background())
 //    defer cancel()
-//    var iterChan = h.IterChanWithContext(20, ctx)
+//    var iterChan = h.IterChan(20, ctx)
 //    for kv := range iterChan {
 //        if shouldStop(kv) {
 //            break //would leak the goroutine except for the deferred cancel
 //        }
 //    }
 //
-func (h *HamtFunctional) IterChanWithContext(chanBufLen int, ctx context.Context) <-chan KeyVal {
-	return h.hamtBase.IterChanWithContext(chanBufLen, ctx)
+func (h *HamtFunctional) IterChan(
+	chanBufLen int,
+	ctx context.Context,
+) <-chan KeyVal {
+	return h.hamtBase.IterChan(chanBufLen, ctx)
 }

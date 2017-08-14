@@ -182,7 +182,7 @@ func runTestHamt32IterChan(
 	StartTime[name] = time.Now()
 
 	var i int
-	for kv := range Hamt32.IterChan(0) {
+	for kv := range Hamt32.IterChan(0, nil) {
 		var val, ok = Hamt32.Get(kv.Key)
 		if !ok {
 			t.Fatalf("failed to lookup %s in Hamt32", kv.Key)
@@ -243,7 +243,7 @@ func runTestHamt32IterChanContext(
 	var stopKey = kvs[0].Key // "aaa" but key from iter are random
 	var ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
-	var iterChan = Hamt32.IterChanWithContext(0, ctx)
+	var iterChan = Hamt32.IterChan(0, ctx)
 	for kv := range iterChan {
 		var val, ok = Hamt32.Get(kv.Key)
 		if !ok {
@@ -595,7 +595,7 @@ func runBenchmarkHamt32IterChan(
 	functional bool,
 	opt int,
 ) {
-	var name = "BenchmarkHamt32Iter"
+	var name = "BenchmarkHamt32IterChan"
 	if Functional {
 		name += ":functional:" + hamt32.TableOptionName[TableOption]
 	} else {
@@ -619,10 +619,11 @@ func runBenchmarkHamt32IterChan(
 	log.Printf("%s: b.N=%d", name, b.N)
 	b.ResetTimer()
 
-	var nents = BenchHamt32Get.Nentries()
 	var ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
-	var iterChan = BenchHamt32Get.IterChanWithContext(20, ctx)
+
+	var nents = BenchHamt32Get.Nentries()
+	var iterChan = BenchHamt32Get.IterChan(20, ctx)
 ForLoop:
 	for i := 0; i < b.N; i++ {
 		//// This code is ~100ns slower than the code after this select
@@ -643,7 +644,7 @@ ForLoop:
 		//		cancel()
 		//		ctx, cancel = context.WithCancel(context.Background())
 		//		defer cancel()
-		//		iterChan = BenchHamt32Get.IterChanWithContext(20, ctx)
+		//		iterChan = BenchHamt32Get.IterChan(20, ctx)
 		//	}
 		//}
 		var kv = <-iterChan
@@ -657,7 +658,7 @@ ForLoop:
 			cancel()
 			ctx, cancel = context.WithCancel(context.Background())
 			defer cancel()
-			iterChan = BenchHamt32Get.IterChanWithContext(20, ctx)
+			iterChan = BenchHamt32Get.IterChan(20, ctx)
 		}
 	}
 }

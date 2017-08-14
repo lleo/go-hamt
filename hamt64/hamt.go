@@ -94,11 +94,10 @@ type Hamt interface {
 	Del([]byte) (Hamt, interface{}, bool)
 	String() string
 	LongString(string) string
-	visit(visitFn) uint
-	Stats() *Stats
 	Iter() IterFunc
-	IterChan(chanBufLen int) <-chan KeyVal
-	IterChanWithContext(chanBufLen int, ctx context.Context) <-chan KeyVal
+	IterChan(chanBufLen int, ctx context.Context) <-chan KeyVal
+	Stats() *Stats
+	visit(visitFn) uint
 }
 
 // New constructs a datastucture that implements the Hamt interface. When the

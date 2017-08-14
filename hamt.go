@@ -6,18 +6,20 @@ are either uint32 or uint64 values for hamt32 and hamt64 respectively. To repeat
 myself, the hamt32 and hamt64 HAMT implementations are almost completely
 identical code.
 
-This package merely implements New32() and New64() functions and the table
-option constants FixedTables, SparseTables, HybridTables, and the map
+This package merely implements New(), New32() and New64() functions and the
+table option constants FixedTables, SparseTables, HybridTables, and the map
 TableOptionName (eg. hamt.TableOptionName[hamt.FixedTables] ==
 "FixedTables").
 
 Choices
 
+The New() function makes all the recommended choices for you. That is it
+uses the 64 bit hashVal (aka hamt64), functional behavior, and Hybrid tables.
+
 There are several choices to make: Hashval hamt32 versus hamt64, FixedTables
 versus SparseTables versus HybridTables, and Functional versus
 Transient. Then there is a hidden choice; you can change the source code
 constant, IndexBits, to a value other than the current setting of 5.
-
 
 Hashval hamt64 versus hamt32
 
@@ -38,9 +40,9 @@ This is the classic speed versus memory choice with a twist. The facts to
 consider are: The tree is indexed by essentially random values (the parts of the
 hash value of the key), so the tree is going to be "balanced" to a statistical
 likelihood. The inner branching nodes will be very densely populated, and the
-outer branching nodes will probably be very sparsely populated.
+outer branching nodes will be very sparsely populated.
 
-FixedTables are fastest to access and modify, because it is a simple mater of
+FixedTables are fastest to access and modify, because it is a simple matter of
 getting and setting preallocated fixed sized arrays. However, they will be
 wasting most of their allocated space most of the time.
 
@@ -50,12 +52,16 @@ is a matter of manipulating slice values. On the other hand, given the way
 slice memory allocation works, they will usually waste less than half their
 allocated memory.
 
-If you are going to have very large number of entries in your HAMT to the degree
-that your program will start paging occationally, DEFINITELY switch away from
-FixedTables to HybridTables or even SparseTables.
-
-As a general rule if the number of entry is only in the 100,000s or less, choose
-FixedTables
+According to tests, HybridTables setting behaves precisely the way we want it
+to behave. For a test set of data with 3,149,824 KeyVal pairs, he distribution
+of tables comes in two groups: tables with 25-32 entries and tables with 1-11
+entries. There are no tables not within those two groupings. The 25-32 entry
+tables are all fixed tables and the 1-11 entry tables are all sparse tables.
+Of the sparse tables %40.1 have 1 or 2 entries, %85.4 have 4 or less and
+%99.7 have 8 or less entries. Given sparse tables start at capacity of 2 and
+capacity grows by doubling, the sparse tables are efficiently packed. The
+conclusion from this test data is that HybridTables setting is a very good
+trade off between speed and memory efficiency.
 
 Transient versus Functional
 
@@ -81,17 +87,17 @@ faster FixedTables option.
 You are going to have to make a per-application determination of which mode
 to use, but at least you have both to choose from :).
 
-IndexBits
+NumIndexBits
 
-Both hamt32 and hamt64 have a constant IndexBits which determines all the other
-constants defining the HAMT structures. For both hamt32 and hamt64, the
-IndexBits constant is set to 5. You can manually change the
-source code to set IndexBits to some uint other than 5. IndexBits is set to 5
+Both hamt32 and hamt64 have a constant NumIndexBits which determines all the
+other constants defining the HAMT structures. For both hamt32 and hamt64, the
+NumIndexBits constant is set to 5. You can manually change the
+source code to set NumIndexBits to some uint other than 5. IndexBits is set to 5
 because that is how other people do it.
 
-IndexBits determines the branching factor (IndexLimit) and the depth
+NumIndexBits determines the branching factor (IndexLimit) and the depth
 (DepthLimit) of the HAMT data structure. Given IndexBits=5 IndexLimit=32, and
-DepthLimit=6 for hamt32 and DepthLimit=10 for hamt64.
+DepthLimit=6 for hamt32 and DepthLimit=12 for hamt64.
 
 */
 package hamt
@@ -133,6 +139,13 @@ func init() {
 	TableOptionName[FixedTables] = "FixedTables"
 	TableOptionName[SparseTables] = "SparseTables"
 	TableOptionName[HybridTables] = "HybridTables"
+}
+
+// New() makes all the configuration choices for you. Specifically, it chooses
+// functional behavior, 64bit hashes, and Hybrid tables. These are the
+// recommended settings. See hamt64.Hamt for the API.
+func New() hamt64.Hamt {
+	return hamt64.New(true, HybridTables)
 }
 
 // New32() takes two arguments and producest a value that conforms to the

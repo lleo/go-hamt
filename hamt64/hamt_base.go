@@ -380,80 +380,39 @@ DepthLoop:
 	return leaf
 }
 
-func (h *hamtBase) IterChan(chanBufLen int) <-chan KeyVal {
-	var iterCh = make(chan KeyVal, chanBufLen)
-
-	go func() {
-		if h.IsEmpty() {
-			close(iterCh)
-			return
-		}
-
-		var locStack = newIterLocStack()
-		var curTable tableI = &h.root
-		var idx uint
-
-	DepthLoop:
-		for uint(locStack.len()) < DepthLimit {
-		IndexIter:
-			for ; idx < IndexLimit; idx++ {
-				var curNode = curTable.get(idx)
-
-				switch x := curNode.(type) {
-				case nil:
-					// implicit break; my C-trained brain rebels from go-switch
-				case leafI:
-					switch leaf := x.(type) {
-					case *flatLeaf:
-						iterCh <- KeyVal{copyKey(leaf.key), leaf.val}
-					case *collisionLeaf:
-						for _, kv := range leaf.kvs {
-							iterCh <- KeyVal{copyKey(kv.Key), kv.Val}
-						}
-					}
-				case tableI:
-					_ = assertOn && assert(uint(locStack.len()) != maxDepth,
-						"Invalid Hamt: TableI found at maxDepth.")
-
-					locStack.push(curTable, idx)
-					curTable = x
-					idx = 0
-					break IndexIter
-				} //type switch
-			} // IndexIter
-
-			if idx == IndexLimit {
-				if locStack.len() == 0 {
-					break DepthLoop
-				}
-				curTable, idx = locStack.pop()
-				idx++
-			}
-		} // DepthLoop
-
-		close(iterCh)
-
-		return
-	}()
-
-	return iterCh
-}
-
-// IterChanWithContext returns both a readable channel.
+// IterChan returns a readable channel. Calls to this method spawn an
+// underlying goroutine that feeds the returned channel.
+//
 // The chanBufLen argument allows you to set the size of the channel's buffer
 // for faster iteration.
 //
+// The context argument is allowed to be nil.
+//
+// The underlying goroutine is leaked if the iterator channel is not read till
+// it is exhausted and the context is not canceled.
+//
 //    var ctx, cancel = context.WithCancel(context.Background())
 //    defer cancel()
-//    var iterChan = h.IterChanWithContext(20, ctx)
+//    var iterChan = h.IterChan(20, ctx)
 //    for kv := range iterChan {
 //        if shouldStop(kv) {
-//            break
+//            break //would leak the goroutine except for the deferred cancel
 //        }
 //    }
+// Or
+//    for kv:= range h.IterChan(20, nil) {
+//        doSomething(kv)
+//    }
 //
-func (h *hamtBase) IterChanWithContext(chanBufLen int, ctx context.Context) <-chan KeyVal {
+func (h *hamtBase) IterChan(
+	chanBufLen int,
+	ctx context.Context,
+) <-chan KeyVal {
 	var iterCh = make(chan KeyVal, chanBufLen)
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
 
 	go func() {
 		if h.IsEmpty() {
