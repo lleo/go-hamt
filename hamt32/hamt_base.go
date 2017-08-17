@@ -221,16 +221,16 @@ func (h *hamtBase) Stats() *Stats {
 type IterFunc func() (KeyVal, bool)
 
 type iterState struct {
-	locStack   iterLocStack
-	curTable   tableI
-	idx        uint
-	colLeaf    *collisionLeaf
-	colLeafIdx uint
+	tblIterStack tableIterStack
+	tblIter      tableIterFunc
+	colLeaf      *collisionLeaf
+	colLeafIdx   uint
 }
 
-func newIterState() *iterState {
+func newIterState(root tableI) *iterState {
 	var state = new(iterState)
-	state.locStack = newIterLocStack()
+	state.tblIterStack = newTableIterStack()
+	state.tblIter = root.iter()
 	return state
 }
 
@@ -251,19 +251,10 @@ func (h *hamtBase) Iter() IterFunc {
 		}
 	}
 
-	//Closure variable
+	//Closure variable; h is not closed over
 	var state *iterState
-	var leaf leafI //not a closure variable
 
-	state, leaf = findFirstLeaf(&h.root)
-
-	if cl, ok := leaf.(*collisionLeaf); ok {
-		state.colLeaf = cl
-		state.colLeafIdx = 0
-	}
-
-	state.curTable, state.idx = state.locStack.pop()
-	//state.curTable != nil cuz !h.IsEmpty()
+	state = newIterState(&h.root)
 
 	return func() (KeyVal, bool) {
 		if state.colLeaf != nil {
@@ -286,12 +277,9 @@ func (h *hamtBase) Iter() IterFunc {
 			// Is this the END? AKA found no leaf
 			// If so, I expect state.locStack.len()==0 && state.idx==IndexLimit
 			if assertOn {
-				assertf(state.locStack.len() == 0,
-					"leaf=nil && state.locStack.len(),%d != 0",
-					state.locStack.len())
-				assertf(state.idx == IndexLimit,
-					"leaf=nil && state.idx,%d != IndexLimit,%d",
-					state.idx, IndexLimit)
+				assertf(len(state.tblIterStack) == 0,
+					"leaf=nil && len(state.tblIterStack),%d != 0",
+					len(state.tblIterStack))
 			}
 
 			return KeyVal{nil, nil}, false
@@ -312,71 +300,26 @@ func (h *hamtBase) Iter() IterFunc {
 	}
 }
 
-func findFirstLeaf(root tableI) (*iterState, leafI) {
-	var state = newIterState()
-
-	var curTable = root
-	var idx uint
-	var leaf leafI
-
-DepthLoop:
-	for uint(state.locStack.len()) < DepthLimit {
-	IndexIter:
-		for idx = 0; idx < IndexLimit; idx++ {
-			var curNode = curTable.get(idx)
-			switch x := curNode.(type) {
-			case nil:
-				// implicit break; my C-trained brain rebels from go-switch
-			case leafI:
-				state.locStack.push(curTable, idx)
-				leaf = x
-				break DepthLoop
-			case tableI:
-				state.locStack.push(curTable, idx)
-				curTable = x
-				break IndexIter
-			} //switch
-		} //IndexIter
-	} //DepthLoop
-
-	return state, leaf
-}
-
 func findNextLeaf(state *iterState) leafI {
 	var leaf leafI
-
-DepthLoop:
-	for uint(state.locStack.len()) < DepthLimit {
-	IndexIter:
-		for ; state.idx < IndexLimit; state.idx++ {
-			var curNode = state.curTable.get(state.idx)
-			switch x := curNode.(type) {
-			case nil:
-				// do nothing
-			case leafI:
-				leaf = x
-				state.idx++
-				break DepthLoop
-			case tableI:
-				state.locStack.push(state.curTable, state.idx)
-				state.curTable = x
-				state.idx = 0
-				break IndexIter
-			} //switch
-		} //IndexIter
-
-		if state.locStack.len() == 0 && state.idx == IndexLimit {
-			//The end of iteration
-			//leaf = nil
-			break DepthLoop
+Loop:
+	for {
+		var curNode = state.tblIter()
+		switch x := curNode.(type) {
+		case nil:
+			state.tblIter = state.tblIterStack.pop()
+			if state.tblIter == nil {
+				leaf = nil
+				break Loop
+			}
+		case leafI:
+			leaf = x
+			break Loop
+		case tableI:
+			state.tblIterStack.push(state.tblIter)
+			state.tblIter = x.iter()
 		}
-
-		if state.idx == IndexLimit { //implicit state.itstk.len() > 0
-			state.curTable, state.idx = state.locStack.pop()
-			state.idx++
-		}
-	} //DepthLoop
-
+	} //Loop
 	return leaf
 }
 
@@ -399,6 +342,10 @@ DepthLoop:
 //            break //would leak the goroutine except for the deferred cancel
 //        }
 //    }
+// Or
+//    for kv:= range h.IterChan(20, nil) {
+//        doSomething(kv)
+//    }
 //
 func (h *hamtBase) IterChan(
 	chanBufLen int,
@@ -406,65 +353,52 @@ func (h *hamtBase) IterChan(
 ) <-chan KeyVal {
 	var iterCh = make(chan KeyVal, chanBufLen)
 
+	if h.IsEmpty() {
+		close(iterCh)
+		return iterCh
+	}
+
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
 	go func() {
-		if h.IsEmpty() {
-			close(iterCh)
-			return
-		}
+		var tblIterStack = newTableIterStack()
+		var next = h.root.iter()
 
-		var locStack = newIterLocStack()
-		var curTable tableI = &h.root
-		var idx uint
-
-	DepthLoop:
-		for uint(locStack.len()) < DepthLimit {
-		IndexIter:
-			for ; idx < IndexLimit; idx++ {
-				var curNode = curTable.get(idx)
-
-				switch x := curNode.(type) {
-				case nil:
-					// implicit break; my C-trained brain rebels from go-switch
-				case leafI:
-					switch leaf := x.(type) {
-					case *flatLeaf:
+	Loop:
+		for {
+			var curNode = next()
+			switch x := curNode.(type) {
+			case nil:
+				next = tblIterStack.pop()
+				if next == nil {
+					break Loop
+				}
+			case leafI:
+				switch leaf := x.(type) {
+				case *flatLeaf:
+					select {
+					case <-ctx.Done():
+						break Loop
+					case iterCh <- KeyVal{copyKey(leaf.key), leaf.val}:
+					}
+				case *collisionLeaf:
+					for _, kv := range leaf.kvs {
 						select {
 						case <-ctx.Done():
-							break DepthLoop
-						case iterCh <- KeyVal{copyKey(leaf.key), leaf.val}:
-						}
-					case *collisionLeaf:
-						for _, kv := range leaf.kvs {
-							select {
-							case <-ctx.Done():
-								break DepthLoop
-							case iterCh <- KeyVal{copyKey(kv.Key), kv.Val}:
-							}
+							break Loop
+						case iterCh <- KeyVal{copyKey(kv.Key), kv.Val}:
 						}
 					}
-				case tableI:
-					locStack.push(curTable, idx)
-					curTable = x
-					idx = 0
-					break IndexIter
-				} //type switch
-			} // IndexIter
-
-			if idx == IndexLimit {
-				if locStack.len() == 0 {
-					break DepthLoop
 				}
-				curTable, idx = locStack.pop()
-				idx++
+			case tableI:
+				tblIterStack.push(next)
+				next = x.iter()
 			}
-		} // DepthLoop
+		} //Loop
 
 		close(iterCh)
-
 		return
 	}()
 

@@ -205,3 +205,18 @@ func (t *fixedTable) visit(fn visitFn, depth uint) uint {
 
 	return maxDepth
 }
+
+func (t *fixedTable) iter() tableIterFunc {
+	var i int = -1
+
+	return func() nodeI {
+		for i < int(IndexLimit-1) {
+			i++
+			if t.nodes[i] != nil {
+				return t.nodes[i]
+			}
+		}
+
+		return nil
+	}
+}

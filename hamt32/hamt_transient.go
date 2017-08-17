@@ -249,6 +249,11 @@ func (h *HamtTransient) Iter() IterFunc {
 //        }
 //    }
 //
+// Or
+//    for kv:= range h.IterChan(20, nil) {
+//        doSomething(kv)
+//    }
+//
 func (h *HamtTransient) IterChan(
 	chanBufLen int,
 	ctx context.Context,

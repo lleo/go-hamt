@@ -315,6 +315,10 @@ func (h *HamtFunctional) Iter() IterFunc {
 //            break //would leak the goroutine except for the deferred cancel
 //        }
 //    }
+// Or
+//    for kv:= range h.IterChan(20, nil) {
+//        doSomething(kv)
+//    }
 //
 func (h *HamtFunctional) IterChan(
 	chanBufLen int,

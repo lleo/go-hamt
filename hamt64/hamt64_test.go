@@ -540,7 +540,7 @@ func runBenchmarkHamt64IterFunc(
 	functional bool,
 	opt int,
 ) {
-	var name = "BenchmarkHamt64Iter"
+	var name = "BenchmarkHamt64IterFunc"
 	if Functional {
 		name += ":functional:" + hamt64.TableOptionName[TableOption]
 	} else {
@@ -581,8 +581,6 @@ func runBenchmarkHamt64IterFunc(
 			kv, ok = next()
 		}
 	}
-
-	next = nil //allow GC; this really doesn't matter.
 }
 
 func BenchmarkHamt64IterChan(b *testing.B) {

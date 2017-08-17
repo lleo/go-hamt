@@ -540,7 +540,7 @@ func runBenchmarkHamt32IterFunc(
 	functional bool,
 	opt int,
 ) {
-	var name = "BenchmarkHamt32Iter"
+	var name = "BenchmarkHamt32IterFunc"
 	if Functional {
 		name += ":functional:" + hamt32.TableOptionName[TableOption]
 	} else {
@@ -581,8 +581,6 @@ func runBenchmarkHamt32IterFunc(
 			kv, ok = next()
 		}
 	}
-
-	next = nil //allow GC; this really doesn't matter.
 }
 
 func BenchmarkHamt32IterChan(b *testing.B) {

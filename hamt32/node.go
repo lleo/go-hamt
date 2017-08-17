@@ -17,6 +17,8 @@ type leafI interface {
 	keyVals() []KeyVal
 }
 
+type tableIterFunc func() nodeI
+
 type tableI interface {
 	nodeI
 
@@ -33,6 +35,8 @@ type tableI interface {
 	insert(idx uint, n nodeI)
 	replace(idx uint, n nodeI)
 	remove(idx uint)
+
+	iter() tableIterFunc
 }
 
 type tableEntry struct {

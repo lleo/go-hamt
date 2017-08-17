@@ -165,11 +165,9 @@ func (t *sparseTable) entries() []tableEntry {
 	var n = t.nentries()
 	var ents = make([]tableEntry, n)
 
-	for idx, j := uint(0), uint(0); idx < IndexLimit; idx++ {
-		if t.nodeMap.IsSet(idx) {
-			ents[j] = tableEntry{idx, t.nodes[j]}
-			j++
-		}
+	for j := uint(0); j < n; j++ {
+		idx := t.nodes[j].Hash().Index(t.depth)
+		ents[j] = tableEntry{idx, t.nodes[j]}
 	}
 
 	return ents
@@ -242,4 +240,16 @@ func (t *sparseTable) visit(fn visitFn, depth uint) uint {
 	}
 
 	return maxDepth
+}
+
+func (t *sparseTable) iter() tableIterFunc {
+	var j int = -1
+
+	return func() nodeI {
+		if j < len(t.nodes)-1 {
+			j++
+			return t.nodes[j]
+		}
+		return nil
+	}
 }
