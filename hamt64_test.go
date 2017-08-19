@@ -43,17 +43,17 @@ func runTestHamt64Put(
 	t *testing.T,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "TestHamt64Put"
 	if functional {
-		name += ":functional:" + hamt64.TableOptionName[TableOption]
+		name += ":functional:" + hamt64.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt64.TableOptionName[TableOption]
+		name += ":transient:" + hamt64.TableOptionName[tblOpt]
 	}
 
 	StartTime[name] = time.Now()
-	Hamt64 = hamt64.New(functional, opt)
+	Hamt64 = hamt64.New(functional, tblOpt)
 	for _, kv := range kvs {
 		var k = kv.Key
 		var v = kv.Val
@@ -92,25 +92,25 @@ func runTestHamt64IterFunc(
 	t *testing.T,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "TestHamt64IterFunc"
 	if functional {
-		name += ":functional:" + hamt64.TableOptionName[TableOption]
+		name += ":functional:" + hamt64.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt64.TableOptionName[TableOption]
+		name += ":transient:" + hamt64.TableOptionName[tblOpt]
 	}
 
 	if Hamt64 == nil {
 		var err error
-		Hamt64, err = buildHamt64(name, kvs, functional, opt)
+		Hamt64, err = buildHamt64(name, kvs, functional, tblOpt)
 		if err != nil {
 			log.Printf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt64.TableOptionName[opt], err)
+				hamt64.TableOptionName[tblOpt], err)
 			t.Fatalf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt64.TableOptionName[opt], err)
+				hamt64.TableOptionName[tblOpt], err)
 		}
 
 		StartTime["Hamt64.Stats()"] = time.Now()
@@ -152,25 +152,25 @@ func runTestHamt64IterChan(
 	t *testing.T,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "TestHamt64IterChan"
 	if functional {
-		name += ":functional:" + hamt64.TableOptionName[TableOption]
+		name += ":functional:" + hamt64.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt64.TableOptionName[TableOption]
+		name += ":transient:" + hamt64.TableOptionName[tblOpt]
 	}
 
 	if Hamt64 == nil {
 		var err error
-		Hamt64, err = buildHamt64(name, kvs, functional, opt)
+		Hamt64, err = buildHamt64(name, kvs, functional, tblOpt)
 		if err != nil {
 			log.Printf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt64.TableOptionName[opt], err)
+				hamt64.TableOptionName[tblOpt], err)
 			t.Fatalf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt64.TableOptionName[opt], err)
+				hamt64.TableOptionName[tblOpt], err)
 		}
 
 		StartTime["Hamt64.Stats()"] = time.Now()
@@ -210,25 +210,25 @@ func runTestHamt64IterChanContext(
 	t *testing.T,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "TestHamt64IterChanContext"
 	if functional {
-		name += ":functional:" + hamt64.TableOptionName[TableOption]
+		name += ":functional:" + hamt64.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt64.TableOptionName[TableOption]
+		name += ":transient:" + hamt64.TableOptionName[tblOpt]
 	}
 
 	if Hamt64 == nil {
 		var err error
-		Hamt64, err = buildHamt64(name, kvs, functional, opt)
+		Hamt64, err = buildHamt64(name, kvs, functional, tblOpt)
 		if err != nil {
 			log.Printf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt64.TableOptionName[opt], err)
+				hamt64.TableOptionName[tblOpt], err)
 			t.Fatalf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt64.TableOptionName[opt], err)
+				hamt64.TableOptionName[tblOpt], err)
 		}
 
 		StartTime["Hamt64.Stats()"] = time.Now()
@@ -274,25 +274,25 @@ func runTestHamt64Get(
 	t *testing.T,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "TestHamt64Get"
 	if functional {
-		name += ":functional:" + hamt64.TableOptionName[TableOption]
+		name += ":functional:" + hamt64.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt64.TableOptionName[TableOption]
+		name += ":transient:" + hamt64.TableOptionName[tblOpt]
 	}
 
 	if Hamt64 == nil {
 		var err error
-		Hamt64, err = buildHamt64(name, kvs, functional, opt)
+		Hamt64, err = buildHamt64(name, kvs, functional, tblOpt)
 		if err != nil {
 			log.Printf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt64.TableOptionName[opt], err)
+				hamt64.TableOptionName[tblOpt], err)
 			t.Fatalf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt64.TableOptionName[opt], err)
+				hamt64.TableOptionName[tblOpt], err)
 		}
 
 		StartTime["Hamt64.Stats()"] = time.Now()
@@ -328,25 +328,25 @@ func runTestHamt64Del(
 	t *testing.T,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "TestHamt64Del"
 	if functional {
-		name += ":functional:" + hamt64.TableOptionName[TableOption]
+		name += ":functional:" + hamt64.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt64.TableOptionName[TableOption]
+		name += ":transient:" + hamt64.TableOptionName[tblOpt]
 	}
 
 	if Hamt64 == nil {
 		var err error
-		Hamt64, err = buildHamt64(name, kvs, functional, opt)
+		Hamt64, err = buildHamt64(name, kvs, functional, tblOpt)
 		if err != nil {
 			log.Printf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt64.TableOptionName[opt], err)
+				hamt64.TableOptionName[tblOpt], err)
 			t.Fatalf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt64.TableOptionName[opt], err)
+				hamt64.TableOptionName[tblOpt], err)
 		}
 
 		StartTime["Hamt64.Stats()"] = time.Now()
@@ -380,33 +380,25 @@ func BenchmarkHamt64Get(b *testing.B) {
 	runBenchmarkHamt64Get(b, KVS, Functional, TableOption)
 }
 
-var BenchHamt64Get hamt64.Hamt
-var BenchHamt64Get_Functional bool
-
 func runBenchmarkHamt64Get(
 	b *testing.B,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "BenchmarkHamt64Get"
 	if functional {
-		name += ":functional:" + hamt64.TableOptionName[opt]
+		name += ":functional:" + hamt64.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt64.TableOptionName[opt]
+		name += ":transient:" + hamt64.TableOptionName[tblOpt]
 	}
 
-	if BenchHamt64Get == nil || BenchHamt64Get_Functional != functional {
-		BenchHamt64Get_Functional = functional
-
-		var err error
-		BenchHamt64Get, err = buildHamt64(name, kvs, functional, opt)
-		if err != nil {
-			log.Printf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
-				name, len(kvs), false, hamt64.TableOptionName[opt], err)
-			b.Fatalf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
-				name, len(kvs), false, hamt64.TableOptionName[opt], err)
-		}
+	var BenchHamt64Get, err = buildHamt64(name, kvs, functional, tblOpt)
+	if err != nil {
+		log.Printf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt64.TableOptionName[tblOpt], err)
+		b.Fatalf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt64.TableOptionName[tblOpt], err)
 	}
 
 	log.Printf("%s: b.N=%d", name, b.N)
@@ -438,13 +430,13 @@ func runBenchmarkHamt64Put(
 	b *testing.B,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "BenchmarkHamt64Put"
 	if functional {
-		name += ":functional:" + hamt64.TableOptionName[opt]
+		name += ":functional:" + hamt64.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt64.TableOptionName[opt]
+		name += ":transient:" + hamt64.TableOptionName[tblOpt]
 	}
 
 	if b.N+InitHamtNumKvsForPut > len(kvs) {
@@ -454,14 +446,14 @@ func runBenchmarkHamt64Put(
 
 	var initKvs = kvs[:InitHamtNumKvsForPut]
 
-	var h, err = buildHamt64(name, initKvs, functional, opt)
+	var h, err = buildHamt64(name, initKvs, functional, tblOpt)
 	if err != nil {
 		log.Printf("%s: failed buildHamt64(%q, kvs[:%d], %t, %s) => %s", name,
 			name, InitHamtNumKvsForPut, functional,
-			hamt64.TableOptionName[opt], err)
+			hamt64.TableOptionName[tblOpt], err)
 		b.Fatalf("%s: failed buildHamt64(%q, kvs[:%d], %t, %s) => %s", name,
 			name, InitHamtNumKvsForPut, functional,
-			hamt64.TableOptionName[opt], err)
+			hamt64.TableOptionName[tblOpt], err)
 	}
 
 	log.Printf("%s: b.N=%d;", name, b.N)
@@ -489,23 +481,23 @@ func runBenchmarkHamt64Del(
 	b *testing.B,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "BenchmarkHamt64Del"
 	if functional {
-		name += ":functional:" + hamt64.TableOptionName[opt]
+		name += ":functional:" + hamt64.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt64.TableOptionName[opt]
+		name += ":transient:" + hamt64.TableOptionName[tblOpt]
 	}
 
-	var h, err = buildHamt64(name, kvs[:TwoKK], functional, opt)
+	var h, err = buildHamt64(name, kvs[:TwoKK], functional, tblOpt)
 	if err != nil {
 		log.Printf("%s: failed buildHamt64(%q, kvs:%d, %t, %s) => %s", name,
 			name, len(kvs), functional,
-			hamt64.TableOptionName[opt], err)
+			hamt64.TableOptionName[tblOpt], err)
 		b.Fatalf("%s: failed buildHamt64(%q, kvs:%d, %t, %s) => %s", name,
 			name, len(kvs), functional,
-			hamt64.TableOptionName[opt], err)
+			hamt64.TableOptionName[tblOpt], err)
 	}
 
 	log.Printf("%s: b.N=%d;", name, b.N)
@@ -538,27 +530,21 @@ func runBenchmarkHamt64IterFunc(
 	b *testing.B,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "BenchmarkHamt64IterFunc"
 	if Functional {
-		name += ":functional:" + hamt64.TableOptionName[TableOption]
+		name += ":functional:" + hamt64.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt64.TableOptionName[TableOption]
+		name += ":transient:" + hamt64.TableOptionName[tblOpt]
 	}
 
-	// We will reuse the BenchHamtGet tree for iterator benchmarking.
-	if BenchHamt64Get == nil || BenchHamt64Get_Functional != Functional {
-		BenchHamt64Get_Functional = Functional
-
-		var err error
-		BenchHamt64Get, err = buildHamt64(name, kvs, functional, opt)
-		if err != nil {
-			log.Printf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
-				name, len(kvs), false, hamt64.TableOptionName[opt], err)
-			b.Fatalf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
-				name, len(kvs), false, hamt64.TableOptionName[opt], err)
-		}
+	var BenchHamt64Get, err = buildHamt64(name, kvs, functional, tblOpt)
+	if err != nil {
+		log.Printf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt64.TableOptionName[tblOpt], err)
+		b.Fatalf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt64.TableOptionName[tblOpt], err)
 	}
 
 	log.Printf("%s: b.N=%d", name, b.N)
@@ -591,27 +577,21 @@ func runBenchmarkHamt64IterChan(
 	b *testing.B,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "BenchmarkHamt64IterChan"
 	if Functional {
-		name += ":functional:" + hamt64.TableOptionName[TableOption]
+		name += ":functional:" + hamt64.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt64.TableOptionName[TableOption]
+		name += ":transient:" + hamt64.TableOptionName[tblOpt]
 	}
 
-	// We will reuse the BenchHamtGet tree for iterator benchmarking.
-	if BenchHamt64Get == nil || BenchHamt64Get_Functional != Functional {
-		BenchHamt64Get_Functional = Functional
-
-		var err error
-		BenchHamt64Get, err = buildHamt64(name, kvs, functional, opt)
-		if err != nil {
-			log.Printf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
-				name, len(kvs), false, hamt64.TableOptionName[opt], err)
-			b.Fatalf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
-				name, len(kvs), false, hamt64.TableOptionName[opt], err)
-		}
+	var BenchHamt64Get, err = buildHamt64(name, kvs, functional, tblOpt)
+	if err != nil {
+		log.Printf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt64.TableOptionName[tblOpt], err)
+		b.Fatalf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt64.TableOptionName[tblOpt], err)
 	}
 
 	log.Printf("%s: b.N=%d", name, b.N)
@@ -659,4 +639,40 @@ ForLoop:
 			iterChan = BenchHamt64Get.IterChan(20, ctx)
 		}
 	}
+}
+
+func BenchmarkHamt64Stats(b *testing.B) {
+	runBenchmarkHamt64Stats(b, KVS, Functional, TableOption)
+}
+
+func runBenchmarkHamt64Stats(
+	b *testing.B,
+	kvs []KeyVal,
+	functional bool,
+	tblOpt int,
+) {
+	var name = "BenchmarkHamt64Stats"
+	if Functional {
+		name += ":functional:" + hamt64.TableOptionName[tblOpt]
+	} else {
+		name += ":transient:" + hamt64.TableOptionName[tblOpt]
+	}
+
+	var h, err = buildHamt64(name, kvs, functional, tblOpt)
+	if err != nil {
+		log.Printf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt64.TableOptionName[tblOpt], err)
+		b.Fatalf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt64.TableOptionName[tblOpt], err)
+	}
+
+	log.Printf("%s: b.N=%d", name, b.N)
+	b.ResetTimer()
+
+	var stats *hamt64.Stats
+	for i := 0; i < b.N; i++ {
+		stats = h.Stats()
+	}
+
+	log.Printf("%s: stats=%+v;\n", name, stats)
 }

@@ -66,7 +66,7 @@ func (l *collisionLeaf) put(key []byte, val interface{}) (leafI, bool) {
 	nl.hash = l.hash
 	nl.kvs = make([]KeyVal, len(l.kvs)+1)
 	copy(nl.kvs, l.kvs)
-	key = copyKey(key) //guarantee internal keys are not externally modifiable
+	//key = copyKey(key) //guarantee internal keys are not externally modifiable
 	nl.kvs[len(l.kvs)] = KeyVal{key, val}
 	//nl.kvs = append(nl.kvs, append(l.kvs, KeyVal{k, v})...)
 

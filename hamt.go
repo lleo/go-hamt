@@ -2,9 +2,7 @@
 Package hamt is just a trivial front door to the hamt32 and hamt64 packages
 which really contain the HAMT implementations. Those HAMT implementations are
 identical in every way but the size of the computed hash, called Hashval. Those
-are either uint32 or uint64 values for hamt32 and hamt64 respectively. To repeat
-myself, the hamt32 and hamt64 HAMT implementations are almost completely
-identical code.
+are either uint32 or uint64 values for hamt32 and hamt64 respectively.
 
 This package merely implements New(), New32() and New64() functions and the
 table option constants FixedTables, SparseTables, HybridTables, and the map
@@ -13,13 +11,13 @@ TableOptionName (eg. hamt.TableOptionName[hamt.FixedTables] ==
 
 Choices
 
-The New() function makes all the recommended choices for you. That is it
-uses the 64 bit hashVal (aka hamt64), functional behavior, and Hybrid tables.
-
 There are several choices to make: Hashval hamt32 versus hamt64, FixedTables
 versus SparseTables versus HybridTables, and Functional versus
 Transient. Then there is a hidden choice; you can change the source code
-constant, IndexBits, to a value other than the current setting of 5.
+constant, NumIndexBits, to a value other than the current setting of 5.
+
+The New() function makes all the recommended choices for you. That is it
+uses the 64 bit hashVal (aka hamt64), functional behavior, and hybrid tables.
 
 Hashval hamt64 versus hamt32
 
@@ -28,13 +26,17 @@ conflating 32 bit hash values with 32 wide branching factor (that was just a
 feature of the other implmentations I was looking at).
 
 While 32bit FNV hash values are still pretty random I have seen plenty of
-collisions in my benchmarks.
+collisions in my tests.
 
 I have never seen 64bit FNV hash values collide and in the current state of
 computing having 64bit CPUs as the norm. I recommend using hamt64. If you are
 on 32bit CPUs then maybe you could choose hamt32.
 
 FixedTables versus SparseTables versus HybridTables
+
+Tables is the name I use to for the interior (aka non-leaf) nodes of the hamt
+data structure. Those tables being the indexed arrays from the Hash-indexed
+Array Mapped Tries (HAMT) name.
 
 This is the classic speed versus memory choice with a twist. The facts to
 consider are: The tree is indexed by essentially random values (the parts of the
@@ -55,37 +57,51 @@ allocated memory.
 According to tests, HybridTables setting behaves precisely the way we want it
 to behave. For a test set of data with 3,149,824 KeyVal pairs, he distribution
 of tables comes in two groups: tables with 25-32 entries and tables with 1-11
-entries. There are no tables not within those two groupings. The 25-32 entry
+entries. There are no tables outside those two groupings. The 25-32 entry
 tables are all fixed tables and the 1-11 entry tables are all sparse tables.
 Of the sparse tables %40.1 have 1 or 2 entries, %85.4 have 4 or less and
 %99.7 have 8 or less entries. Given sparse tables start at capacity of 2 and
 capacity grows by doubling, the sparse tables are efficiently packed. The
-conclusion from this test data is that HybridTables setting is a very good
-trade off between speed and memory efficiency.
+conclusion from this test data is that HybridTables setting is an excellent
+fit for memory efficiency.
+
+Benchmarks show that fixed table hamts are slower than hybrid table hamts for
+Put operations and comparable for Get & Del operations. I conclude that is due
+to the massive over use of memory in fixed tables. This conclusion is partly
+due to the fact that the Put operation differntial between fixed and hybrid
+table hamts is twice as large for functional versus transient hamt behavior.
+
+Clearly HybridTables table option for my HAMT data structure is the best
+choice.
 
 Transient versus Functional
 
-The bottom line is that writing to transient data structures in a multiple
-threads is almost guarantees problems unless you implement a locking solution
+The bottom line is that writing to transient behavior in a multiple
+threads almost guarantees problems unless you implement a locking solution
 (and that can be hard to do in a performant manner).
 
-On the other hand, given that HamtFunctional data structures return a new
+On the other hand, given that HamtFunctional behavior returns a new
 HamtFunctional data structure upon any modification, HamtFunctional data
 structures are inherently thread safe.
 
 On your third hand, the copy-on-write strategy of HamtFunctional is inherently
 slower than modify-in-place strategy of HamtTransient. How much slower? For
-large Hamt data structures (~3 million key/value pairs) the transient Put
-operation takes ~1100ns, where the functional Put op takes ~3200ns. Which
+large hamt data structures (~3 million key/value pairs) the transient Put
+operation takes ~1000ns, where the functional Put op takes ~3200ns. Which
 really isn't that bad because they are within the same order of magnitude and
-it is already blazingly fast (about a million ops/sec).
+it is already fast.
 
-On the fourth hand, functional copy-on-write strategy puts pressure on the Go
-garbage collector. This is even worse if you use the memory inefficient, but
-faster FixedTables option.
+Using the transient behavior begs the question: why not use the Go builtin map?
+Of course, the reason is obvious if your key must be a slice; Go map keys can
+not be slices. The ability to implement a reasonably efficient functional
+behavior for HAMTs is the point of this library. The hamt transient speed
+is definitely is slower than Go's builtin map: 435 vs 130 ns/Get; 950 vs 235
+ns/Put; 900 vs 175 ns/Del; 235 vs 23 ns/KeyVal iterate.
 
-You are going to have to make a per-application determination of which mode
-to use, but at least you have both to choose from :).
+The point of this library is to implement the functional map-like behavior, so
+that is what I assume you will use it for. The transient behavior is useful for
+faster single threaded bulk operations then transform it back to the functional
+behavior.
 
 NumIndexBits
 
@@ -148,20 +164,28 @@ func New() hamt64.Hamt {
 	return hamt64.New(true, HybridTables)
 }
 
-// New32() takes two arguments and producest a value that conforms to the
-// hamt32.Hamt interface. The arguments are a bool and an int. The bool argument
-// determines if a functional structure(true) or transient stucture(false) is
-// produced. The int option is either 0, 1, or 2 conforming to the
-// FixedTables, SparseTables, or HybridTables constants.
+// New32 constructs a datastucture that implements the hamt32.Hamt interface.
+//
+// When the functional argument is true it implements a hamt32.HamtFunctional
+// data structure. When the functional argument is false it implements a
+// HamtTransient data structure.
+//
+// The tblOpt argument is the table option defined by the constants
+// HybridTables, SparseTables, xor FixedTables.
+//
 func New32(functional bool, opt int) hamt32.Hamt {
 	return hamt32.New(functional, opt)
 }
 
-// New32() takes two arguments and producest a value that conforms to the
-// hamt64.Hamt interface. The arguments are a bool and an int. The bool argument
-// determines if a functional structure(true) or transient stucture(false) is
-// produced. The int option is either 0, 1, or 2 conforming to the
-// FixedTables, SparseTables, or HybridTables constants.
+// New64 constructs a datastucture that implements the hamt64.Hamt interface.
+//
+// When the functional argument is true it implements a hamt64.HamtFunctional
+// data structure. When the functional argument is false it implements a
+// HamtTransient data structure.
+//
+// The tblOpt argument is the table option defined by the constants
+// HybridTables, SparseTables, xor FixedTables.
+//
 func New64(functional bool, opt int) hamt64.Hamt {
 	return hamt64.New(functional, opt)
 }

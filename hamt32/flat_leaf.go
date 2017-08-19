@@ -15,6 +15,7 @@ func newFlatLeaf(hv hashVal, key []byte, val interface{}) *flatLeaf {
 	var fl = new(flatLeaf)
 	fl.hash = hv
 	fl.key = copyKey(key) //guarantee internal keys are not externally modifiable
+	//fl.key = key
 	fl.val = val
 	return fl
 }

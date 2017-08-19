@@ -65,6 +65,10 @@ func TestMain(m *testing.M) {
 	flag.BoolVar(&both, "b", false,
 		"Run Tests against both transient and functional Hamt types.")
 
+	var appendLog bool
+	flag.BoolVar(&appendLog, "a", false,
+		"Append to log file rather than re-creating it.")
+
 	var logFn string
 	flag.StringVar(&logFn, "l", "test.log",
 		"set the log file name.")
@@ -101,13 +105,24 @@ func TestMain(m *testing.M) {
 
 	log.SetFlags(log.Lshortfile)
 
-	var logfile, err = os.Create(logFn)
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "failed to os.Create(\"test.log\")"))
+	var logFile *os.File
+	var err error
+	if appendLog {
+		logFile, err = os.OpenFile(logFn, os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			log.Fatal(errors.Wrapf(err,
+				"failed to os.OpenFile(%q, os.O_CREATE|os.O_APPEND, 0666)",
+				logFn))
+		}
+	} else {
+		logFile, err = os.Create(logFn)
+		if err != nil {
+			log.Fatal(errors.Wrapf(err, "failed to os.Create(%q)", logFn))
+		}
 	}
-	defer logfile.Close()
+	defer logFile.Close()
 
-	log.SetOutput(logfile)
+	log.SetOutput(logFile)
 
 	log.Println("TestMain: and so it begins...")
 

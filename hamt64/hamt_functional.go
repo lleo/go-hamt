@@ -18,12 +18,15 @@ type HamtFunctional struct {
 	hamtBase
 }
 
-// NewFunctional constructs a new HamtFunctional data structure based on the opt
-// argument.
-func NewFunctional(opt int) *HamtFunctional {
+// NewFunctional constructs a new HamtFunctional data structure.
+//
+// The tblOpt argument is the table option defined by the constants
+// HybridTables, SparseTables, xor FixedTables.
+//
+func NewFunctional(tblOpt int) *HamtFunctional {
 	var h = new(HamtFunctional)
 
-	h.hamtBase.init(opt)
+	h.hamtBase.init(tblOpt)
 
 	return h
 }
@@ -269,7 +272,7 @@ func (h *HamtFunctional) LongString(indent string) string {
 	return "HamtFunctional{\n" + indent + h.hamtBase.LongString(indent) + "\n}"
 }
 
-// Visit walks the Hamt executing the VisitFn then recursing into each of
+// visit walks the Hamt executing the VisitFn then recursing into each of
 // the subtrees in order. It returns the maximum table depth it reached in
 // any branch.
 func (h *HamtFunctional) visit(fn visitFn) uint {

@@ -48,17 +48,17 @@ const UpgradeThreshold uint = IndexLimit / 2 //16 for NumIndexBits=5
 
 // Configuration contants to be passed to `hamt64.New(int) *Hamt`.
 const (
+	// HybridTables indicates the structure should use sparseTable
+	// initially, then upgrade to fixedTable when appropriate.
+	HybridTables = iota
 	// FixedTable indicates the structure should use fixedTables ONLY.
 	// This was intended to be for speed, as compressed tables use a software
 	// bitCount function to access individual cells.
-	FixedTables = iota
+	FixedTables
 	// SparseTables indicates the structure should use sparseTables ONLY.
 	// This was intended just save space, but also seems to be faster; CPU cache
 	// locality maybe?
 	SparseTables
-	// HybridTables indicates the structure should use sparseTable
-	// initially, then upgrade to fixedTable when appropriate.
-	HybridTables
 )
 
 // TableOptionName is a lookup table to map the integer value of
@@ -70,9 +70,9 @@ var TableOptionName [3]string
 
 // Could have used...
 //var TableOptionName = [3]string{
+//	"HybridTables",
 //	"FixedTables",
 //	"SparseTables",
-//	"HybridTables",
 //}
 
 func init() {
@@ -100,16 +100,20 @@ type Hamt interface {
 	visit(visitFn) uint
 }
 
-// New constructs a datastucture that implements the Hamt interface. When the
-// functional argument is true it implements a HamtFunctional data structure.
-// When the functional argument is false it implements a HamtTransient
-// data structure. In either case the opt argument is handed to the to the
-// contructore for either NewFunctional(opt) or NewTransient(opt).
-func New(functional bool, opt int) Hamt {
+// New constructs a datastucture that implements the Hamt interface.
+//
+// When the functional argument is true it implements a HamtFunctional data
+// structure. When the functional argument is false it implements a
+// HamtTransient data structure.
+//
+// The tblOpt argument is the table option defined by the constants
+// HybridTables, SparseTables, xor FixedTables.
+//
+func New(functional bool, tblOpt int) Hamt {
 	if functional {
-		return NewFunctional(opt)
+		return NewFunctional(tblOpt)
 	}
-	return NewTransient(opt)
+	return NewTransient(tblOpt)
 }
 
 type Stats struct {

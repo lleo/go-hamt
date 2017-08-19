@@ -56,6 +56,14 @@ func TestMain(m *testing.M) {
 	flag.BoolVar(&both, "b", false,
 		"Run Tests against both transient and functional Hamt types.")
 
+	var appendLog bool
+	flag.BoolVar(&appendLog, "a", false,
+		"Append to log file rather than re-creating it.")
+
+	var logFn string
+	flag.StringVar(&logFn, "l", "test.log",
+		"set the log file name.")
+
 	flag.Parse()
 
 	// If all flag set, ignore fixedonly, sparseonly, and hybrid.
@@ -88,14 +96,24 @@ func TestMain(m *testing.M) {
 
 	log.SetFlags(log.Lshortfile)
 
-	var logfn = fmt.Sprintf("test-%d.log", hamt64.NumIndexBits)
-	var logfile, err = os.Create(logfn)
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "failed to os.Create(\"test.log\")"))
+	var logFile *os.File
+	var err error
+	if appendLog {
+		logFile, err = os.OpenFile(logFn, os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			log.Fatal(errors.Wrapf(err,
+				"failed to os.OpenFile(%q, os.O_CREATE|os.O_APPEND, 0666)",
+				logFn))
+		}
+	} else {
+		logFile, err = os.Create(logFn)
+		if err != nil {
+			log.Fatal(errors.Wrapf(err, "failed to os.Create(%q)", logFn))
+		}
 	}
-	defer logfile.Close()
+	defer logFile.Close()
 
-	log.SetOutput(logfile)
+	log.SetOutput(logFile)
 
 	log.Println("TestMain: and so it begins...")
 
@@ -104,24 +122,24 @@ func TestMain(m *testing.M) {
 	log.Printf("TestMain: NumIndexBits=%d\n", hamt64.NumIndexBits)
 	fmt.Printf("TestMain: NumIndexBits=%d\n", hamt64.NumIndexBits)
 	log.Printf("TestMain: IndexLimit=%d\n", hamt64.IndexLimit)
-	fmt.Printf("TestMain: IndexLimit=%d\n", hamt64.IndexLimit)
+	//fmt.Printf("TestMain: IndexLimit=%d\n", hamt64.IndexLimit)
 	log.Printf("TestMain: DepthLimit=%d\n", hamt64.DepthLimit)
-	fmt.Printf("TestMain: DepthLimit=%d\n", hamt64.DepthLimit)
+	//fmt.Printf("TestMain: DepthLimit=%d\n", hamt64.DepthLimit)
 
 	log.Printf("TestMain: SizeofHamtTransient=%d\n",
 		unsafe.Sizeof(hamt64.HamtTransient{}))
-	fmt.Printf("TestMain: SizeofHamtTransient=%d\n",
-		unsafe.Sizeof(hamt64.HamtTransient{}))
+	//fmt.Printf("TestMain: SizeofHamtTransient=%d\n",
+	//	unsafe.Sizeof(hamt64.HamtTransient{}))
 	log.Printf("TestMain: SizeofHamtFunctional=%d\n",
 		unsafe.Sizeof(hamt64.HamtFunctional{}))
-	fmt.Printf("TestMain: SizeofHamtFunctional=%d\n",
-		unsafe.Sizeof(hamt64.HamtFunctional{}))
+	//fmt.Printf("TestMain: SizeofHamtFunctional=%d\n",
+	//	unsafe.Sizeof(hamt64.HamtFunctional{}))
 	log.Printf("TestMain: SizeofHamtBase=%d\n", hamt64.SizeofHamtBase)
-	fmt.Printf("TestMain: SizeofHamtBase=%d\n", hamt64.SizeofHamtBase)
+	//fmt.Printf("TestMain: SizeofHamtBase=%d\n", hamt64.SizeofHamtBase)
 	log.Printf("TestMain: SizeofFixedTable=%d\n", hamt64.SizeofFixedTable)
-	fmt.Printf("TestMain: SizeofFixedTable=%d\n", hamt64.SizeofFixedTable)
+	//fmt.Printf("TestMain: SizeofFixedTable=%d\n", hamt64.SizeofFixedTable)
 	log.Printf("TestMain: SizeofSparseTable=%d\n", hamt64.SizeofSparseTable)
-	fmt.Printf("TestMain: SizeofSparseTable=%d\n", hamt64.SizeofSparseTable)
+	//fmt.Printf("TestMain: SizeofSparseTable=%d\n", hamt64.SizeofSparseTable)
 
 	// // This is an attempt to make the first benchmarks faster. My theory is
 	// // that we needed to build up the heap. This worked a little bit, I don't
@@ -226,7 +244,7 @@ func TestMain(m *testing.M) {
 }
 
 func executeAll(m *testing.M) int {
-	TableOption = hamt64.FixedTables
+	TableOption = hamt64.SparseTables
 
 	log.Printf("TestMain: TableOption=%s;\n",
 		hamt64.TableOptionName[TableOption])
@@ -240,7 +258,7 @@ func executeAll(m *testing.M) int {
 	}
 
 	Hamt64 = nil
-	TableOption = hamt64.SparseTables
+	TableOption = hamt64.FixedTables
 
 	log.Printf("TestMain: TableOption=%s;\n",
 		hamt64.TableOptionName[TableOption])

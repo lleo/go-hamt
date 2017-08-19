@@ -13,9 +13,9 @@ type hamtBase struct {
 	startFixed bool
 }
 
-func (h *hamtBase) init(opt int) {
+func (h *hamtBase) init(tblOpt int) {
 	// boolean zero value is false
-	switch opt {
+	switch tblOpt {
 	case HybridTables:
 		h.grade = true
 		//h.startFixed = false
@@ -266,7 +266,8 @@ func (h *hamtBase) Iter() IterFunc {
 				state.colLeafIdx = 0
 			}
 
-			return KeyVal{copyKey(kv.Key), kv.Val}, true
+			//return KeyVal{copyKey(kv.Key), kv.Val}, true
+			return KeyVal{kv.Key, kv.Val}, true
 		}
 
 		var leaf = findNextLeaf(state)
@@ -284,7 +285,8 @@ func (h *hamtBase) Iter() IterFunc {
 
 			return KeyVal{nil, nil}, false
 		case *flatLeaf:
-			retKV = KeyVal{copyKey(x.key), x.val}
+			//retKV = KeyVal{copyKey(x.key), x.val}
+			retKV = KeyVal{x.key, x.val}
 		case *collisionLeaf:
 			// This is the first time I've visited this colLeaf, the rest of the
 			// colLeaf.kvs will be dealt with at the beginning of this func.
@@ -292,7 +294,8 @@ func (h *hamtBase) Iter() IterFunc {
 			state.colLeafIdx = 0
 
 			var kv = state.colLeaf.kvs[state.colLeafIdx]
-			retKV = KeyVal{copyKey(kv.Key), kv.Val}
+			//retKV = KeyVal{copyKey(kv.Key), kv.Val}
+			retKV = KeyVal{kv.Key, kv.Val}
 
 			state.colLeafIdx++
 		}
@@ -381,14 +384,16 @@ func (h *hamtBase) IterChan(
 					select {
 					case <-ctx.Done():
 						break Loop
-					case iterCh <- KeyVal{copyKey(leaf.key), leaf.val}:
+					//case iterCh <- KeyVal{copyKey(leaf.key), leaf.val}:
+					case iterCh <- KeyVal{leaf.key, leaf.val}:
 					}
 				case *collisionLeaf:
 					for _, kv := range leaf.kvs {
 						select {
 						case <-ctx.Done():
 							break Loop
-						case iterCh <- KeyVal{copyKey(kv.Key), kv.Val}:
+						//case iterCh <- KeyVal{copyKey(kv.Key), kv.Val}:
+						case iterCh <- KeyVal{kv.Key, kv.Val}:
 						}
 					}
 				}

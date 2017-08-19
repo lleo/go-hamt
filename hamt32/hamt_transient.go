@@ -15,12 +15,15 @@ type HamtTransient struct {
 	hamtBase
 }
 
-// NewTransient constructs a new HamtTransient data structure based on the opt
-// argument.
-func NewTransient(opt int) *HamtTransient {
+// NewTransient constructs a new HamtTransient data structure.
+//
+// The tblOpt argument is the table option defined by the constants
+// HybridTables, SparseTables, xor FixedTables.
+//
+func NewTransient(tblOpt int) *HamtTransient {
 	var h = new(HamtTransient)
 
-	h.hamtBase.init(opt)
+	h.hamtBase.init(tblOpt)
 
 	return h
 }
@@ -202,7 +205,7 @@ func (h *HamtTransient) LongString(indent string) string {
 	return "HamtTransient{\n" + indent + h.hamtBase.LongString(indent) + "\n}"
 }
 
-// Visit walks the Hamt executing the VisitFn then recursing into each of
+// visit walks the Hamt executing the VisitFn then recursing into each of
 // the subtrees in order. It returns the maximum table depth it reached in
 // any branch.
 func (h *HamtTransient) visit(fn visitFn) uint {

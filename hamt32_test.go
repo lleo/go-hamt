@@ -43,17 +43,17 @@ func runTestHamt32Put(
 	t *testing.T,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "TestHamt32Put"
 	if functional {
-		name += ":functional:" + hamt32.TableOptionName[TableOption]
+		name += ":functional:" + hamt32.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt32.TableOptionName[TableOption]
+		name += ":transient:" + hamt32.TableOptionName[tblOpt]
 	}
 
 	StartTime[name] = time.Now()
-	Hamt32 = hamt32.New(functional, opt)
+	Hamt32 = hamt32.New(functional, tblOpt)
 	for _, kv := range kvs {
 		var k = kv.Key
 		var v = kv.Val
@@ -92,25 +92,25 @@ func runTestHamt32IterFunc(
 	t *testing.T,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "TestHamt32IterFunc"
 	if functional {
-		name += ":functional:" + hamt32.TableOptionName[TableOption]
+		name += ":functional:" + hamt32.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt32.TableOptionName[TableOption]
+		name += ":transient:" + hamt32.TableOptionName[tblOpt]
 	}
 
 	if Hamt32 == nil {
 		var err error
-		Hamt32, err = buildHamt32(name, kvs, functional, opt)
+		Hamt32, err = buildHamt32(name, kvs, functional, tblOpt)
 		if err != nil {
 			log.Printf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt32.TableOptionName[opt], err)
+				hamt32.TableOptionName[tblOpt], err)
 			t.Fatalf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt32.TableOptionName[opt], err)
+				hamt32.TableOptionName[tblOpt], err)
 		}
 
 		StartTime["Hamt32.Stats()"] = time.Now()
@@ -152,25 +152,25 @@ func runTestHamt32IterChan(
 	t *testing.T,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "TestHamt32IterChan"
 	if functional {
-		name += ":functional:" + hamt32.TableOptionName[TableOption]
+		name += ":functional:" + hamt32.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt32.TableOptionName[TableOption]
+		name += ":transient:" + hamt32.TableOptionName[tblOpt]
 	}
 
 	if Hamt32 == nil {
 		var err error
-		Hamt32, err = buildHamt32(name, kvs, functional, opt)
+		Hamt32, err = buildHamt32(name, kvs, functional, tblOpt)
 		if err != nil {
 			log.Printf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt32.TableOptionName[opt], err)
+				hamt32.TableOptionName[tblOpt], err)
 			t.Fatalf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt32.TableOptionName[opt], err)
+				hamt32.TableOptionName[tblOpt], err)
 		}
 
 		StartTime["Hamt32.Stats()"] = time.Now()
@@ -210,25 +210,25 @@ func runTestHamt32IterChanContext(
 	t *testing.T,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "TestHamt32IterChanContext"
 	if functional {
-		name += ":functional:" + hamt32.TableOptionName[TableOption]
+		name += ":functional:" + hamt32.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt32.TableOptionName[TableOption]
+		name += ":transient:" + hamt32.TableOptionName[tblOpt]
 	}
 
 	if Hamt32 == nil {
 		var err error
-		Hamt32, err = buildHamt32(name, kvs, functional, opt)
+		Hamt32, err = buildHamt32(name, kvs, functional, tblOpt)
 		if err != nil {
 			log.Printf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt32.TableOptionName[opt], err)
+				hamt32.TableOptionName[tblOpt], err)
 			t.Fatalf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt32.TableOptionName[opt], err)
+				hamt32.TableOptionName[tblOpt], err)
 		}
 
 		StartTime["Hamt32.Stats()"] = time.Now()
@@ -274,25 +274,25 @@ func runTestHamt32Get(
 	t *testing.T,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "TestHamt32Get"
 	if functional {
-		name += ":functional:" + hamt32.TableOptionName[TableOption]
+		name += ":functional:" + hamt32.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt32.TableOptionName[TableOption]
+		name += ":transient:" + hamt32.TableOptionName[tblOpt]
 	}
 
 	if Hamt32 == nil {
 		var err error
-		Hamt32, err = buildHamt32(name, kvs, functional, opt)
+		Hamt32, err = buildHamt32(name, kvs, functional, tblOpt)
 		if err != nil {
 			log.Printf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt32.TableOptionName[opt], err)
+				hamt32.TableOptionName[tblOpt], err)
 			t.Fatalf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt32.TableOptionName[opt], err)
+				hamt32.TableOptionName[tblOpt], err)
 		}
 
 		StartTime["Hamt32.Stats()"] = time.Now()
@@ -328,25 +328,25 @@ func runTestHamt32Del(
 	t *testing.T,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "TestHamt32Del"
 	if functional {
-		name += ":functional:" + hamt32.TableOptionName[TableOption]
+		name += ":functional:" + hamt32.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt32.TableOptionName[TableOption]
+		name += ":transient:" + hamt32.TableOptionName[tblOpt]
 	}
 
 	if Hamt32 == nil {
 		var err error
-		Hamt32, err = buildHamt32(name, kvs, functional, opt)
+		Hamt32, err = buildHamt32(name, kvs, functional, tblOpt)
 		if err != nil {
 			log.Printf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt32.TableOptionName[opt], err)
+				hamt32.TableOptionName[tblOpt], err)
 			t.Fatalf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
 				name, len(kvs), functional,
-				hamt32.TableOptionName[opt], err)
+				hamt32.TableOptionName[tblOpt], err)
 		}
 
 		StartTime["Hamt32.Stats()"] = time.Now()
@@ -380,33 +380,25 @@ func BenchmarkHamt32Get(b *testing.B) {
 	runBenchmarkHamt32Get(b, KVS, Functional, TableOption)
 }
 
-var BenchHamt32Get hamt32.Hamt
-var BenchHamt32Get_Functional bool
-
 func runBenchmarkHamt32Get(
 	b *testing.B,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "BenchmarkHamt32Get"
 	if functional {
-		name += ":functional:" + hamt32.TableOptionName[opt]
+		name += ":functional:" + hamt32.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt32.TableOptionName[opt]
+		name += ":transient:" + hamt32.TableOptionName[tblOpt]
 	}
 
-	if BenchHamt32Get == nil || BenchHamt32Get_Functional != functional {
-		BenchHamt32Get_Functional = functional
-
-		var err error
-		BenchHamt32Get, err = buildHamt32(name, kvs, functional, opt)
-		if err != nil {
-			log.Printf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
-				name, len(kvs), false, hamt32.TableOptionName[opt], err)
-			b.Fatalf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
-				name, len(kvs), false, hamt32.TableOptionName[opt], err)
-		}
+	var BenchHamt32Get, err = buildHamt32(name, kvs, functional, tblOpt)
+	if err != nil {
+		log.Printf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt32.TableOptionName[tblOpt], err)
+		b.Fatalf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt32.TableOptionName[tblOpt], err)
 	}
 
 	log.Printf("%s: b.N=%d", name, b.N)
@@ -438,13 +430,13 @@ func runBenchmarkHamt32Put(
 	b *testing.B,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "BenchmarkHamt32Put"
 	if functional {
-		name += ":functional:" + hamt32.TableOptionName[opt]
+		name += ":functional:" + hamt32.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt32.TableOptionName[opt]
+		name += ":transient:" + hamt32.TableOptionName[tblOpt]
 	}
 
 	if b.N+InitHamtNumKvsForPut > len(kvs) {
@@ -454,14 +446,14 @@ func runBenchmarkHamt32Put(
 
 	var initKvs = kvs[:InitHamtNumKvsForPut]
 
-	var h, err = buildHamt32(name, initKvs, functional, opt)
+	var h, err = buildHamt32(name, initKvs, functional, tblOpt)
 	if err != nil {
 		log.Printf("%s: failed buildHamt32(%q, kvs[:%d], %t, %s) => %s", name,
 			name, InitHamtNumKvsForPut, functional,
-			hamt32.TableOptionName[opt], err)
+			hamt32.TableOptionName[tblOpt], err)
 		b.Fatalf("%s: failed buildHamt32(%q, kvs[:%d], %t, %s) => %s", name,
 			name, InitHamtNumKvsForPut, functional,
-			hamt32.TableOptionName[opt], err)
+			hamt32.TableOptionName[tblOpt], err)
 	}
 
 	log.Printf("%s: b.N=%d;", name, b.N)
@@ -489,23 +481,23 @@ func runBenchmarkHamt32Del(
 	b *testing.B,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "BenchmarkHamt32Del"
 	if functional {
-		name += ":functional:" + hamt32.TableOptionName[opt]
+		name += ":functional:" + hamt32.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt32.TableOptionName[opt]
+		name += ":transient:" + hamt32.TableOptionName[tblOpt]
 	}
 
-	var h, err = buildHamt32(name, kvs[:TwoKK], functional, opt)
+	var h, err = buildHamt32(name, kvs[:TwoKK], functional, tblOpt)
 	if err != nil {
 		log.Printf("%s: failed buildHamt32(%q, kvs:%d, %t, %s) => %s", name,
 			name, len(kvs), functional,
-			hamt32.TableOptionName[opt], err)
+			hamt32.TableOptionName[tblOpt], err)
 		b.Fatalf("%s: failed buildHamt32(%q, kvs:%d, %t, %s) => %s", name,
 			name, len(kvs), functional,
-			hamt32.TableOptionName[opt], err)
+			hamt32.TableOptionName[tblOpt], err)
 	}
 
 	log.Printf("%s: b.N=%d;", name, b.N)
@@ -538,27 +530,21 @@ func runBenchmarkHamt32IterFunc(
 	b *testing.B,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "BenchmarkHamt32IterFunc"
 	if Functional {
-		name += ":functional:" + hamt32.TableOptionName[TableOption]
+		name += ":functional:" + hamt32.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt32.TableOptionName[TableOption]
+		name += ":transient:" + hamt32.TableOptionName[tblOpt]
 	}
 
-	// We will reuse the BenchHamtGet tree for iterator benchmarking.
-	if BenchHamt32Get == nil || BenchHamt32Get_Functional != Functional {
-		BenchHamt32Get_Functional = Functional
-
-		var err error
-		BenchHamt32Get, err = buildHamt32(name, kvs, functional, opt)
-		if err != nil {
-			log.Printf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
-				name, len(kvs), false, hamt32.TableOptionName[opt], err)
-			b.Fatalf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
-				name, len(kvs), false, hamt32.TableOptionName[opt], err)
-		}
+	var BenchHamt32Get, err = buildHamt32(name, kvs, functional, tblOpt)
+	if err != nil {
+		log.Printf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt32.TableOptionName[tblOpt], err)
+		b.Fatalf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt32.TableOptionName[tblOpt], err)
 	}
 
 	log.Printf("%s: b.N=%d", name, b.N)
@@ -591,27 +577,21 @@ func runBenchmarkHamt32IterChan(
 	b *testing.B,
 	kvs []KeyVal,
 	functional bool,
-	opt int,
+	tblOpt int,
 ) {
 	var name = "BenchmarkHamt32IterChan"
 	if Functional {
-		name += ":functional:" + hamt32.TableOptionName[TableOption]
+		name += ":functional:" + hamt32.TableOptionName[tblOpt]
 	} else {
-		name += ":transient:" + hamt32.TableOptionName[TableOption]
+		name += ":transient:" + hamt32.TableOptionName[tblOpt]
 	}
 
-	// We will reuse the BenchHamtGet tree for iterator benchmarking.
-	if BenchHamt32Get == nil || BenchHamt32Get_Functional != Functional {
-		BenchHamt32Get_Functional = Functional
-
-		var err error
-		BenchHamt32Get, err = buildHamt32(name, kvs, functional, opt)
-		if err != nil {
-			log.Printf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
-				name, len(kvs), false, hamt32.TableOptionName[opt], err)
-			b.Fatalf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
-				name, len(kvs), false, hamt32.TableOptionName[opt], err)
-		}
+	var BenchHamt32Get, err = buildHamt32(name, kvs, functional, tblOpt)
+	if err != nil {
+		log.Printf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt32.TableOptionName[tblOpt], err)
+		b.Fatalf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt32.TableOptionName[tblOpt], err)
 	}
 
 	log.Printf("%s: b.N=%d", name, b.N)
@@ -659,4 +639,40 @@ ForLoop:
 			iterChan = BenchHamt32Get.IterChan(20, ctx)
 		}
 	}
+}
+
+func BenchmarkHamt32Stats(b *testing.B) {
+	runBenchmarkHamt32Stats(b, KVS, Functional, TableOption)
+}
+
+func runBenchmarkHamt32Stats(
+	b *testing.B,
+	kvs []KeyVal,
+	functional bool,
+	tblOpt int,
+) {
+	var name = "BenchmarkHamt32Stats"
+	if Functional {
+		name += ":functional:" + hamt32.TableOptionName[tblOpt]
+	} else {
+		name += ":transient:" + hamt32.TableOptionName[tblOpt]
+	}
+
+	var h, err = buildHamt32(name, kvs, functional, tblOpt)
+	if err != nil {
+		log.Printf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt32.TableOptionName[tblOpt], err)
+		b.Fatalf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt32.TableOptionName[tblOpt], err)
+	}
+
+	log.Printf("%s: b.N=%d", name, b.N)
+	b.ResetTimer()
+
+	var stats *hamt32.Stats
+	for i := 0; i < b.N; i++ {
+		stats = h.Stats()
+	}
+
+	log.Printf("%s: stats=%+v;\n", name, stats)
 }
