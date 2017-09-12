@@ -66,7 +66,7 @@ func (h *HamtFunctional) DeepCopy() Hamt {
 	var nh = new(HamtFunctional)
 	nh.root = *h.root.deepCopy().(*fixedTable)
 	nh.nentries = h.nentries
-	nh.grade = h.grade
+	nh.nograde = h.nograde
 	nh.startFixed = h.startFixed
 	return nh
 }
@@ -129,7 +129,7 @@ func (h *HamtFunctional) Put(key []byte, val interface{}) (Hamt, bool) {
 	var nh = new(HamtFunctional)
 	*nh = *h
 
-	var hv = calcHashVal(key)
+	var hv = hashVal(CalcHash(key))
 
 	var path, leaf, idx = h.find(hv)
 
@@ -158,7 +158,7 @@ func (h *HamtFunctional) Put(key []byte, val interface{}) (Hamt, bool) {
 		var newTable tableI
 
 		if leaf == nil {
-			if nh.grade && (curTable.nentries()+1) == UpgradeThreshold {
+			if !nh.nograde && (curTable.nentries()+1) == UpgradeThreshold {
 				newTable = upgradeToFixedTable(
 					curTable.Hash(), depth, curTable.entries())
 			} else {
@@ -207,7 +207,7 @@ func (h *HamtFunctional) Del(key []byte) (Hamt, interface{}, bool) {
 
 	//key = copyKey(key)
 
-	var hv = calcHashVal(key)
+	var hv = hashVal(CalcHash(key))
 	var path, leaf, idx = h.find(hv)
 
 	if leaf == nil {
@@ -246,7 +246,7 @@ func (h *HamtFunctional) Del(key []byte) (Hamt, interface{}, bool) {
 			switch {
 			case nents == 0:
 				newTable = nil
-			case h.grade && nents == DowngradeThreshold:
+			case !h.nograde && nents == DowngradeThreshold:
 				newTable = downgradeToSparseTable(
 					newTable.Hash(), depth, newTable.entries())
 			}

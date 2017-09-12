@@ -1,6 +1,6 @@
 // +build go1.9
 
-package hamt64
+package hamt32
 
 import (
 	"math/bits"

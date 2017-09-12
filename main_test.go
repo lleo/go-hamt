@@ -18,19 +18,18 @@ import (
 
 type StrVal struct {
 	Str string
-	Val interface{}
+	Val int
 }
 
 type KeyVal struct {
 	Key []byte
-	Val interface{}
+	Val int
 }
 
-// 1 million & change
-var InitHamtNumKvsForPut = 1024 * 1024
-var InitHamtNumKvs = InitHamtNumKvsForPut + (2 * 1024 * 1024)
-var numKvs = InitHamtNumKvs + (4 * 1024)
-var TwoKK = 2 * 1024 * 1024
+var Mega = 1024 * 1024
+var InitHamtNumKvsForPut = 1 * Mega
+var TwoMega = 2 * Mega
+var numKvs = InitHamtNumKvsForPut + TwoMega // 3 * Mega
 var KVS []KeyVal
 
 //var SVS []StrVal
@@ -222,7 +221,7 @@ func TestMain(m *testing.M) {
 }
 
 func executeAll(m *testing.M) int {
-	TableOption = hamt32.FixedTables
+	TableOption = hamt32.HybridTables
 
 	log.Printf("TestMain: TableOption=%s;\n",
 		hamt32.TableOptionName[TableOption])
@@ -237,7 +236,7 @@ func executeAll(m *testing.M) int {
 
 	Hamt32 = nil
 	Hamt64 = nil
-	TableOption = hamt32.SparseTables
+	TableOption = hamt32.FixedTables
 
 	log.Printf("TestMain: TableOption=%s;\n",
 		hamt32.TableOptionName[TableOption])
@@ -252,7 +251,7 @@ func executeAll(m *testing.M) int {
 
 	Hamt32 = nil
 	Hamt64 = nil
-	TableOption = hamt32.HybridTables
+	TableOption = hamt32.SparseTables
 
 	log.Printf("TestMain: TableOption=%s;\n",
 		hamt32.TableOptionName[TableOption])

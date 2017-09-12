@@ -13,9 +13,10 @@ import (
 // uint32 and establishes a type we can hang methods, like Index(), off of.
 type hashVal uint32
 
-// Calculate the hashVal of a given byte slice.
-func calcHashVal(bs []byte) hashVal {
-	return hashVal(fold(hash(bs), remainder))
+// CalcHash deterministically calculates a randomized uint32 of a given byte
+// slice .
+func CalcHash(bs []byte) uint32 {
+	return fold(hash(bs), remainder)
 }
 
 func hash(bs []byte) uint32 {
@@ -105,8 +106,8 @@ func (hv hashVal) HashPathString(limit uint) string {
 func (hv hashVal) bitString() string {
 	var strs = make([]string, DepthLimit)
 
+	var fmtStr = fmt.Sprintf("%%0%db", NumIndexBits)
 	for d := uint(0); d < DepthLimit; d++ {
-		var fmtStr = fmt.Sprintf("%%0%dd", NumIndexBits)
 		strs[maxDepth-d] = fmt.Sprintf(fmtStr, hv.Index(d))
 	}
 

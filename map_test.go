@@ -22,17 +22,14 @@ func genRandomizedSvs(svs []StrVal) []StrVal {
 	return randSvs
 }
 
-func buildMap(prefix string, num int) map[string]int {
+func buildMap(prefix string, svs []StrVal) map[string]int {
 	var name = fmt.Sprintf("%s-buildMap", prefix)
 	StartTime[name] = time.Now()
 
-	var m = make(map[string]int, num)
-	var s = "aaa"
+	var m = make(map[string]int, len(svs))
 
-	for i := 0; i < num; i++ {
-		m[s] = i
-
-		s = Inc(s)
+	for _, sv := range svs {
+		m[sv.Str] = sv.Val
 	}
 
 	RunTime[name] = time.Since(StartTime[name])
@@ -41,16 +38,11 @@ func buildMap(prefix string, num int) map[string]int {
 
 func BenchmarkMapGet(b *testing.B) {
 	var name = fmt.Sprintf("BenchmarkMapGet#%d", b.N)
-	var lookupMap = buildMap(name, b.N)
 
-	var svs = make([]StrVal, b.N)
-	var j int
-	for k, v := range lookupMap {
-		svs[j] = StrVal{k, v}
-		j++
-	}
-
+	var svs = buildStrVals(name, b.N)
 	//svs = genRandomizedSvs(svs)
+
+	var lookupMap = buildMap(name, svs)
 
 	b.ResetTimer()
 
@@ -64,6 +56,44 @@ func BenchmarkMapGet(b *testing.B) {
 		}
 		if val != v {
 			b.Fatalf("v,%v != val,%v", v, val)
+		}
+	}
+}
+
+func BenchmarkMap_GetN30(b *testing.B) {
+	runBenchmarkMapGetN(b, 30)
+}
+
+func BenchmarkMap_GetN1000(b *testing.B) {
+	runBenchmarkMapGetN(b, 1000)
+}
+
+func BenchmarkMapGetN10000(b *testing.B) {
+	runBenchmarkMapGetN(b, 10000)
+}
+
+func runBenchmarkMapGetN(b *testing.B, N int) {
+	var name = "runBenchmarkMapGetN"
+
+	log.Println(name, b.N)
+
+	var svs = buildStrVals(name, N)
+	var m = buildMap(name, svs)
+
+	//var keys = make([]string, 0, N)
+	//for k, _ := range m {
+	//	keys = append(keys, k)
+	//}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		//var k = keys[i%len(keys)]
+		var sv = svs[i%len(svs)]
+		var _, ok = m[sv.Str]
+		if !ok {
+			//b.Fatalf("failed to lookup k,%q in m", k)
+			b.Fatalf("failed to lookup sv.Str,%q in m", sv.Str)
 		}
 	}
 }
@@ -90,19 +120,21 @@ func BenchmarkMapDel(b *testing.B) {
 	var name = fmt.Sprintf("BenchmarkMapDel:%d", b.N)
 	log.Printf("BenchmarkMapDel: b.N=%d", b.N)
 
-	var deleteMap = buildMap(name, b.N)
+	var svs = buildStrVals(name, b.N)
+	var deleteMap = buildMap(name, svs)
 
-	var keyStrings = make([]string, b.N)
-	var i int
-	for k := range deleteMap {
-		keyStrings[i] = k
-		i++
-	}
+	//var keyStrings = make([]string, b.N)
+	//var i int
+	//for k := range deleteMap {
+	//	keyStrings[i] = k
+	//	i++
+	//}
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		delete(deleteMap, keyStrings[i])
+		//delete(deleteMap, keyStrings[i])
+		delete(deleteMap, svs[i].Str)
 	}
 
 	if len(deleteMap) != 0 {
@@ -114,18 +146,19 @@ func BenchmarkMapIter(b *testing.B) {
 	var name = fmt.Sprintf("BenchmarkMapIter:%d", b.N)
 	log.Printf("BenchmarkMapIter: b.N=%d", b.N)
 
-	var iterMap = buildMap(name, b.N)
+	var svs = buildStrVals(name, b.N)
+	var iterMap = buildMap(name, svs)
 
-	var keyStrings = make([]string, b.N)
-	var i int
-	for k := range iterMap {
-		keyStrings[i] = k
-		i++
-	}
+	//var keyStrings = make([]string, b.N)
+	//var i int
+	//for k := range iterMap {
+	//	keyStrings[i] = k
+	//	i++
+	//}
 
 	b.ResetTimer()
 
-	i = 0
+	var i = 0
 	for k := range iterMap {
 		if len(k) < 1 {
 			b.Fatal("len(k) == 0")

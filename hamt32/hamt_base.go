@@ -9,7 +9,7 @@ import (
 type hamtBase struct {
 	root       fixedTable
 	nentries   uint
-	grade      bool
+	nograde    bool
 	startFixed bool
 }
 
@@ -17,13 +17,13 @@ func (h *hamtBase) init(tblOpt int) {
 	// boolean zero value is false
 	switch tblOpt {
 	case HybridTables:
-		h.grade = true
+		h.nograde = false
 		//h.startFixed = false
 	case SparseTables:
-		//h.grade = false
+		h.nograde = true
 		//h.startFixed = false
 	case FixedTables:
-		//h.grade = false
+		h.nograde = true
 		h.startFixed = true
 	}
 }
@@ -47,7 +47,7 @@ func (h *hamtBase) DeepCopy() Hamt {
 	var nh = new(HamtFunctional)
 	nh.root = *h.root.deepCopy().(*fixedTable)
 	nh.nentries = h.nentries
-	nh.grade = h.grade
+	nh.nograde = h.nograde
 	nh.startFixed = h.startFixed
 	return nh
 }
@@ -95,7 +95,7 @@ DepthIter:
 // This is slower due to extraneous code and allocations in find().
 //func (h *hamtBase) Get(key []byte) (interface{}, bool) {
 //	key = copyKey(key)
-//	var hv = calcHashVal(key)
+//	var hv = hashVal(CalcHash(key))
 //	var _, leaf, _ = h.find(hv)
 //
 //	if leaf == nil {
@@ -115,7 +115,7 @@ func (h *hamtBase) Get(key []byte) (interface{}, bool) {
 
 	//key = copyKey(key)
 
-	var hv = calcHashVal(key)
+	var hv = hashVal(CalcHash(key))
 	var curTable tableI = &h.root
 
 	var val interface{}

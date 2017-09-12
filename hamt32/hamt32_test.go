@@ -3,11 +3,13 @@ package hamt32_test
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"log"
 	"testing"
 	"time"
 
 	"github.com/lleo/go-hamt/hamt32"
+	"github.com/pkg/errors"
 )
 
 func TestBuild32(t *testing.T) {
@@ -490,7 +492,7 @@ func runBenchmarkHamt32Del(
 		name += ":transient:" + hamt32.TableOptionName[tblOpt]
 	}
 
-	var h, err = buildHamt32(name, kvs[:TwoKK], functional, tblOpt)
+	var h, err = buildHamt32(name, kvs, functional, tblOpt)
 	if err != nil {
 		log.Printf("%s: failed buildHamt32(%q, kvs:%d, %t, %s) => %s", name,
 			name, len(kvs), functional,
@@ -676,3 +678,134 @@ func runBenchmarkHamt32Stats(
 
 	log.Printf("%s: stats=%+v;\n", name, stats)
 }
+
+func BenchmarkHamt32_GetN30(b *testing.B) {
+	runBenchmarkHamt32GetN(b, KVS[:30], Functional, TableOption)
+}
+
+func BenchmarkHamt32_GetN1000(b *testing.B) {
+	runBenchmarkHamt32GetN(b, KVS[:1000], Functional, TableOption)
+}
+
+func BenchmarkHamt32_GetN10000(b *testing.B) {
+	runBenchmarkHamt32GetN(b, KVS[:10000], Functional, TableOption)
+}
+
+func runBenchmarkHamt32GetN(
+	b *testing.B,
+	kvs []KeyVal,
+	functional bool,
+	tblOpt int,
+) {
+	var name = "runBenchmarkHamt32GetN"
+	if Functional {
+		name += ":functional:" + hamt32.TableOptionName[tblOpt]
+	} else {
+		name += ":transient:" + hamt32.TableOptionName[tblOpt]
+	}
+
+	log.Println(name, b.N)
+
+	var h, err = buildHamt32(name, kvs, functional, tblOpt)
+	if err != nil {
+		log.Printf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt32.TableOptionName[tblOpt], err)
+		b.Fatalf("%s: failed buildHamt32(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt32.TableOptionName[tblOpt], err)
+	}
+
+	log.Printf("%s: b.N=%d", name, b.N)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var kv = kvs[i%len(kvs)]
+		var val, found = h.Get(kv.Key)
+		if !found {
+			b.Fatalf("Failed to find h.Get(%q)", kv.Key)
+		}
+
+		if val != kv.Val {
+			b.Fatalf("Retrieved val,%d != kv.Val,%d", val, kv.Val)
+		}
+	}
+}
+
+func BenchmarkHamt32_CalcHash(b *testing.B) {
+	runBenchmarkHamt32CalcHash(b, KVS)
+}
+
+func runBenchmarkHamt32CalcHash(b *testing.B, kvs []KeyVal) {
+	for i := 0; i < b.N; i++ {
+		hamt32.CalcHash(kvs[i%len(kvs)].Key)
+	}
+}
+
+func BenchmarkHamt32_CalcHashFromStringInterface(b *testing.B) {
+	runBenchmarkHamt32CalcHashFomStringInterface(b, KVS)
+}
+
+func copyByteSlice(key []byte) []byte {
+	var k = make([]byte, len(key))
+	copy(k, key)
+	return k
+}
+
+func toByteSlice(v interface{}) ([]byte, error) {
+	switch x := v.(type) {
+	case string:
+		return []byte(x), nil
+	default:
+		var buf bytes.Buffer
+		var err = binary.Write(&buf, binary.LittleEndian, v)
+		if err != nil {
+			err = errors.Wrapf(err, "Failed to encode %q to bytes.Buffer", v)
+			return nil, err
+		}
+		return copyByteSlice(buf.Bytes()), nil
+	}
+}
+
+func runBenchmarkHamt32CalcHashFomStringInterface(
+	b *testing.B,
+	kvs []KeyVal,
+) {
+	var keys = make([]interface{}, len(kvs))
+	for i, kv := range kvs {
+		keys[i] = string(kv.Key)
+	}
+
+	log.Println("b.N = ", b.N)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var key, err = toByteSlice(keys[i%len(keys)])
+		if err != nil {
+			log.Panic(err)
+		}
+		hamt32.CalcHash(key)
+	}
+}
+
+func BenchmarkHamt32_stringToByteSlice(b *testing.B) {
+	var keys = make([]string, len(KVS))
+	for i, kv := range KVS {
+		keys[i] = string(kv.Key)
+	}
+
+	log.Println("b.N = ", b.N)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_ = []byte(keys[i%len(keys)])
+		//bs := []byte(keys[i%len(keys)])
+		//if len(bs) < 0 {
+		//	panic("never")
+		//}
+	}
+}
+
+//func BenchmarkHamt32_noop(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		i = i / 1
+//	}
+//}

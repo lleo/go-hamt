@@ -490,7 +490,7 @@ func runBenchmarkHamt64Del(
 		name += ":transient:" + hamt64.TableOptionName[tblOpt]
 	}
 
-	var h, err = buildHamt64(name, kvs[:TwoKK], functional, tblOpt)
+	var h, err = buildHamt64(name, kvs, functional, tblOpt)
 	if err != nil {
 		log.Printf("%s: failed buildHamt64(%q, kvs:%d, %t, %s) => %s", name,
 			name, len(kvs), functional,

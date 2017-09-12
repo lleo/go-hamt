@@ -3,11 +3,13 @@ package hamt64_test
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"log"
 	"testing"
 	"time"
 
 	"github.com/lleo/go-hamt/hamt64"
+	"github.com/pkg/errors"
 )
 
 func TestBuild64(t *testing.T) {
@@ -490,7 +492,7 @@ func runBenchmarkHamt64Del(
 		name += ":transient:" + hamt64.TableOptionName[tblOpt]
 	}
 
-	var h, err = buildHamt64(name, kvs[:TwoKK], functional, tblOpt)
+	var h, err = buildHamt64(name, kvs, functional, tblOpt)
 	if err != nil {
 		log.Printf("%s: failed buildHamt64(%q, kvs:%d, %t, %s) => %s", name,
 			name, len(kvs), functional,
@@ -676,3 +678,134 @@ func runBenchmarkHamt64Stats(
 
 	log.Printf("%s: stats=%+v;\n", name, stats)
 }
+
+func BenchmarkHamt64_GetN30(b *testing.B) {
+	runBenchmarkHamt64GetN(b, KVS[:30], Functional, TableOption)
+}
+
+func BenchmarkHamt64_GetN1000(b *testing.B) {
+	runBenchmarkHamt64GetN(b, KVS[:1000], Functional, TableOption)
+}
+
+func BenchmarkHamt64_GetN10000(b *testing.B) {
+	runBenchmarkHamt64GetN(b, KVS[:10000], Functional, TableOption)
+}
+
+func runBenchmarkHamt64GetN(
+	b *testing.B,
+	kvs []KeyVal,
+	functional bool,
+	tblOpt int,
+) {
+	var name = "runBenchmarkHamt64GetN"
+	if Functional {
+		name += ":functional:" + hamt64.TableOptionName[tblOpt]
+	} else {
+		name += ":transient:" + hamt64.TableOptionName[tblOpt]
+	}
+
+	log.Println(name, b.N)
+
+	var h, err = buildHamt64(name, kvs, functional, tblOpt)
+	if err != nil {
+		log.Printf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt64.TableOptionName[tblOpt], err)
+		b.Fatalf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt64.TableOptionName[tblOpt], err)
+	}
+
+	log.Printf("%s: b.N=%d", name, b.N)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var kv = kvs[i%len(kvs)]
+		var val, found = h.Get(kv.Key)
+		if !found {
+			b.Fatalf("Failed to find h.Get(%q)", kv.Key)
+		}
+
+		if val != kv.Val {
+			b.Fatalf("Retrieved val,%d != kv.Val,%d", val, kv.Val)
+		}
+	}
+}
+
+func BenchmarkHamt64_CalcHash(b *testing.B) {
+	runBenchmarkHamt64CalcHash(b, KVS)
+}
+
+func runBenchmarkHamt64CalcHash(b *testing.B, kvs []KeyVal) {
+	for i := 0; i < b.N; i++ {
+		hamt64.CalcHash(kvs[i%len(kvs)].Key)
+	}
+}
+
+func BenchmarkHamt64_CalcHashFromStringInterface(b *testing.B) {
+	runBenchmarkHamt64CalcHashFomStringInterface(b, KVS)
+}
+
+func copyByteSlice(key []byte) []byte {
+	var k = make([]byte, len(key))
+	copy(k, key)
+	return k
+}
+
+func toByteSlice(v interface{}) ([]byte, error) {
+	switch x := v.(type) {
+	case string:
+		return []byte(x), nil
+	default:
+		var buf bytes.Buffer
+		var err = binary.Write(&buf, binary.LittleEndian, v)
+		if err != nil {
+			err = errors.Wrapf(err, "Failed to encode %q to bytes.Buffer", v)
+			return nil, err
+		}
+		return copyByteSlice(buf.Bytes()), nil
+	}
+}
+
+func runBenchmarkHamt64CalcHashFomStringInterface(
+	b *testing.B,
+	kvs []KeyVal,
+) {
+	var keys = make([]interface{}, len(kvs))
+	for i, kv := range kvs {
+		keys[i] = string(kv.Key)
+	}
+
+	log.Println("b.N = ", b.N)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var key, err = toByteSlice(keys[i%len(keys)])
+		if err != nil {
+			log.Panic(err)
+		}
+		hamt64.CalcHash(key)
+	}
+}
+
+func BenchmarkHamt64_stringToByteSlice(b *testing.B) {
+	var keys = make([]string, len(KVS))
+	for i, kv := range KVS {
+		keys[i] = string(kv.Key)
+	}
+
+	log.Println("b.N = ", b.N)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_ = []byte(keys[i%len(keys)])
+		//bs := []byte(keys[i%len(keys)])
+		//if len(bs) < 0 {
+		//	panic("never")
+		//}
+	}
+}
+
+//func BenchmarkHamt64_noop(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		i = i / 1
+//	}
+//}

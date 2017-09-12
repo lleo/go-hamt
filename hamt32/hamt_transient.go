@@ -62,7 +62,7 @@ func (h *HamtTransient) DeepCopy() Hamt {
 	var nh = new(HamtTransient)
 	nh.root = *h.root.deepCopy().(*fixedTable)
 	nh.nentries = h.nentries
-	nh.grade = h.grade
+	nh.nograde = h.nograde
 	nh.startFixed = h.startFixed
 	return nh
 }
@@ -82,7 +82,7 @@ func (h *HamtTransient) Put(key []byte, val interface{}) (Hamt, bool) {
 	// Doing this in newFlatLeaf() and leafI.put().
 	//key = copyKey(key)
 
-	var hv = calcHashVal(key)
+	var hv = hashVal(CalcHash(key))
 	var path, leaf, idx = h.find(hv)
 
 	var curTable = path.pop()
@@ -91,7 +91,7 @@ func (h *HamtTransient) Put(key []byte, val interface{}) (Hamt, bool) {
 
 	if leaf == nil {
 		//check if upgrading allowed & if it is required
-		if h.grade && curTable != &h.root &&
+		if !h.nograde && curTable != &h.root &&
 			(curTable.nentries()+1) == UpgradeThreshold {
 			var newTable = upgradeToFixedTable(
 				curTable.Hash(), depth, curTable.entries())
@@ -143,7 +143,7 @@ func (h *HamtTransient) Del(key []byte) (Hamt, interface{}, bool) {
 
 	//key = copyKey(key)
 
-	var hv = calcHashVal(key)
+	var hv = hashVal(CalcHash(key))
 	var path, leaf, idx = h.find(hv)
 
 	var curTable = path.pop()
@@ -179,7 +179,7 @@ func (h *HamtTransient) Del(key []byte) (Hamt, interface{}, bool) {
 				}
 
 				// else check if downgrade allowed and required
-			case h.grade && curTable.nentries() == DowngradeThreshold:
+			case !h.nograde && curTable.nentries() == DowngradeThreshold:
 				//when nentries is decr'd it will be <DowngradeThreshold
 				var newTable = downgradeToSparseTable(
 					curTable.Hash(), depth, curTable.entries())

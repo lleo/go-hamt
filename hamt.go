@@ -124,17 +124,17 @@ import (
 )
 
 const (
-	// FixedTable indicates the structure should use fixedTables ONLY.
+	// HybridTables indicates the structure should use sparseTable
+	// initially, then upgrad to fixedTable when appropriate.
+	HybridTables = iota
+	// FixedTables indicates the structure should use fixedTables ONLY.
 	// This was intended to be for speed, as sparse tables use a software
 	// bitCount function to access individual cells.
-	FixedTables = iota
+	FixedTables
 	// SparseTables indicates the structure should use sparseTable's ONLY.
 	// This was intended just save space, but also seems to be faster; CPU cache
 	// locality maybe?
 	SparseTables
-	// HybridTables indicates the structure should use sparseTable
-	// initially, then upgrad to fixedTable when appropriate.
-	HybridTables
 )
 
 // TableOptionName is a lookup table to map the integer value of

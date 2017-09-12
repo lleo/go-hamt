@@ -20,11 +20,10 @@ type KeyVal struct {
 	Val interface{}
 }
 
-// 4 million & change
-var InitHamtNumKvsForPut = 1024 * 1024
-var InitHamtNumKvs = (2 * 1024 * 1024) + InitHamtNumKvsForPut
-var numKvs = InitHamtNumKvs + (4 * 1024)
-var TwoKK = 2 * 1024 * 1024
+var Mega = 1024 * 1024
+var InitHamtNumKvsForPut = 1 * Mega
+var TwoMega = 2 * Mega
+var numKvs = InitHamtNumKvsForPut + TwoMega // 3 * Mega
 var KVS []KeyVal
 
 var Functional bool

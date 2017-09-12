@@ -36,7 +36,7 @@ const maxIndex = IndexLimit - 1
 //
 // This conversion only happens if the Hamt structure has be constructed with
 // the HybridTables option.
-const DowngradeThreshold uint = IndexLimit * 3 / 8 //12 for NumIndexBits=5
+const DowngradeThreshold uint = IndexLimit / 2 //16 for NumIndexBits=5
 
 // UpgradeThreshold is the constant that sets the threshold for the size of a
 // table, such that when a table increases to the threshold size, the table is
@@ -44,7 +44,7 @@ const DowngradeThreshold uint = IndexLimit * 3 / 8 //12 for NumIndexBits=5
 //
 // This conversion only happens if the Hamt structure has be constructed with
 // the HybridTables option.
-const UpgradeThreshold uint = IndexLimit / 2 //16 for NumIndexBits=5
+const UpgradeThreshold uint = IndexLimit * 5 / 8 //20 for NumIndexBits=5
 
 // Configuration contants to be passed to `hamt32.New(int) *Hamt`.
 const (
