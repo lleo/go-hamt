@@ -6,10 +6,10 @@ import (
 )
 
 type fixedTable struct {
-	nodes    [IndexLimit]nodeI // 512; 32*16
-	depth    uint              // 8; amd64
-	nents    uint              // 8; amd64
-	hashPath hashVal           // 8
+	nodes    [IndexLimit]nodeI
+	depth    uint
+	nents    uint
+	hashPath hashVal
 }
 
 func (t *fixedTable) copy() tableI {
@@ -76,8 +76,7 @@ func createFixedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	} else { //idx1 == idx2
 		var node nodeI
 		if depth == maxDepth {
-			node = newCollisionLeaf(leaf1.Hash(),
-				append(leaf1.keyVals(), leaf2.keyVals()...))
+			node = newCollisionLeaf(append(leaf1.keyVals(), leaf2.keyVals()...))
 		} else {
 			node = createFixedTable(depth+1, leaf1, leaf2)
 		}
@@ -188,22 +187,26 @@ func (t *fixedTable) remove(idx uint) {
 	t.nents--
 }
 
-func (t *fixedTable) visit(fn visitFn, depth uint) uint {
-	fn(t)
+// visit executes the visitFn in pre-order traversal. If there is no node for
+// a given node slot, visit calls the visitFn on nil.
+//
+// The traversal stops if the visitFn function returns false.
+func (t *fixedTable) visit(fn visitFn) bool {
+	if !fn(t) {
+		return false
+	}
 
-	var maxDepth = depth + 1
 	for _, n := range t.nodes {
 		if n == nil {
 			fn(n)
 		} else {
-			var md = n.visit(fn, depth+1)
-			if md > maxDepth {
-				maxDepth = md
+			if !n.visit(fn) {
+				return false
 			}
 		}
 	}
 
-	return maxDepth
+	return true
 }
 
 func (t *fixedTable) iter() tableIterFunc {

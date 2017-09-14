@@ -1,7 +1,6 @@
 package hamt32
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 )
@@ -9,13 +8,11 @@ import (
 // implements nodeI
 // implements leafI
 type collisionLeaf struct {
-	hash hashVal
-	kvs  []KeyVal
+	kvs []KeyVal
 }
 
-func newCollisionLeaf(hv hashVal, kvs []KeyVal) *collisionLeaf {
+func newCollisionLeaf(kvs []KeyVal) *collisionLeaf {
 	var leaf = new(collisionLeaf)
-	leaf.hash = hv
 	leaf.kvs = append(leaf.kvs, kvs...)
 
 	//log.Println("newCollisionLeaf:", leaf)
@@ -25,13 +22,12 @@ func newCollisionLeaf(hv hashVal, kvs []KeyVal) *collisionLeaf {
 
 func (l *collisionLeaf) copy() *collisionLeaf {
 	var nl = new(collisionLeaf)
-	nl.hash = l.hash
 	nl.kvs = append(nl.kvs, l.kvs...)
 	return nl
 }
 
 func (l *collisionLeaf) Hash() hashVal {
-	return l.hash
+	return hashVal(l.kvs[0].Key.Hash())
 }
 
 func (l *collisionLeaf) String() string {
@@ -42,31 +38,29 @@ func (l *collisionLeaf) String() string {
 	var jkvstr = strings.Join(kvstrs, ",")
 
 	return fmt.Sprintf("collisionLeaf{hash:%s, kvs:[]KeyVal{%s}}",
-		l.hash, jkvstr)
+		hashVal(l.kvs[0].Key.Hash()), jkvstr)
 }
 
-func (l *collisionLeaf) get(key []byte) (interface{}, bool) {
+func (l *collisionLeaf) get(key KeyI) (interface{}, bool) {
 	for _, kv := range l.kvs {
-		if bytes.Equal(kv.Key, key) {
+		if kv.Key.Equals(key) {
 			return kv.Val, true
 		}
 	}
 	return nil, false
 }
 
-func (l *collisionLeaf) put(key []byte, val interface{}) (leafI, bool) {
+func (l *collisionLeaf) put(key KeyI, val interface{}) (leafI, bool) {
 	for i, kv := range l.kvs {
-		if bytes.Equal(kv.Key, key) {
+		if kv.Key.Equals(key) {
 			var nl = l.copy()
 			nl.kvs[i].Val = val
 			return nl, false //replaced
 		}
 	}
 	var nl = new(collisionLeaf)
-	nl.hash = l.hash
 	nl.kvs = make([]KeyVal, len(l.kvs)+1)
 	copy(nl.kvs, l.kvs)
-	//key = copyKey(key) //guarantee internal keys are not externally modifiable
 	nl.kvs[len(l.kvs)] = KeyVal{key, val}
 	//nl.kvs = append(nl.kvs, append(l.kvs, KeyVal{k, v})...)
 
@@ -75,13 +69,13 @@ func (l *collisionLeaf) put(key []byte, val interface{}) (leafI, bool) {
 	return nl, true // k,v was added
 }
 
-func (l *collisionLeaf) del(key []byte) (leafI, interface{}, bool) {
+func (l *collisionLeaf) del(key KeyI) (leafI, interface{}, bool) {
 	for i, kv := range l.kvs {
-		if bytes.Equal(kv.Key, key) {
+		if kv.Key.Equals(key) {
 			var nl leafI
 			if len(l.kvs) == 2 {
 				// think about the index... it works, really :)
-				nl = newFlatLeaf(l.hash, l.kvs[1-i].Key, l.kvs[1-i].Val)
+				nl = newFlatLeaf(l.kvs[1-i].Key, l.kvs[1-i].Val)
 			} else {
 				var cl = l.copy()
 				cl.kvs = append(cl.kvs[:i], cl.kvs[i+1:]...)
@@ -102,7 +96,6 @@ func (l *collisionLeaf) keyVals() []KeyVal {
 	//return l.kvs
 }
 
-func (l *collisionLeaf) visit(fn visitFn, depth uint) uint {
-	fn(l)
-	return depth //remove cuz this method is called with depth+1
+func (l *collisionLeaf) visit(fn visitFn) bool {
+	return fn(l)
 }

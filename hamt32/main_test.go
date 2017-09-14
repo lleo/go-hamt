@@ -15,8 +15,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+//
+// START HERE: need to rectify KeyVal here in main_test.go & hamt32_test.go
+// then I need to fixup go-hamt/main_test.go & go-hamt/hamt{64,32}_test.go
+//
 type KeyVal struct {
-	Key []byte
+	Key hamt32.KeyI
 	Val interface{}
 }
 
@@ -29,7 +33,7 @@ var KVS []KeyVal
 var Functional bool
 var TableOption int
 
-var Hamt32 hamt32.Hamt
+var Hamt64 hamt32.Hamt
 
 var Inc = stringutil.Lower.Inc
 
@@ -144,7 +148,7 @@ func TestMain(m *testing.M) {
 	// // that we needed to build up the heap. This worked a little bit, I don't
 	// // know if it is really worth it or should I do more.
 	// StartTime["fat throw away"] = time.Now()
-	// foo, _ := buildHamt32("foo", KVS, true, hamt32.FixedTables)
+	// foo, _ := buildHamt64("foo", KVS, true, hamt32.FixedTables)
 	// _, found := foo.Get([]byte("aaa"))
 	// if !found {
 	// 	panic("foo failed to find \"aaa\"")
@@ -165,7 +169,7 @@ func TestMain(m *testing.M) {
 				os.Exit(xit)
 			}
 
-			Hamt32 = nil
+			Hamt64 = nil
 
 			Functional = true
 			log.Printf("TestMain: Functional=%t;\n", Functional)
@@ -210,7 +214,7 @@ func TestMain(m *testing.M) {
 				os.Exit(xit)
 			}
 
-			Hamt32 = nil
+			Hamt64 = nil
 			Functional = true
 
 			log.Printf("TestMain: Functional=%t;\n", Functional)
@@ -256,7 +260,7 @@ func executeAll(m *testing.M) int {
 		os.Exit(1)
 	}
 
-	Hamt32 = nil
+	Hamt64 = nil
 	TableOption = hamt32.FixedTables
 
 	log.Printf("TestMain: TableOption=%s;\n",
@@ -270,7 +274,7 @@ func executeAll(m *testing.M) int {
 		os.Exit(1)
 	}
 
-	Hamt32 = nil
+	Hamt64 = nil
 	TableOption = hamt32.HybridTables
 
 	log.Printf("TestMain: TableOption=%s;\n",
@@ -291,7 +295,7 @@ func buildKeyVals(prefix string, num int) []KeyVal {
 	var s = "aaa"
 
 	for i := 0; i < num; i++ {
-		kvs[i] = KeyVal{[]byte(s), i}
+		kvs[i] = KeyVal{hamt32.StringKey(s), i}
 		s = Inc(s)
 	}
 
@@ -299,24 +303,24 @@ func buildKeyVals(prefix string, num int) []KeyVal {
 	return kvs
 }
 
-func buildHamt32(
+func buildHamt64(
 	prefix string,
 	kvs []KeyVal,
 	functional bool,
 	opt int,
 ) (hamt32.Hamt, error) {
-	var name = fmt.Sprintf("%s-buildHamt32-%d", prefix, len(kvs))
+	var name = fmt.Sprintf("%s-buildHamt64-%d", prefix, len(kvs))
 
 	StartTime[name] = time.Now()
 	var h = hamt32.New(functional, opt)
-	for _, bv := range kvs {
-		var bs = bv.Key
-		var v = bv.Val
+	for _, kv := range kvs {
+		var k = kv.Key
+		var v = kv.Val
 
 		var inserted bool
-		h, inserted = h.Put(bs, v)
+		h, inserted = h.Put(k, v)
 		if !inserted {
-			return nil, fmt.Errorf("failed to Put(%q, %v)", string(bs), v)
+			return nil, fmt.Errorf("failed to Put(%q, %d)", k, v)
 		}
 	}
 	RunTime[name] = time.Since(StartTime[name])

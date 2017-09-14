@@ -1,7 +1,6 @@
 package hamt32
 
 import (
-	"context"
 	"unsafe"
 )
 
@@ -89,15 +88,29 @@ type Hamt interface {
 	ToFunctional() Hamt
 	ToTransient() Hamt
 	DeepCopy() Hamt
-	Get([]byte) (interface{}, bool)
-	Put([]byte, interface{}) (Hamt, bool)
-	Del([]byte) (Hamt, interface{}, bool)
+	Get(KeyI) (interface{}, bool)
+	Put(KeyI, interface{}) (Hamt, bool)
+	Del(KeyI) (Hamt, interface{}, bool)
 	String() string
 	LongString(string) string
-	Iter() IterFunc
-	IterChan(chanBufLen int, ctx context.Context) <-chan KeyVal
+	Range(func(KeyI, interface{}) bool)
 	Stats() *Stats
-	visit(visitFn) uint
+	walk(visitFn) bool
+}
+
+// KeyI interface specifies the two methods a datatype must implement to be used
+// as a key in this HAMT implementation.
+//
+// For provided types that popular data structures used as keys in other Map
+// implementations see the ByteSliceKey, StringKey, Int{32,64}Key, and
+// Uint{32,64}Key types provided by this library.
+//
+// For instace, you can map "foo"->"bar" with a call to
+// h.Put(hamt32.StringKey("foo"), "bar") .
+//
+type KeyI interface {
+	Hash() uint64
+	Equals(KeyI) bool
 }
 
 // New constructs a datastucture that implements the Hamt interface.
@@ -155,6 +168,6 @@ type Stats struct {
 	// CollisionLeafs is the total count of collisionLeaf structs in the HAMT.
 	CollisionLeafs uint
 
-	// KeyVals is the total number of Key,Val pairs int the HAMT.
+	// KeyVals is the total number of KeyVal pairs int the HAMT.
 	KeyVals uint
 }

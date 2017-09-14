@@ -80,8 +80,7 @@ func createSparseTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 	} else { //idx1 == idx2
 		var node nodeI
 		if depth == maxDepth {
-			node = newCollisionLeaf(leaf1.Hash(),
-				append(leaf1.keyVals(), leaf2.keyVals()...))
+			node = newCollisionLeaf(append(leaf1.keyVals(), leaf2.keyVals()...))
 		} else {
 			node = createSparseTable(depth+1, leaf1, leaf2)
 		}
@@ -228,18 +227,32 @@ func (t *sparseTable) remove(idx uint) {
 	t.nodeMap.Unset(idx)
 }
 
-func (t *sparseTable) visit(fn visitFn, depth uint) uint {
-	fn(t)
-
-	var maxDepth = depth + 1
-	for _, n := range t.nodes {
-		var md = n.visit(fn, depth+1)
-		if md > maxDepth {
-			maxDepth = md
-		}
+// visit executes the visitFn in pre-order traversal. If there is no node for
+// a given node, slot visit calls the visitFn on nil.
+//
+// The traversal stops if the visitFn function returns false.
+func (t *sparseTable) visit(fn visitFn) bool {
+	if !fn(t) {
+		return false
 	}
 
-	return maxDepth
+	for idx := uint(0); idx < IndexLimit; idx++ {
+		var n = t.get(idx)
+		if n == nil {
+			fn(n)
+		} else {
+			if !n.visit(fn) {
+				return false
+			}
+		}
+	}
+	//for _, n := range t.nodes {
+	//	if !n.visit(fn) {
+	//		return false
+	//	}
+	//}
+
+	return true
 }
 
 func (t *sparseTable) iter() tableIterFunc {

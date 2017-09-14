@@ -15,8 +15,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+//
+// START HERE: need to rectify KeyVal here in main_test.go & hamt64_test.go
+// then I need to fixup go-hamt/main_test.go & go-hamt/hamt{64,32}_test.go
+//
 type KeyVal struct {
-	Key []byte
+	Key hamt64.KeyI
 	Val interface{}
 }
 
@@ -291,7 +295,7 @@ func buildKeyVals(prefix string, num int) []KeyVal {
 	var s = "aaa"
 
 	for i := 0; i < num; i++ {
-		kvs[i] = KeyVal{[]byte(s), i}
+		kvs[i] = KeyVal{hamt64.StringKey(s), i}
 		s = Inc(s)
 	}
 
@@ -309,14 +313,14 @@ func buildHamt64(
 
 	StartTime[name] = time.Now()
 	var h = hamt64.New(functional, opt)
-	for _, bv := range kvs {
-		var bs = bv.Key
-		var v = bv.Val
+	for _, kv := range kvs {
+		var k = kv.Key
+		var v = kv.Val
 
 		var inserted bool
-		h, inserted = h.Put(bs, v)
+		h, inserted = h.Put(k, v)
 		if !inserted {
-			return nil, fmt.Errorf("failed to Put(%q, %v)", string(bs), v)
+			return nil, fmt.Errorf("failed to Put(%q, %d)", k, v)
 		}
 	}
 	RunTime[name] = time.Since(StartTime[name])

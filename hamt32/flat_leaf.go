@@ -1,43 +1,31 @@
 package hamt32
 
 import (
-	"bytes"
 	"fmt"
 )
 
 type flatLeaf struct {
-	hash hashVal
-	key  []byte
-	val  interface{}
+	key KeyI
+	val interface{}
 }
 
-func newFlatLeaf(hv hashVal, key []byte, val interface{}) *flatLeaf {
+func newFlatLeaf(key KeyI, val interface{}) *flatLeaf {
 	var fl = new(flatLeaf)
-	fl.hash = hv
-	fl.key = copyKey(key) //guarantee internal keys are not externally modifiable
-	//fl.key = key
-	fl.val = val
-	return fl
-}
-
-func newFlatLeafNoCopy(hv hashVal, key []byte, val interface{}) *flatLeaf {
-	var fl = new(flatLeaf)
-	fl.hash = hv
 	fl.key = key
 	fl.val = val
 	return fl
 }
 
 func (l *flatLeaf) Hash() hashVal {
-	return l.hash
+	return hashVal(l.key.Hash())
 }
 
 func (l *flatLeaf) String() string {
 	return fmt.Sprintf("flatLeaf{key: %s, val: %v}", l.key, l.val)
 }
 
-func (l *flatLeaf) get(key []byte) (interface{}, bool) {
-	if bytes.Equal(l.key, key) {
+func (l *flatLeaf) get(key KeyI) (interface{}, bool) {
+	if l.key.Equals(key) {
 		return l.val, true
 	}
 	return nil, false
@@ -48,22 +36,21 @@ func (l *flatLeaf) get(key []byte) (interface{}, bool) {
 // indicating if the key,val was added ontop of the current leaf key,val or if
 // the val mearly replaced the current key's val (either way a new leafI is
 // allocated and returned).
-func (l *flatLeaf) put(key []byte, val interface{}) (leafI, bool) {
+func (l *flatLeaf) put(key KeyI, val interface{}) (leafI, bool) {
 	var nl leafI
 
-	if bytes.Equal(l.key, key) {
+	if l.key.Equals(key) {
 		// maintain functional behavior of flatLeaf
-		nl = newFlatLeafNoCopy(l.hash, l.key, val)
+		nl = newFlatLeaf(l.key, val)
 		return nl, false //replaced
 	}
 
-	key = copyKey(key) //guarantee internal keys are not externally modifiable
-	nl = newCollisionLeaf(l.hash, []KeyVal{{l.key, l.val}, {key, val}})
+	nl = newCollisionLeaf([]KeyVal{{l.key, l.val}, {key, val}})
 	return nl, true // key,val was added
 }
 
-func (l *flatLeaf) del(key []byte) (leafI, interface{}, bool) {
-	if bytes.Equal(l.key, key) {
+func (l *flatLeaf) del(key KeyI) (leafI, interface{}, bool) {
+	if l.key.Equals(key) {
 		return nil, l.val, true //found
 	}
 	return l, nil, false //not found
@@ -73,7 +60,6 @@ func (l *flatLeaf) keyVals() []KeyVal {
 	return []KeyVal{{l.key, l.val}}
 }
 
-func (l *flatLeaf) visit(fn visitFn, depth uint) uint {
-	fn(l)
-	return depth
+func (l *flatLeaf) visit(fn visitFn) bool {
+	return fn(l)
 }

@@ -7,7 +7,7 @@ import (
 // KeyVal is a simple struct used to transfer lists ([]KeyVal) from one
 // function to another.
 type KeyVal struct {
-	Key []byte
+	Key KeyI
 	Val interface{}
 }
 

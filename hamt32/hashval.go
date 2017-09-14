@@ -10,26 +10,26 @@ import (
 )
 
 // hashVal sets the numberer of bits of the hash value by being an alias to
-// uint32 and establishes a type we can hang methods, like Index(), off of.
-type hashVal uint32
+// uint64 and establishes a type we can hang methods, like Index(), off of.
+type hashVal uint64
 
-// CalcHash deterministically calculates a randomized uint32 of a given byte
+// CalcHash deterministically calculates a randomized uint64 of a given byte
 // slice .
-func CalcHash(bs []byte) uint32 {
+func CalcHash(bs []byte) uint64 {
 	return fold(hash(bs), remainder)
 }
 
-func hash(bs []byte) uint32 {
-	var h = fnv.New32()
+func hash(bs []byte) uint64 {
+	var h = fnv.New64()
 	h.Write(bs)
-	return h.Sum32()
+	return h.Sum64()
 }
 
-func mask(size uint) uint32 {
-	return uint32(1<<size) - 1
+func mask(size uint) uint64 {
+	return uint64(1<<size) - 1
 }
 
-func fold(hash uint32, rem uint) uint32 {
+func fold(hash uint64, rem uint) uint64 {
 	return (hash >> (hashSize - rem)) ^ (hash & mask(hashSize-rem))
 }
 
@@ -68,7 +68,7 @@ func (hv hashVal) hashPath(depth uint) hashVal {
 // buildHashPath method adds a idx at depth level of the hashPath. Given a
 // hash Path = "/11/07/13" and you call hashPath.buildHashPath(23, 3) the method
 // will return hashPath "/11/07/13/23". hashPath is shown here in the string
-// representation, but the real value is hashVal (aka uint32).
+// representation, but the real value is hashVal (aka uint64).
 func (hv hashVal) buildHashPath(idx, depth uint) hashVal {
 	_ = assertOn && assert(idx < DepthLimit, "buildHashPath: idx > maxIndex")
 

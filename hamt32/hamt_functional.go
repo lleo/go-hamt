@@ -1,9 +1,5 @@
 package hamt32
 
-import (
-	"context"
-)
-
 // HamtFunctional is the data structure which the Funcitonal Hamt methods are
 // called upon. In fact it is identical to the HamtTransient data structure and
 // all the table and leaf data structures it uses are the same ones used by the
@@ -114,7 +110,7 @@ func (h *HamtFunctional) persist(oldTable, newTable tableI, path tableStack) {
 // Get retrieves the value related to the key in the HamtFunctional
 // data structure. It also return a bool to indicate the value was found. This
 // allows you to store nil values in the HamtFunctional data structure.
-func (h *HamtFunctional) Get(key []byte) (interface{}, bool) {
+func (h *HamtFunctional) Get(key KeyI) (interface{}, bool) {
 	return h.hamtBase.Get(key)
 }
 
@@ -122,14 +118,13 @@ func (h *HamtFunctional) Get(key []byte) (interface{}, bool) {
 // returns a bool indicating if a new pair was added (true) or if the value
 // replaced (false). Either way it returns a new HamtFunctional data structure
 // containing the modification.
-func (h *HamtFunctional) Put(key []byte, val interface{}) (Hamt, bool) {
+func (h *HamtFunctional) Put(key KeyI, val interface{}) (Hamt, bool) {
 	// Doing this in newFlatLeaf() and leafI.put().
-	//key = copyKey(key)
 
 	var nh = new(HamtFunctional)
 	*nh = *h
 
-	var hv = hashVal(CalcHash(key))
+	var hv = hashVal(key.Hash())
 
 	var path, leaf, idx = h.find(hv)
 
@@ -141,14 +136,14 @@ func (h *HamtFunctional) Put(key []byte, val interface{}) (Hamt, bool) {
 	if curTable == &h.root {
 		//copying all h.root into nh.root already done in *nh = *h
 		if leaf == nil {
-			nh.root.insert(idx, newFlatLeaf(hv, key, val))
+			nh.root.insert(idx, newFlatLeaf(key, val))
 			added = true
 		} else {
 			var node nodeI
 			if leaf.Hash() == hv {
 				node, added = leaf.put(key, val)
 			} else {
-				node = nh.createTable(depth+1, leaf, newFlatLeaf(hv, key, val))
+				node = nh.createTable(depth+1, leaf, newFlatLeaf(key, val))
 				added = true
 			}
 
@@ -165,7 +160,7 @@ func (h *HamtFunctional) Put(key []byte, val interface{}) (Hamt, bool) {
 				newTable = curTable.copy()
 			}
 
-			newTable.insert(idx, newFlatLeaf(hv, key, val))
+			newTable.insert(idx, newFlatLeaf(key, val))
 			added = true
 		} else {
 			newTable = curTable.copy()
@@ -174,7 +169,7 @@ func (h *HamtFunctional) Put(key []byte, val interface{}) (Hamt, bool) {
 			if leaf.Hash() == hv {
 				node, added = leaf.put(key, val)
 			} else {
-				node = nh.createTable(depth+1, leaf, newFlatLeaf(hv, key, val))
+				node = nh.createTable(depth+1, leaf, newFlatLeaf(key, val))
 				added = true
 			}
 
@@ -200,14 +195,12 @@ func (h *HamtFunctional) Put(key []byte, val interface{}) (Hamt, bool) {
 //
 // If key was not found, then the bool is false, the value is nil, and the Hamt
 // value is the original HamtFunctional data structure pointer.
-func (h *HamtFunctional) Del(key []byte) (Hamt, interface{}, bool) {
+func (h *HamtFunctional) Del(key KeyI) (Hamt, interface{}, bool) {
 	if h.IsEmpty() {
 		return h, nil, false
 	}
 
-	//key = copyKey(key)
-
-	var hv = hashVal(CalcHash(key))
+	var hv = hashVal(key.Hash())
 	var path, leaf, idx = h.find(hv)
 
 	if leaf == nil {
@@ -272,60 +265,26 @@ func (h *HamtFunctional) LongString(indent string) string {
 	return "HamtFunctional{\n" + indent + h.hamtBase.LongString(indent) + "\n}"
 }
 
-// visit walks the Hamt executing the VisitFn then recursing into each of
-// the subtrees in order. It returns the maximum table depth it reached in
-// any branch.
-func (h *HamtFunctional) visit(fn visitFn) uint {
-	return h.hamtBase.visit(fn)
+// walk traverses the Trie in pre-order traversal. For a Trie this is also a
+// in-order traversal of all leaf nodes.
+//
+// walk returns false if the traversal stopped early.
+func (h *HamtFunctional) walk(fn visitFn) bool {
+	return h.hamtBase.walk(fn)
 }
 
-// Stats walks the Hamt using Visit and populates a Stats data struture which
-// it return.
+// Range executes the given function for every KeyVal pair in the Hamt. KeyVal
+// pairs are visited in a seeminly random order.
+//
+// Note: we say "seemingly random order", becuase there is a predictable order
+// based on the hash value of the Keys and the insertion order of the KeyVal
+// pairs, so you cannot reley on the "randomness" of the order of KeyVal pairs.
+func (h *HamtFunctional) Range(fn func(KeyI, interface{}) bool) {
+	h.hamtBase.Range(fn)
+}
+
+// Stats walks the Hamt in a pre-order traversal and populates a Stats data
+// struture which it returns.
 func (h *HamtFunctional) Stats() *Stats {
 	return h.hamtBase.Stats()
-}
-
-// Iter returns an IterFunc to be called repeatedly to iterate over the Hamt.
-// No modifications should happend during the lifetime of the iterator. For
-// HamtFunctional this is not a problem, but for HamtTransient this constaint
-// is up to the Library user.
-//
-//    var next = h.Iter()
-//    for kv, ok:= next(); ok; kv, ok = next() {
-//        doSomething(kv)
-//    }
-//
-func (h *HamtFunctional) Iter() IterFunc {
-	return h.hamtBase.Iter()
-}
-
-// IterChan returns a readable channel. Calls to this method spawn an
-// underlying goroutine that feeds the returned channel.
-//
-// The chanBufLen argument allows you to set the size of the channel's buffer
-// for faster iteration.
-//
-// The context argument is allowed to be nil.
-//
-// The underlying goroutine is leaked if the iterator channel is not read till
-// it is exhausted and the context is not canceled.
-//
-//    var ctx, cancel = context.WithCancel(context.Background())
-//    defer cancel()
-//    var iterChan = h.IterChan(20, ctx)
-//    for kv := range iterChan {
-//        if shouldStop(kv) {
-//            break //would leak the goroutine except for the deferred cancel
-//        }
-//    }
-// Or
-//    for kv:= range h.IterChan(20, nil) {
-//        doSomething(kv)
-//    }
-//
-func (h *HamtFunctional) IterChan(
-	chanBufLen int,
-	ctx context.Context,
-) <-chan KeyVal {
-	return h.hamtBase.IterChan(chanBufLen, ctx)
 }

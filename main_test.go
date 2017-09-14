@@ -22,7 +22,7 @@ type StrVal struct {
 }
 
 type KeyVal struct {
-	Key []byte
+	Key string
 	Val int
 }
 
@@ -271,7 +271,7 @@ func buildKeyVals(prefix string, num int) []KeyVal {
 	var s = "aaa"
 
 	for i := 0; i < num; i++ {
-		kvs[i] = KeyVal{[]byte(s), i}
+		kvs[i] = KeyVal{s, i}
 		s = Inc(s)
 	}
 
@@ -306,13 +306,13 @@ func buildHamt32(
 	StartTime[name] = time.Now()
 	var h = hamt32.New(functional, opt)
 	for _, sv := range kvs {
-		var b = sv.Key
+		var k = hamt32.StringKey(sv.Key)
 		var v = sv.Val
 
 		var inserted bool
-		h, inserted = h.Put(b, v)
+		h, inserted = h.Put(k, v)
 		if !inserted {
-			return nil, fmt.Errorf("failed to Put(%q, %v)", string(b), v)
+			return nil, fmt.Errorf("failed to Put(%q, %v)", string(k), v)
 		}
 	}
 	RunTime[name] = time.Since(StartTime[name])
@@ -331,13 +331,13 @@ func buildHamt64(
 	StartTime[name] = time.Now()
 	var h = hamt64.New(functional, opt)
 	for _, sv := range kvs {
-		var b = sv.Key
+		var k = hamt64.StringKey(sv.Key)
 		var v = sv.Val
 
 		var inserted bool
-		h, inserted = h.Put(b, v)
+		h, inserted = h.Put(k, v)
 		if !inserted {
-			return nil, fmt.Errorf("failed to Put(%q, %v)", string(b), v)
+			return nil, fmt.Errorf("failed to Put(%q, %v)", string(k), v)
 		}
 	}
 	RunTime[name] = time.Since(StartTime[name])

@@ -2,18 +2,22 @@ package hamt32
 
 import "fmt"
 
+// visitFn will be passed a value for every slot in the Hamt; this includes
+// leafs, tables, and nil.
+type visitFn func(nodeI) bool
+
 type nodeI interface {
 	Hash() hashVal
 	String() string
-	visit(fn visitFn, depth uint) uint
+	visit(fn visitFn) bool
 }
 
 type leafI interface {
 	nodeI
 
-	get(key []byte) (interface{}, bool)
-	put(key []byte, val interface{}) (leafI, bool)
-	del(key []byte) (leafI, interface{}, bool)
+	get(key KeyI) (interface{}, bool)
+	put(key KeyI, val interface{}) (leafI, bool)
+	del(key KeyI) (leafI, interface{}, bool)
 	keyVals() []KeyVal
 }
 
