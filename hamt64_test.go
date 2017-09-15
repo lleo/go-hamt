@@ -408,6 +408,57 @@ func runBenchmarkHamt64Del(
 	}
 }
 
+func BenchmarkHamt64Range(b *testing.B) {
+	runBenchmarkHamt64Range(b, KVS, Functional, TableOption)
+}
+
+func runBenchmarkHamt64Range(
+	b *testing.B,
+	kvs []KeyVal,
+	functional bool,
+	tblOpt int,
+) {
+	var name = "BenchmarkHamt64Range"
+	if Functional {
+		name += ":functional:" + hamt64.TableOptionName[tblOpt]
+	} else {
+		name += ":transient:" + hamt64.TableOptionName[tblOpt]
+	}
+
+	var h, err = buildHamt64(name, kvs, functional, tblOpt)
+	if err != nil {
+		log.Printf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt64.TableOptionName[tblOpt], err)
+		b.Fatalf("%s: failed buildHamt64(%q, kvs#%d, %t, %s) => %s", name,
+			name, len(kvs), false, hamt64.TableOptionName[tblOpt], err)
+	}
+
+	var kvMap = make(map[string]int, len(KVS))
+	for _, kv := range KVS {
+		kvMap[kv.Key] = kv.Val
+	}
+
+	log.Printf("%s: b.N=%d", name, b.N)
+	b.ResetTimer()
+
+	var i int
+	h.Range(func(k hamt64.KeyI, v interface{}) bool {
+		var sk = string(k.(hamt64.StringKey))
+		var iv = v.(int)
+
+		if kvMap[sk] != iv {
+			b.Fatalf("%s: for kvMap[%q],%d != i,%d", name, kvMap[sk], iv)
+		}
+
+		i++
+		if i >= b.N {
+			return false //stop Range()
+		}
+
+		return true
+	})
+}
+
 func BenchmarkHamt64Stats(b *testing.B) {
 	runBenchmarkHamt64Stats(b, KVS, Functional, TableOption)
 }
