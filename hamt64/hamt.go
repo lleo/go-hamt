@@ -4,13 +4,13 @@ import (
 	"unsafe"
 )
 
-// hashSize is the size of hashVal in bits.
-const hashSize uint = uint(unsafe.Sizeof(hashVal(0))) * 8
+// hashSize is the size of HashVal in bits.
+const hashSize uint = uint(unsafe.Sizeof(HashVal(0))) * 8
 
 // NumIndexBits is the fundemental setting for the Hamt data structure. Given
-// that we hash every key ([]byte slice) into a hashVal, that hashVal must be
+// that we hash every key ([]byte slice) into a HashVal, that HashVal must be
 // split into DepthLimit number of NumIndexBits wide parts. Each of those parts
-// of the hashVal is used as the index into the given level of the Hamt tree.
+// of the HashVal is used as the index into the given level of the Hamt tree.
 // So NumIndexBits determines how wide and how deep the Hamt can be.
 const NumIndexBits uint = 5
 

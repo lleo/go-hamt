@@ -9,7 +9,7 @@ type fixedTable struct {
 	nodes    [IndexLimit]nodeI
 	depth    uint
 	nents    uint
-	hashPath hashVal
+	hashPath HashVal
 }
 
 func (t *fixedTable) copy() tableI {
@@ -87,7 +87,7 @@ func createFixedTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 }
 
 func upgradeToFixedTable(
-	hashPath hashVal,
+	hashPath HashVal,
 	depth uint,
 	ents []tableEntry,
 ) *fixedTable {
@@ -105,7 +105,7 @@ func upgradeToFixedTable(
 
 // Hash returns an incomplete Hash of this table. Any levels past it's current
 // depth should be zero.
-func (t *fixedTable) Hash() hashVal {
+func (t *fixedTable) Hash() HashVal {
 	return t.hashPath
 }
 

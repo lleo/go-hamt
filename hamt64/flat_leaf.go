@@ -16,8 +16,8 @@ func newFlatLeaf(key KeyI, val interface{}) *flatLeaf {
 	return fl
 }
 
-func (l *flatLeaf) Hash() hashVal {
-	return hashVal(l.key.Hash())
+func (l *flatLeaf) Hash() HashVal {
+	return HashVal(l.key.Hash())
 }
 
 func (l *flatLeaf) String() string {

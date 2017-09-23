@@ -13,7 +13,7 @@ const sparseTableInitCap int = 2
 type sparseTable struct {
 	nodes    []nodeI // 24
 	depth    uint    // 8; amd64 cpu
-	hashPath hashVal // 8
+	hashPath HashVal // 8
 	nodeMap  bitmap  // 4
 }
 
@@ -97,7 +97,7 @@ func createSparseTable(depth uint, leaf1 leafI, leaf2 *flatLeaf) tableI {
 // The ents []tableEntry slice is guaranteed to be in order from lowest idx to
 // highest. tableI.entries() also adhears to this contract.
 func downgradeToSparseTable(
-	hashPath hashVal,
+	hashPath HashVal,
 	depth uint,
 	ents []tableEntry,
 ) *sparseTable {
@@ -117,7 +117,7 @@ func downgradeToSparseTable(
 
 // Hash returns an incomplete Hash of this table. Any levels past it's current
 // depth should be zero.
-func (t *sparseTable) Hash() hashVal {
+func (t *sparseTable) Hash() HashVal {
 	return t.hashPath
 }
 

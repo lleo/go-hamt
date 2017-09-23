@@ -7,7 +7,7 @@ import "fmt"
 type visitFn func(nodeI) bool
 
 type nodeI interface {
-	Hash() hashVal
+	Hash() HashVal
 	String() string
 	visit(fn visitFn) bool
 }

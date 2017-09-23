@@ -63,7 +63,7 @@ func (h *hamtBase) DeepCopy() Hamt {
 // 	return k
 // }
 
-func (h *hamtBase) find(hv hashVal) (tableStack, leafI, uint) {
+func (h *hamtBase) find(hv HashVal) (tableStack, leafI, uint) {
 	var curTable tableI = &h.root
 
 	var path = newTableSlice() //conforms to tableStack interface
@@ -93,7 +93,7 @@ DepthIter:
 
 // This is slower due to extraneous code and allocations in find().
 //func (h *hamtBase) Get(key KeyI) (interface{}, bool) {
-//	var hv = hashVal(CalcHash(key))
+//	var hv = HashVal(CalcHash(key))
 //	var _, leaf, _ = h.find(hv)
 //
 //	if leaf == nil {
@@ -111,7 +111,7 @@ func (h *hamtBase) Get(key KeyI) (interface{}, bool) {
 		return nil, false
 	}
 
-	var hv = hashVal(key.Hash())
+	var hv = HashVal(key.Hash())
 	var curTable tableI = &h.root
 
 	var val interface{}
