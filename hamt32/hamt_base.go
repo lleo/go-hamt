@@ -93,7 +93,7 @@ DepthIter:
 
 // This is slower due to extraneous code and allocations in find().
 //func (h *hamtBase) Get(key KeyI) (interface{}, bool) {
-//	var hv = HashVal(CalcHash(key))
+//	var hv = CalcHash(key)
 //	var _, leaf, _ = h.find(hv)
 //
 //	if leaf == nil {
@@ -111,7 +111,7 @@ func (h *hamtBase) Get(key KeyI) (interface{}, bool) {
 		return nil, false
 	}
 
-	var hv = HashVal(key.Hash())
+	var hv = key.Hash()
 	var curTable tableI = &h.root
 
 	var val interface{}

@@ -4,7 +4,7 @@ import "bytes"
 
 type ByteSliceKey []byte
 
-func (bsk ByteSliceKey) Hash() uint64 {
+func (bsk ByteSliceKey) Hash() HashVal {
 	return CalcHash(bsk)
 }
 
@@ -18,7 +18,7 @@ func (bsk ByteSliceKey) Equals(K KeyI) bool {
 
 type StringKey string
 
-func (sk StringKey) Hash() uint64 {
+func (sk StringKey) Hash() HashVal {
 	return CalcHash([]byte(sk))
 }
 
@@ -32,7 +32,7 @@ func (sk StringKey) Equals(K KeyI) bool {
 
 type Int32Key int32
 
-func (ik Int32Key) Hash() uint64 {
+func (ik Int32Key) Hash() HashVal {
 	return CalcHash([]byte{
 		byte(0xff000000 & uint32(ik) >> 3 * 8),
 		byte(0x00ff0000 & uint32(ik) >> 2 * 8),
@@ -51,7 +51,7 @@ func (ik Int32Key) Equals(K KeyI) bool {
 
 type Int64Key int64
 
-func (ik Int64Key) Hash() uint64 {
+func (ik Int64Key) Hash() HashVal {
 	return CalcHash([]byte{
 		byte(0xff00000000000000 & uint64(ik) >> 7 * 8),
 		byte(0x00ff000000000000 & uint64(ik) >> 6 * 8),
@@ -74,7 +74,7 @@ func (ik Int64Key) Equals(K KeyI) bool {
 
 type Uint32Key int32
 
-func (ik Uint32Key) Hash() uint64 {
+func (ik Uint32Key) Hash() HashVal {
 	return CalcHash([]byte{
 		byte(0xff000000 & uint32(ik) >> 3 * 8),
 		byte(0x00ff0000 & uint32(ik) >> 2 * 8),
@@ -93,7 +93,7 @@ func (ik Uint32Key) Equals(K KeyI) bool {
 
 type Uint64Key int64
 
-func (ik Uint64Key) Hash() uint64 {
+func (ik Uint64Key) Hash() HashVal {
 	return CalcHash([]byte{
 		byte(0xff00000000000000 & uint64(ik) >> 7 * 8),
 		byte(0x00ff000000000000 & uint64(ik) >> 6 * 8),

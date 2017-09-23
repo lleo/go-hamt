@@ -79,7 +79,7 @@ func (h *HamtTransient) Get(key KeyI) (interface{}, bool) {
 func (h *HamtTransient) Put(key KeyI, val interface{}) (Hamt, bool) {
 	// Doing this in newFlatLeaf() and leafI.put().
 
-	var hv = HashVal(key.Hash())
+	var hv = key.Hash()
 	var path, leaf, idx = h.find(hv)
 
 	var curTable = path.pop()
@@ -138,7 +138,7 @@ func (h *HamtTransient) Del(key KeyI) (Hamt, interface{}, bool) {
 		return h, nil, false
 	}
 
-	var hv = HashVal(key.Hash())
+	var hv = key.Hash()
 	var path, leaf, idx = h.find(hv)
 
 	var curTable = path.pop()

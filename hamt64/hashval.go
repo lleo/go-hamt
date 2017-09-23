@@ -15,8 +15,8 @@ type HashVal uint64
 
 // CalcHash deterministically calculates a randomized uint64 of a given byte
 // slice .
-func CalcHash(bs []byte) uint64 {
-	return fold(hash(bs), remainder)
+func CalcHash(bs []byte) HashVal {
+	return HashVal(fold(hash(bs), remainder))
 }
 
 func hash(bs []byte) uint64 {

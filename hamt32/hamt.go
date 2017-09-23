@@ -109,7 +109,7 @@ type Hamt interface {
 // h.Put(hamt32.StringKey("foo"), "bar") .
 //
 type KeyI interface {
-	Hash() uint64
+	Hash() HashVal
 	Equals(KeyI) bool
 }
 

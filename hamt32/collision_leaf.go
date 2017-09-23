@@ -27,7 +27,7 @@ func (l *collisionLeaf) copy() *collisionLeaf {
 }
 
 func (l *collisionLeaf) Hash() HashVal {
-	return HashVal(l.kvs[0].Key.Hash())
+	return l.kvs[0].Key.Hash()
 }
 
 func (l *collisionLeaf) String() string {
@@ -38,7 +38,7 @@ func (l *collisionLeaf) String() string {
 	var jkvstr = strings.Join(kvstrs, ",")
 
 	return fmt.Sprintf("collisionLeaf{hash:%s, kvs:[]KeyVal{%s}}",
-		HashVal(l.kvs[0].Key.Hash()), jkvstr)
+		l.kvs[0].Key.Hash(), jkvstr)
 }
 
 func (l *collisionLeaf) get(key KeyI) (interface{}, bool) {

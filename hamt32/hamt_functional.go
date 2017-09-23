@@ -124,7 +124,7 @@ func (h *HamtFunctional) Put(key KeyI, val interface{}) (Hamt, bool) {
 	var nh = new(HamtFunctional)
 	*nh = *h
 
-	var hv = HashVal(key.Hash())
+	var hv = key.Hash()
 
 	var path, leaf, idx = h.find(hv)
 
@@ -200,7 +200,7 @@ func (h *HamtFunctional) Del(key KeyI) (Hamt, interface{}, bool) {
 		return h, nil, false
 	}
 
-	var hv = HashVal(key.Hash())
+	var hv = key.Hash()
 	var path, leaf, idx = h.find(hv)
 
 	if leaf == nil {
