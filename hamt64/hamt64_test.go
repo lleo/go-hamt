@@ -18,15 +18,15 @@ func TestBuild64(t *testing.T) {
 
 	var h = hamt64.New(Functional, TableOption)
 
-	for _, kv := range KVS[:30] {
+	for _, kv := range KVS64[:30] {
 		var k = kv.Key
 		var v = kv.Val
 
 		var inserted bool
 		h, inserted = h.Put(k, v)
 		if !inserted {
-			log.Printf("%s: failed to insert s=%q, v=%d", name, k.(hamt64.StringKey), v)
-			t.Fatalf("%s: failed to insert s=%q, v=%d", name, k.(hamt64.StringKey), v)
+			log.Printf("%s: failed to insert s=%q, v=%d", name, k, v)
+			t.Fatalf("%s: failed to insert s=%q, v=%d", name, k, v)
 		}
 
 		//log.Print(h.LongString(""))
@@ -34,12 +34,12 @@ func TestBuild64(t *testing.T) {
 }
 
 func TestHamt64Put(t *testing.T) {
-	runTestHamt64Put(t, KVS, Functional, TableOption)
+	runTestHamt64Put(t, KVS64, Functional, TableOption)
 }
 
 func runTestHamt64Put(
 	t *testing.T,
-	kvs []KeyVal,
+	kvs []hamt64.KeyVal,
 	functional bool,
 	tblOpt int,
 ) {
@@ -59,19 +59,19 @@ func runTestHamt64Put(
 		var inserted bool
 		Hamt64, inserted = Hamt64.Put(k, v)
 		if !inserted {
-			log.Printf("%s: failed to Hamt64.Put(%q, %v)", name, k.(hamt64.StringKey), v)
-			t.Fatalf("%s: failed to Hamt64.Put(%q, %v)", name, k.(hamt64.StringKey), v)
+			log.Printf("%s: failed to Hamt64.Put(%q, %v)", name, k, v)
+			t.Fatalf("%s: failed to Hamt64.Put(%q, %v)", name, k, v)
 		}
 
 		var val, found = Hamt64.Get(k)
 		if !found {
-			log.Printf("%s: failed to Hamt64.Get(%q)", name, k.(hamt64.StringKey))
+			log.Printf("%s: failed to Hamt64.Get(%q)", name, k)
 			//log.Print(Hamt64.LongString(""))
-			t.Fatalf("%s: failed to Hamt64.Get(%q)", name, k.(hamt64.StringKey))
+			t.Fatalf("%s: failed to Hamt64.Get(%q)", name, k)
 		}
 		if val != v {
-			log.Printf("%s: returned val,%d != expected v,%d for s=%q", name, val, v, k.(hamt64.StringKey))
-			t.Fatalf("%s: returned val,%d != expected v,%d for s=%q", name, val, v, k.(hamt64.StringKey))
+			log.Printf("%s: returned val,%d != expected v,%d for s=%q", name, val, v, k)
+			t.Fatalf("%s: returned val,%d != expected v,%d for s=%q", name, val, v, k)
 		}
 	}
 	RunTime[name] = time.Since(StartTime[name])
@@ -83,12 +83,12 @@ func runTestHamt64Put(
 }
 
 func TestHamt64Get(t *testing.T) {
-	runTestHamt64Get(t, KVS, Functional, TableOption)
+	runTestHamt64Get(t, KVS64, Functional, TableOption)
 }
 
 func runTestHamt64Get(
 	t *testing.T,
-	kvs []KeyVal,
+	kvs []hamt64.KeyVal,
 	functional bool,
 	tblOpt int,
 ) {
@@ -124,25 +124,25 @@ func runTestHamt64Get(
 
 		var val, found = Hamt64.Get(k)
 		if !found {
-			log.Printf("%s: Failed to Hamt64.Get(%q)", name, k.(hamt64.StringKey))
+			log.Printf("%s: Failed to Hamt64.Get(%q)", name, k)
 			log.Print(Hamt64.LongString(""))
-			t.Fatalf("%s: Failed to Hamt64.Get(%q)", name, k.(hamt64.StringKey))
+			t.Fatalf("%s: Failed to Hamt64.Get(%q)", name, k)
 		}
 		if val != v {
-			log.Printf("%s: retrieved val,%d != expected v,%d for s=%q", name, val, v, k.(hamt64.StringKey))
-			t.Fatalf("%s: retrieved val,%d != expected v,%d for s=%q", name, val, v, k.(hamt64.StringKey))
+			log.Printf("%s: retrieved val,%d != expected v,%d for s=%q", name, val, v, k)
+			t.Fatalf("%s: retrieved val,%d != expected v,%d for s=%q", name, val, v, k)
 		}
 	}
 	RunTime[name] = time.Since(StartTime[name])
 }
 
 func TestHamt64Range(t *testing.T) {
-	runTestHamt64Range(t, KVS, Functional, TableOption)
+	runTestHamt64Range(t, KVS64, Functional, TableOption)
 }
 
 func runTestHamt64Range(
 	t *testing.T,
-	kvs []KeyVal,
+	kvs []hamt64.KeyVal,
 	functional bool,
 	tblOpt int,
 ) {
@@ -173,25 +173,22 @@ func runTestHamt64Range(
 
 	StartTime[name] = time.Now()
 
-	var kvMap = make(map[string]int, len(KVS))
-	for _, kv := range KVS {
-		kvMap[string(kv.Key.(hamt64.StringKey))] = kv.Val.(int)
+	var kvMap = make(map[hamt64.KeyI]interface{}, len(kvs))
+	for _, kv := range kvs {
+		kvMap[kv.Key] = kv.Val
 	}
 
-	// Reconstruct KVS as tmpKVS
 	var totalKvs int
 	var visitKeyVal = func(k hamt64.KeyI, v interface{}) bool {
-		var s = string(k.(hamt64.StringKey))
-		var i = v.(int)
-		var expected_i, found = kvMap[s]
+		var expectedVal, found = kvMap[k]
 
 		if !found {
-			t.Fatalf("%s: Range(visitKeyVal) KeyI.(StringKey),%q not in kvMap",
-				name, s)
+			t.Fatalf("%s: Range(visitKeyVal) KeyI,%v not in kvMap",
+				name, k)
 		}
 
-		if expected_i != i {
-			t.Fatalf("%s: Range(visitKeyVal) for KeyI.(StringKey),%q found i,%d != expected_i,%d", name, s, i, expected_i)
+		if expectedVal != v {
+			t.Fatalf("%s: Range(visitKeyVal) for KeyI,%v found v,%d != expectedVal,%d", name, k, v, expectedVal)
 		}
 
 		totalKvs++
@@ -199,20 +196,20 @@ func runTestHamt64Range(
 	}
 	Hamt64.Range(visitKeyVal)
 
-	if totalKvs != len(KVS) {
-		t.Fatalf("%s: Range(visitKeyVal) found totalKvs,%d != len(KVS),%d",
-			name, totalKvs, len(KVS))
+	if totalKvs != len(kvs) {
+		t.Fatalf("%s: Range(visitKeyVal) found totalKvs,%d != len(kvs),%d",
+			name, totalKvs, len(kvs))
 	}
 	RunTime[name] = time.Since(StartTime[name])
 }
 
 func TestHamt64Del(t *testing.T) {
-	runTestHamt64Del(t, KVS, Functional, TableOption)
+	runTestHamt64Del(t, KVS64, Functional, TableOption)
 }
 
 func runTestHamt64Del(
 	t *testing.T,
-	kvs []KeyVal,
+	kvs []hamt64.KeyVal,
 	functional bool,
 	tblOpt int,
 ) {
@@ -250,25 +247,25 @@ func runTestHamt64Del(
 		var deleted bool
 		Hamt64, val, deleted = Hamt64.Del(k)
 		if !deleted {
-			log.Printf("%s: Failed to Hamt64.Del(%q)", name, k.(hamt64.StringKey))
+			log.Printf("%s: Failed to Hamt64.Del(%q)", name, k)
 			log.Print(Hamt64.LongString(""))
-			t.Fatalf("%s: Failed to Hamt64.Del(%q)", name, k.(hamt64.StringKey))
+			t.Fatalf("%s: Failed to Hamt64.Del(%q)", name, k)
 		}
 		if val != v {
-			log.Printf("%s: retrieved val,%d != expected v,%d for s=%q", name, val, v, k.(hamt64.StringKey))
-			t.Fatalf("%s: retrieved val,%d != expected v,%d for s=%q", name, val, v, k.(hamt64.StringKey))
+			log.Printf("%s: retrieved val,%d != expected v,%d for s=%q", name, val, v, k)
+			t.Fatalf("%s: retrieved val,%d != expected v,%d for s=%q", name, val, v, k)
 		}
 	}
 	RunTime[name] = time.Since(StartTime[name])
 }
 
 func BenchmarkHamt64Get(b *testing.B) {
-	runBenchmarkHamt64Get(b, KVS, Functional, TableOption)
+	runBenchmarkHamt64Get(b, KVS64, Functional, TableOption)
 }
 
 func runBenchmarkHamt64Get(
 	b *testing.B,
-	kvs []KeyVal,
+	kvs []hamt64.KeyVal,
 	functional bool,
 	tblOpt int,
 ) {
@@ -297,24 +294,24 @@ func runBenchmarkHamt64Get(
 
 		var val, found = BenchHamt64Get.Get(k)
 		if !found {
-			log.Printf("%s: Failed to h.Get(%q)", name, k.(hamt64.StringKey))
+			log.Printf("%s: Failed to h.Get(%q)", name, k)
 			//log.Print(h.LongString(""))
-			b.Fatalf("%s: Failed to h.Get(%q)", name, k.(hamt64.StringKey))
+			b.Fatalf("%s: Failed to h.Get(%q)", name, k)
 		}
 		if val != v {
-			log.Printf("%s: retrieved val,%d != expected v,%d for s=%q", name, val, v, k.(hamt64.StringKey))
-			b.Fatalf("%s: retrieved val,%d != expected v,%d for s=%q", name, val, v, k.(hamt64.StringKey))
+			log.Printf("%s: retrieved val,%d != expected v,%d for s=%q", name, val, v, k)
+			b.Fatalf("%s: retrieved val,%d != expected v,%d for s=%q", name, val, v, k)
 		}
 	}
 }
 
 func BenchmarkHamt64Put(b *testing.B) {
-	runBenchmarkHamt64Put(b, KVS, Functional, TableOption)
+	runBenchmarkHamt64Put(b, KVS64, Functional, TableOption)
 }
 
 func runBenchmarkHamt64Put(
 	b *testing.B,
-	kvs []KeyVal,
+	kvs []hamt64.KeyVal,
 	functional bool,
 	tblOpt int,
 ) {
@@ -352,20 +349,20 @@ func runBenchmarkHamt64Put(
 		var added bool
 		h, added = h.Put(k, v)
 		if !added {
-			log.Printf("%s: failed to h.Put(%q, %d)", name, k.(hamt64.StringKey), v)
+			log.Printf("%s: failed to h.Put(%q, %d)", name, k, v)
 			//log.Print(h.LongString(""))
-			b.Fatalf("%s: failed to h.Put(%q, %d)", name, k.(hamt64.StringKey), v)
+			b.Fatalf("%s: failed to h.Put(%q, %d)", name, k, v)
 		}
 	}
 }
 
 func BenchmarkHamt64Del(b *testing.B) {
-	runBenchmarkHamt64Del(b, KVS, Functional, TableOption)
+	runBenchmarkHamt64Del(b, KVS64, Functional, TableOption)
 }
 
 func runBenchmarkHamt64Del(
 	b *testing.B,
-	kvs []KeyVal,
+	kvs []hamt64.KeyVal,
 	functional bool,
 	tblOpt int,
 ) {
@@ -397,9 +394,9 @@ func runBenchmarkHamt64Del(
 		var val interface{}
 		h, val, deleted = h.Del(k)
 		if !deleted {
-			log.Printf("%s: failed to h.Del(%q)", name, k.(hamt64.StringKey))
+			log.Printf("%s: failed to h.Del(%q)", name, k)
 			//log.Print(h.LongString(""))
-			b.Fatalf("%s: failed to h.Del(%q)", name, k.(hamt64.StringKey))
+			b.Fatalf("%s: failed to h.Del(%q)", name, k)
 		}
 		if val != v {
 			log.Printf("%s: failed val,%d != v,%d", name, val, v)
@@ -409,12 +406,12 @@ func runBenchmarkHamt64Del(
 }
 
 func BenchmarkHamt64Range(b *testing.B) {
-	runBenchmarkHamt64Range(b, KVS, Functional, TableOption)
+	runBenchmarkHamt64Range(b, KVS64, Functional, TableOption)
 }
 
 func runBenchmarkHamt64Range(
 	b *testing.B,
-	kvs []KeyVal,
+	kvs []hamt64.KeyVal,
 	functional bool,
 	tblOpt int,
 ) {
@@ -433,9 +430,9 @@ func runBenchmarkHamt64Range(
 			name, len(kvs), false, hamt64.TableOptionName[tblOpt], err)
 	}
 
-	var kvMap = make(map[string]int, len(KVS))
-	for _, kv := range KVS {
-		kvMap[string(kv.Key.(hamt64.StringKey))] = kv.Val.(int)
+	var kvMap = make(map[hamt64.KeyI]interface{}, len(kvs))
+	for _, kv := range kvs {
+		kvMap[kv.Key] = kv.Val
 	}
 
 	log.Printf("%s: b.N=%d", name, b.N)
@@ -443,11 +440,8 @@ func runBenchmarkHamt64Range(
 
 	var i int
 	h.Range(func(k hamt64.KeyI, v interface{}) bool {
-		var sk = string(k.(hamt64.StringKey))
-		var iv = v.(int)
-
-		if kvMap[sk] != iv {
-			b.Fatalf("%s: for kvMap[%q],%d != i,%d", name, kvMap[sk], iv)
+		if kvMap[k] != v {
+			b.Fatalf("%s: for kvMap[%q],%d != v,%d", name, k, kvMap[k], v)
 		}
 
 		i++
@@ -460,12 +454,12 @@ func runBenchmarkHamt64Range(
 }
 
 func BenchmarkHamt64Stats(b *testing.B) {
-	runBenchmarkHamt64Stats(b, KVS, Functional, TableOption)
+	runBenchmarkHamt64Stats(b, KVS64, Functional, TableOption)
 }
 
 func runBenchmarkHamt64Stats(
 	b *testing.B,
-	kvs []KeyVal,
+	kvs []hamt64.KeyVal,
 	functional bool,
 	tblOpt int,
 ) {
@@ -496,20 +490,28 @@ func runBenchmarkHamt64Stats(
 }
 
 func BenchmarkHamt64_GetN30(b *testing.B) {
-	runBenchmarkHamt64GetN(b, KVS[:30], Functional, TableOption)
+	runBenchmarkHamt64GetN(b, KVS64[:30], Functional, TableOption)
 }
 
-func BenchmarkHamt64_GetN1000(b *testing.B) {
-	runBenchmarkHamt64GetN(b, KVS[:1000], Functional, TableOption)
+func BenchmarkHamt64_GetN1K(b *testing.B) {
+	runBenchmarkHamt64GetN(b, KVS64[:1000], Functional, TableOption)
 }
 
-func BenchmarkHamt64_GetN10000(b *testing.B) {
-	runBenchmarkHamt64GetN(b, KVS[:10000], Functional, TableOption)
+func BenchmarkHamt64_GetN10K(b *testing.B) {
+	runBenchmarkHamt64GetN(b, KVS64[:10000], Functional, TableOption)
+}
+
+func BenchmarkHamt64_GetN100K(b *testing.B) {
+	runBenchmarkHamt64GetN(b, KVS64[:100000], Functional, TableOption)
+}
+
+func BenchmarkHamt64_GetN1M(b *testing.B) {
+	runBenchmarkHamt64GetN(b, KVS64[:1000000], Functional, TableOption)
 }
 
 func runBenchmarkHamt64GetN(
 	b *testing.B,
-	kvs []KeyVal,
+	kvs []hamt64.KeyVal,
 	functional bool,
 	tblOpt int,
 ) {
