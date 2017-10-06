@@ -11,16 +11,13 @@ import (
 	"unsafe"
 
 	"github.com/lleo/go-hamt/hamt32"
+	"github.com/lleo/hamt/hamt32/castable"
 	"github.com/lleo/stringutil"
 	"github.com/pkg/errors"
 )
 
-//
-// START HERE: need to rectify KeyVal here in main_test.go & hamt32_test.go
-// then I need to fixup go-hamt/main_test.go & go-hamt/hamt{64,32}_test.go
-//
-type KeyVal struct {
-	Key hamt32.KeyI
+type StrVal struct {
+	Str string
 	Val interface{}
 }
 
@@ -28,7 +25,8 @@ var Mega = 1024 * 1024
 var InitHamtNumKvsForPut = 1 * Mega
 var TwoMega = 2 * Mega
 var numKvs = InitHamtNumKvsForPut + TwoMega // 3 * Mega
-var KVS []KeyVal
+var SVS []StrVal
+var KVS64 []hamt32.KeyVal
 
 var Functional bool
 var TableOption int
@@ -120,7 +118,8 @@ func TestMain(m *testing.M) {
 
 	log.Println("TestMain: and so it begins...")
 
-	KVS = buildKeyVals("TestMain", numKvs)
+	SVS = buildStrVals("TestMain", numKvs)
+	KVS64 = svs2kvs64("TestMain", SVS, castable.CastStringKey)
 
 	log.Printf("TestMain: NumIndexBits=%d\n", hamt32.NumIndexBits)
 	fmt.Printf("TestMain: NumIndexBits=%d\n", hamt32.NumIndexBits)
@@ -287,16 +286,34 @@ func executeAll(m *testing.M) int {
 	return xit
 }
 
-func buildKeyVals(prefix string, num int) []KeyVal {
-	var name = fmt.Sprintf("%s-buildKeyVals-%d", prefix, num)
+func buildStrVals(prefix string, num int) []StrVal {
+	var name = fmt.Sprintf("%s-buildStrVals-%d", prefix, num)
 	StartTime[name] = time.Now()
 
-	var kvs = make([]KeyVal, num)
+	var kvs = make([]StrVal, num)
 	var s = "aaa"
 
 	for i := 0; i < num; i++ {
-		kvs[i] = KeyVal{hamt32.StringKey(s), i}
+		kvs[i] = StrVal{s, i}
 		s = Inc(s)
+	}
+
+	RunTime[name] = time.Since(StartTime[name])
+	return kvs
+}
+
+func svs2kvs64(
+	prefix string,
+	svs []StrVal,
+	fn func(string) hamt32.KeyI,
+) []hamt32.KeyVal {
+	var name = fmt.Sprintf("%s-svs2kvs64-%d", prefix, len(svs))
+	StartTime[name] = time.Now()
+
+	var kvs = make([]hamt32.KeyVal, len(svs))
+
+	for i, sv := range svs {
+		kvs[i] = hamt32.KeyVal{fn(sv.Str), sv.Val}
 	}
 
 	RunTime[name] = time.Since(StartTime[name])
@@ -305,7 +322,7 @@ func buildKeyVals(prefix string, num int) []KeyVal {
 
 func buildHamt64(
 	prefix string,
-	kvs []KeyVal,
+	kvs []hamt32.KeyVal,
 	functional bool,
 	opt int,
 ) (hamt32.Hamt, error) {
