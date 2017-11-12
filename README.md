@@ -23,13 +23,13 @@ This results in a simpler API and no external dependency.
 ## What is a HAMT?
 
 HAMT stands for Hash Array Mapped Trie. That spells it out clearly right? Ok,
-not so much. A HAMT is an in-menory Key/Value data structure  with some really
+not so much. A HAMT is an in-memory Key/Value data structure with some really
 cool features. The first feature is that we implement it as a tree with a
 reasonably large and fixed branching factor; thereby making it a pretty flat
 tree. The killer feature is that the tree has a maximum depth, resulting in a
-O(1) Search and Modify speeds. That is O(1) with out a giant constant factor.
+O(1) Search and Modify speeds. That is O(1) without a giant constant factor.
 
-HAMT make this happen by first hashing the []bute slice  into either a 32bit or
+HAMT make this happen by first hashing the []byte slice  into either a 32bit or
 64bit hash value. We then split this hash value up into a fixed number of parts.
 Each part now becomes the index into the Array we use for interior nodes of the
 tree. Lastly, we only use enough parts of the hash value to find a free node to
@@ -37,11 +37,11 @@ store the value into; this is why it is called a Trie. So now we have a wide
 tree with a maximum depth where we only use enough of the parts of hash value to
 find a free spot to store the leaf; That is what makes a HAMT O(1) and fast.
 
-In our implementation we use the FNV hashing algorithm. It is fast and provides
+In our implementation, we use the FNV hashing algorithm. It is fast and provides
 good randomness and that is all we need from it.
 
 Also we choose to split the 32bit or 64bit hash value into 5bit values. 5bit
-values means the tree will have a branching factor of 32 and a maximum depth of
+values mean the tree will have a branching factor of 32 and a maximum depth of
 6 for a 32bit hash value (hamt32) and 12 for a 64bit hash value (hamt64). You
 may be noticing that 5 does not go into 32 nor 64 cleanly. That is not a problem
 because we fold the extra 2 or 4 bits into the main hash value. Don't worry this
@@ -54,17 +54,17 @@ We implement HAMT data structure based on either a 32 bit or 64 bit hash value,
 hamt32 and hamt64 respectively.
 
 Further we can have the HAMT data structure behave in one of two modes,
-transient or functional. Tansient means we modify the data structures in-place.
+transient or functional. Transient means we modify the data structures in-place.
 Functional means persistent, which requires we use a copy-on-write strategy. In
-other words  we copy each data structure and modify the copy, then given the
+other words we copy each data structure and modify the copy, then given the
 parent now needs to be modified we follow this copy-on-write strategy up to a
-brand new HamtFunctional data structure. As you can imagine Tansient is faster
+brand new HamtFunctional data structure. As you can imagine Transient is faster
 than Functional. Suprisingly, the transient behavior is not that much faster
-than the persisent behavior, because the HAMT data structure is flat and wide.
+than the persistent behavior, because the HAMT data structure is flat and wide.
 
 However, you cannot easily share transient datastructures between threads
 safely; you would need to implement a locking strategy. Where with functional
-data structures you are guaranteed safty across threads.
+data structures you are guaranteed safety across threads.
 
 ### Functional (aka Immutable & Persistent)
 
