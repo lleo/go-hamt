@@ -184,21 +184,28 @@ func (h *hamtBase) walk(fn visitFn) bool {
 // pairs, so you cannot reley on the "randomness" of the order of KeyVal pairs.
 func (h *hamtBase) Range(fn func(KeyI, interface{}) bool) {
 	var visitLeafs = func(n nodeI) bool {
-		var keepOn = true
-
-		switch x := n.(type) {
-		case nil, tableI:
-			//ignore
-		case leafI:
-			for _, kv := range x.keyVals() {
+		if leaf, ok := n.(leafI); ok {
+			for _, kv := range leaf.keyVals() {
 				if !fn(kv.Key, kv.Val) {
-					keepOn = false
-					break //for
+					return false
 				}
 			}
 		}
+		return true
 
-		return keepOn
+		//var keepOn = true
+		//switch x := n.(type) {
+		//case nil, tableI:
+		//	//ignore
+		//case leafI:
+		//	for _, kv := range x.keyVals() {
+		//		if !fn(kv.Key, kv.Val) {
+		//			keepOn = false
+		//			break //for
+		//		}
+		//	}
+		//}
+		// return keepOn
 	} //end: visitLeafsFn = func(nodeI)
 
 	h.walk(visitLeafs)

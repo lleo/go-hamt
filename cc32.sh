@@ -29,10 +29,10 @@ mv hamt32/hamt64_test.go hamt32/hamt32_test.go
 #rm hamt32/bitcount64.go
 
 cd hamt32
-perl -pi -e 's/hamt64/hamt32/g' $pkg_files main_test.go hamt32_test.go
-perl -pi -d 's/uint64/uint32/g' $pkg_files main_test.go hamt32_test.go
+perl -pi -e 's/hamt64/hamt32/g' $pkg_files main_test.go
+perl -pi -d 's/uint64/uint32/g' $pkg_files main_test.go
 perl -pi -e 's/hamt64/hamt32/' $specific_files
-perl -pi -e 's/64/32/g' key/*.go
+perl -pi -e 's/64/32/g' key/*.go hamt32_test.go hashval.go 
 cd ..
 
 cp hamt64_test.go hamt32_test.go
