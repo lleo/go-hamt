@@ -11,7 +11,6 @@ import (
 	"unsafe"
 
 	"github.com/lleo/go-hamt/hamt32"
-	"github.com/lleo/hamt/hamt32/castable"
 	"github.com/lleo/stringutil"
 	"github.com/pkg/errors"
 )
@@ -26,12 +25,12 @@ var InitHamtNumKvsForPut = 1 * Mega
 var TwoMega = 2 * Mega
 var numKvs = InitHamtNumKvsForPut + TwoMega // 3 * Mega
 var SVS []StrVal
-var KVS64 []hamt32.KeyVal
+var KVS32 []hamt32.KeyVal
 
 var Functional bool
 var TableOption int
 
-var Hamt64 hamt32.Hamt
+var Hamt32 hamt32.Hamt
 
 var Inc = stringutil.Lower.Inc
 
@@ -119,7 +118,7 @@ func TestMain(m *testing.M) {
 	log.Println("TestMain: and so it begins...")
 
 	SVS = buildStrVals("TestMain", numKvs)
-	KVS64 = svs2kvs64("TestMain", SVS, castable.CastStringKey)
+	KVS32 = svs2kvs32("TestMain", SVS)
 
 	log.Printf("TestMain: NumIndexBits=%d\n", hamt32.NumIndexBits)
 	fmt.Printf("TestMain: NumIndexBits=%d\n", hamt32.NumIndexBits)
@@ -147,7 +146,7 @@ func TestMain(m *testing.M) {
 	// // that we needed to build up the heap. This worked a little bit, I don't
 	// // know if it is really worth it or should I do more.
 	// StartTime["fat throw away"] = time.Now()
-	// foo, _ := buildHamt64("foo", KVS, true, hamt32.FixedTables)
+	// foo, _ := buildHamt32("foo", KVS, true, hamt32.FixedTables)
 	// _, found := foo.Get([]byte("aaa"))
 	// if !found {
 	// 	panic("foo failed to find \"aaa\"")
@@ -164,11 +163,11 @@ func TestMain(m *testing.M) {
 
 			xit = executeAll(m)
 			if xit != 0 {
-				log.Printf("\n", RunTimes())
+				log.Printf("%s\n", RunTimes())
 				os.Exit(xit)
 			}
 
-			Hamt64 = nil
+			Hamt32 = nil
 
 			Functional = true
 			log.Printf("TestMain: Functional=%t;\n", Functional)
@@ -209,11 +208,11 @@ func TestMain(m *testing.M) {
 
 			xit = m.Run()
 			if xit != 0 {
-				log.Printf("\n", RunTimes())
+				log.Printf("%s\n", RunTimes())
 				os.Exit(xit)
 			}
 
-			Hamt64 = nil
+			Hamt32 = nil
 			Functional = true
 
 			log.Printf("TestMain: Functional=%t;\n", Functional)
@@ -259,7 +258,7 @@ func executeAll(m *testing.M) int {
 		os.Exit(1)
 	}
 
-	Hamt64 = nil
+	Hamt32 = nil
 	TableOption = hamt32.FixedTables
 
 	log.Printf("TestMain: TableOption=%s;\n",
@@ -273,7 +272,7 @@ func executeAll(m *testing.M) int {
 		os.Exit(1)
 	}
 
-	Hamt64 = nil
+	Hamt32 = nil
 	TableOption = hamt32.HybridTables
 
 	log.Printf("TestMain: TableOption=%s;\n",
@@ -302,31 +301,27 @@ func buildStrVals(prefix string, num int) []StrVal {
 	return kvs
 }
 
-func svs2kvs64(
-	prefix string,
-	svs []StrVal,
-	fn func(string) hamt32.KeyI,
-) []hamt32.KeyVal {
-	var name = fmt.Sprintf("%s-svs2kvs64-%d", prefix, len(svs))
+func svs2kvs32(prefix string, svs []StrVal) []hamt32.KeyVal {
+	var name = fmt.Sprintf("%s-svs2kvs32-%d", prefix, len(svs))
 	StartTime[name] = time.Now()
 
 	var kvs = make([]hamt32.KeyVal, len(svs))
 
 	for i, sv := range svs {
-		kvs[i] = hamt32.KeyVal{fn(sv.Str), sv.Val}
+		kvs[i] = hamt32.KeyVal{hamt32.StringKey(sv.Str), sv.Val}
 	}
 
 	RunTime[name] = time.Since(StartTime[name])
 	return kvs
 }
 
-func buildHamt64(
+func buildHamt32(
 	prefix string,
 	kvs []hamt32.KeyVal,
 	functional bool,
 	opt int,
 ) (hamt32.Hamt, error) {
-	var name = fmt.Sprintf("%s-buildHamt64-%d", prefix, len(kvs))
+	var name = fmt.Sprintf("%s-buildHamt32-%d", prefix, len(kvs))
 
 	StartTime[name] = time.Now()
 	var h = hamt32.New(functional, opt)

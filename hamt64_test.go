@@ -447,7 +447,7 @@ func runBenchmarkHamt64Range(
 		var iv = v.(int)
 
 		if kvMap[sk] != iv {
-			b.Fatalf("%s: for kvMap[%q],%d != i,%d", name, kvMap[sk], iv)
+			b.Fatalf("%s: for kvMap[%q],%d != i,%d", name, sk, kvMap[sk], iv)
 		}
 
 		i++

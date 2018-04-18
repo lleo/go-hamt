@@ -11,7 +11,6 @@ import (
 	"unsafe"
 
 	"github.com/lleo/go-hamt/hamt64"
-	"github.com/lleo/hamt/hamt64/castable"
 	"github.com/lleo/stringutil"
 	"github.com/pkg/errors"
 )
@@ -119,7 +118,7 @@ func TestMain(m *testing.M) {
 	log.Println("TestMain: and so it begins...")
 
 	SVS = buildStrVals("TestMain", numKvs)
-	KVS64 = svs2kvs64("TestMain", SVS, castable.CastStringKey)
+	KVS64 = svs2kvs64("TestMain", SVS)
 
 	log.Printf("TestMain: NumIndexBits=%d\n", hamt64.NumIndexBits)
 	fmt.Printf("TestMain: NumIndexBits=%d\n", hamt64.NumIndexBits)
@@ -164,7 +163,7 @@ func TestMain(m *testing.M) {
 
 			xit = executeAll(m)
 			if xit != 0 {
-				log.Printf("\n", RunTimes())
+				log.Printf("%s\n", RunTimes())
 				os.Exit(xit)
 			}
 
@@ -209,7 +208,7 @@ func TestMain(m *testing.M) {
 
 			xit = m.Run()
 			if xit != 0 {
-				log.Printf("\n", RunTimes())
+				log.Printf("%s\n", RunTimes())
 				os.Exit(xit)
 			}
 
@@ -302,18 +301,14 @@ func buildStrVals(prefix string, num int) []StrVal {
 	return kvs
 }
 
-func svs2kvs64(
-	prefix string,
-	svs []StrVal,
-	fn func(string) hamt64.KeyI,
-) []hamt64.KeyVal {
+func svs2kvs64(prefix string, svs []StrVal) []hamt64.KeyVal {
 	var name = fmt.Sprintf("%s-svs2kvs64-%d", prefix, len(svs))
 	StartTime[name] = time.Now()
 
 	var kvs = make([]hamt64.KeyVal, len(svs))
 
 	for i, sv := range svs {
-		kvs[i] = hamt64.KeyVal{fn(sv.Str), sv.Val}
+		kvs[i] = hamt64.KeyVal{hamt64.StringKey(sv.Str), sv.Val}
 	}
 
 	RunTime[name] = time.Since(StartTime[name])

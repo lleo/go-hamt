@@ -137,7 +137,7 @@ func TestMain(m *testing.M) {
 
 			xit = executeAll(m)
 			if xit != 0 {
-				log.Printf("\n", RunTimes())
+				log.Printf("%s\n", RunTimes())
 				os.Exit(xit)
 			}
 
@@ -183,7 +183,7 @@ func TestMain(m *testing.M) {
 
 			xit = m.Run()
 			if xit != 0 {
-				log.Printf("\n", RunTimes())
+				log.Printf("%s\n", RunTimes())
 				os.Exit(xit)
 			}
 
