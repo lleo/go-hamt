@@ -14,17 +14,6 @@ specific_files="bitmap.go key_types.go bitcount32.go bitcount32_pre19.go bitcoun
 
 test_files="main_test.go hamt64_test.go"
 
-#hamt64_test.go
-#key.go
-
-cd hamt64
-cp $pkg_files $specific_files $test_files ../hamt32/
-if [ ! -d ../hamt32/key ]; then
-    mkdir ../hamt32/key
-fi
-cp key/*.go ../hamt32/key/
-cd ..
-
 mv hamt32/hamt64_test.go hamt32/hamt32_test.go
 #rm hamt32/bitcount64.go
 
@@ -32,7 +21,8 @@ cd hamt32
 perl -pi -e 's/hamt64/hamt32/g' $pkg_files main_test.go
 perl -pi -d 's/uint64/uint32/g' $pkg_files main_test.go
 perl -pi -e 's/hamt64/hamt32/' $specific_files
-perl -pi -e 's/64/32/g' key/*.go hamt32_test.go hashval.go 
+perl -pi -e 's/64/32/g' hamt32_test.go hashval.go main_test.go
+
 cd ..
 
 cp hamt64_test.go hamt32_test.go
