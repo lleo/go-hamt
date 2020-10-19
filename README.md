@@ -12,7 +12,7 @@ guarantees that the transient and functional Hamt implementations are using the
 exact same internal data structures. This is true even to the degree that we can
 recast a HamtTransient data structure to HamtFunctional and the code will switch
 from transient (modify in place) to functional (copy on write) behavior. Of
-course, his works the other way around as well (that is, we can cast a
+course, this works the other way around as well (that is, we can cast a
 HamtFunctional to HamtTransient).
 
 This package also obsoletes github.com/lleo/go-hamt-key because we pass a []byte
