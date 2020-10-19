@@ -17,7 +17,7 @@ HamtFunctional to HamtTransient).
 
 This package also obsoletes github.com/lleo/go-hamt-key because we pass a []byte
 slice to Get/Put/Del operations instead of a Key data structure. What happens
-is we use the []byte slice to build a Key data structure to be used internally.
+is we use the `[]byte` slice to build a Key data structure to be used internally.
 This results in a simpler API and no external dependency.
 
 ## What is a HAMT?
@@ -29,7 +29,7 @@ reasonably large and fixed branching factor; thereby making it a pretty flat
 tree. The killer feature is that the tree has a maximum depth, resulting in a
 O(1) Search and Modify speeds. That is O(1) without a giant constant factor.
 
-HAMT makes this happen by first hashing the []byte slice  into either a 32bit or
+HAMT makes this happen by first hashing the `[]byte` slice  into either a 32bit or
 64bit hash value. We then split this hash value up into a fixed number of parts.
 Each part now becomes the index into the Array we use for interior nodes of the
 tree. Lastly, we only use enough parts of the hash value to find a free node to
